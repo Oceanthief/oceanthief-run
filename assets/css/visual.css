@@ -588,6 +588,192 @@ h3 {
   letter-spacing: 0;
 }
 
+/* ----------------------------------------------------------- provas alvo */
+/* linha do tempo de hoje até a última prova, com um marco por prova */
+.linha-alvos {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.1rem;
+  margin-bottom: 1.6rem;
+  font-size: 0.82rem;
+  color: var(--texto-3);
+}
+
+.trilho-alvos {
+  position: relative;
+  height: 2px;
+  margin: 0 14px;
+  border-radius: 2px;
+  background: var(--linha-forte);
+}
+
+.marco {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 1px solid var(--linha-forte);
+  border-radius: 50%;
+  background: var(--painel-2);
+  color: var(--texto);
+  font: 700 0.72rem/1 var(--sans);
+  font-style: normal;
+}
+
+.marco.prio-A {
+  border-color: var(--vermelho);
+  background: var(--vermelho);
+  color: var(--sobre-destaque);
+}
+
+.marco.prio-B {
+  border-color: var(--destaque);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+.alvos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alvo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.25rem 1.35rem 1.35rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--painel);
+}
+
+/* a prova principal leva a cor das provas */
+.alvo.principal {
+  border-color: var(--vermelho);
+  background: var(--vermelho);
+  color: var(--sobre-destaque);
+}
+
+.alvo-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.selo-prio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--texto-2);
+}
+
+.selo-prio b {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--painel-2);
+  color: var(--texto);
+  font-size: 0.72rem;
+}
+
+.faltam {
+  font-weight: 600;
+  color: var(--texto-3);
+}
+
+.alvo h3 {
+  margin-top: 0.7rem;
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-size: clamp(1.7rem, 2.6vw, 2.2rem);
+  line-height: 1.05;
+}
+
+.alvo .quando {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--texto-2);
+}
+
+.alvo dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  margin: 0.9rem 0 0;
+}
+
+.alvo dt {
+  font-size: 0.78rem;
+  color: var(--texto-3);
+}
+
+.alvo dd {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.nota-alvo {
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+  color: var(--texto-2);
+}
+
+.alvo .acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-top: auto;
+  padding-top: 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.alvo .acoes a {
+  color: var(--destaque-tx);
+}
+
+.alvo.principal .selo-prio,
+.alvo.principal .faltam,
+.alvo.principal .quando,
+.alvo.principal dt,
+.alvo.principal .nota-alvo,
+.alvo.principal .acoes a {
+  color: inherit;
+}
+
+.alvo.principal .quando,
+.alvo.principal dt,
+.alvo.principal .faltam {
+  opacity: 0.82;
+}
+
+.alvo.principal .selo-prio b {
+  background: var(--sobre-destaque);
+  color: var(--vermelho);
+}
+
+.alvos-passadas {
+  margin-top: 2rem;
+  padding: 1.35rem 1.35rem 0.75rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--painel);
+}
+
 /* -------------------------------------------------------------- recordes */
 .grade-recordes {
   gap: 14px;

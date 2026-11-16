@@ -15,6 +15,7 @@ const estado = { periodo: "semana", recentesMostrar: 8, destaque: "longos", grup
 
 const TITULOS = {
   sobre: [t("Sobre"), t("Quem está por trás dos números.")],
+  alvos: [t("Provas alvo"), t("O calendário da temporada, da prova principal às de preparação.")],
   recordes: [t("Recordes"), t("Os tempos que eu ainda tento bater.")],
   recentes: [t("Recentes"), t("O que rolou nos últimos dias.")],
   destaques: [t("Destaques"), t("Os treinos que não saem da memória.")],
@@ -45,7 +46,7 @@ async function iniciar() {
   const nome = nomeSite(S, P);
   document.title = P.titulo_aba || nome;
 
-  const links = [["#sobre", t("Sobre")], ["#recordes", t("Recordes")], ["#recentes", t("Recentes")], ["#destaques", t("Destaques")],
+  const links = [["#sobre", t("Sobre")], ...(P.provas_alvo?.length ? [["#alvos", t("Alvos")]] : []), ["#recordes", t("Recordes")], ["#recentes", t("Recentes")], ["#destaques", t("Destaques")],
     ["#numeros", t("Números")], ["#constancia", t("Constância")], ["#clima", t("Clima")], ["#lugares", t("Lugares")], ["#equipamento", t("Equipamento")]];
   if (PLANO?.semanas?.length) links.push(["plano.html", t("Plano")]);
   montarTopo({ nome: nomeTopo(S, P), links: links.filter(([h]) => !h.startsWith("#") || document.querySelector(h)) });
@@ -67,10 +68,12 @@ async function iniciar() {
   ROTAS = new Map((await buscarJSON("data/rotas.json", true)) || []);
   abertura();
   sobre();
+  alvos();
   desenharSecoes();
   lugares();
   aoMudarUnidade(() => {
     atualizarCapa();
+    alvos();
     desenharSecoes();
     painelLugares();
   });
@@ -158,7 +161,7 @@ function abertura() {
   const temContagem = PLANO?.prova?.data && new Date(PLANO.prova.data) > new Date();
   // a versão grande da foto ("grande" no perfil.json) só é baixada em telas largas
   const imagem = (f, tamanhos) =>
-    `<img src="${esc(f.arquivo)}"${f.grande ? ` srcset="${esc(f.arquivo)} 1000w, ${esc(f.grande)} 1600w" sizes="${tamanhos}"` : ""} alt="${esc(tr(f.descricao) || t("Foto de {nome}", { nome: nomeSite(S, P) }))}" decoding="async">`;
+    `<img src="${esc(f.arquivo)}"${f.grande ? ` srcset="${esc(f.arquivo)} 1000w, ${esc(f.grande)} 1920w" sizes="${tamanhos}"` : ""} alt="${esc(tr(f.descricao) || t("Foto de {nome}", { nome: nomeSite(S, P) }))}" decoding="async">`;
   const contagem = temContagem
     ? `<a class="contagem" href="plano.html"><p>${t("Próxima prova")}</p><strong>${esc(PLANO.prova.nome)}</strong><div class="relogio" id="relogio-prova"></div><span class="ver">${t("Ver o plano de treino")}</span></a>`
     : "";
@@ -283,6 +286,81 @@ function sobre() {
   const paragrafos = (tr(P.sobre) || []).filter(Boolean);
   if (!paragrafos.length) return $("#sobre").remove();
   $("#texto-sobre").innerHTML = paragrafos.map(paragrafo).join("") + assinatura();
+}
+
+// ----------------------------------------------------------- provas alvo
+// o calendário da temporada; a prova A é a principal (a do plano)
+const nomePrioridade = (p) => ({ A: t("prioridade|Principal"), B: t("prioridade|Preparação"), C: t("prioridade|Treino") })[p] || p;
+
+function alvos() {
+  const sec = $("#alvos");
+  if (!sec) return;
+  const lista = (P.provas_alvo || [])
+    .filter((p) => p?.nome && p.data)
+    .map((p) => ({ ...p, quando: new Date(p.data.length <= 10 ? `${p.data}T12:00` : p.data), prio: String(p.prioridade || "").toUpperCase() }))
+    .sort((x, y) => x.quando - y.quando);
+  if (!lista.length) return sec.remove();
+  const agora = new Date();
+  const hoje0 = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const dia0 = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const futuras = lista.filter((p) => dia0(p.quando) >= hoje0);
+  const passadas = lista.filter((p) => dia0(p.quando) < hoje0).reverse();
+  const distancia = (p) => (p.distancia_km ? dist(p.distancia_km * 1000, p.distancia_km % 1 ? 1 : 0) : tr(p.distancia) || "");
+
+  // linha do tempo: de hoje até a última prova marcada
+  const ultima = futuras.at(-1)?.quando;
+  const linha = futuras.length
+    ? `<div class="linha-alvos">
+        <span class="ponta">${t("Hoje")}</span>
+        <div class="trilho-alvos" role="img" aria-label="${esc(t("Linha do tempo das próximas provas"))}">${futuras
+          .map((p) => {
+            const pos = ultima > hoje0 ? ((p.quando - hoje0) / (ultima - hoje0)) * 100 : 100;
+            return `<i class="marco prio-${esc(p.prio || "B")}" style="left:${Math.min(100, Math.max(0, pos)).toFixed(2)}%" data-dica="${esc(`${tr(p.nome)}\n${dataLonga(p.quando)}`)}">${esc(p.prio)}</i>`;
+          })
+          .join("")}</div>
+        <span class="ponta">${esc(dataLonga(ultima))}</span>
+      </div>`
+    : "";
+
+  const cartao = (p) => {
+    const n = Math.round((dia0(p.quando) - hoje0) / 864e5);
+    const meta = tr(p.meta);
+    const d = distancia(p);
+    const temPlano = p.plano && PLANO?.semanas?.length;
+    return `<li class="alvo${p.prio === "A" ? " principal" : ""}">
+      <div class="alvo-topo">
+        ${p.prio ? `<span class="selo-prio"><b>${esc(p.prio)}</b>${esc(nomePrioridade(p.prio))}</span>` : "<span></span>"}
+        <span class="faltam">${n === 0 ? t("É hoje") : plural(n, "em {n} dia", "em {n} dias")}</span>
+      </div>
+      <h3>${esc(tr(p.nome))}</h3>
+      <p class="quando">${esc(diaSemana(p.quando))}, ${dataLonga(p.quando)}${p.cidade ? `, ${esc(tr(p.cidade))}` : ""}</p>
+      ${d || meta ? `<dl>${d ? `<div><dt>${t("Distância")}</dt><dd>${esc(d)}</dd></div>` : ""}${meta ? `<div><dt>${t("Meta")}</dt><dd>${esc(meta)}</dd></div>` : ""}</dl>` : ""}
+      ${p.nota ? `<p class="nota-alvo">${esc(tr(p.nota))}</p>` : ""}
+      <div class="acoes">
+        ${temPlano ? `<a href="plano.html">${t("Ver o plano de treino")}</a>` : ""}
+        ${/^https?:\/\//.test(p.link || "") ? `<a href="${esc(p.link)}" target="_blank" rel="noopener">${t("Página da prova")}</a>` : ""}
+      </div>
+    </li>`;
+  };
+
+  // as que já passaram: o tempo vem do treino do Strava no mesmo dia, com distância parecida
+  const resultado = (p) => {
+    const dia = chaveDia(p.quando);
+    const alvo = (p.distancia_km || 0) * 1000;
+    return A.find((a) => a.dia === dia && a.grupo === "corrida" && (!alvo || Math.abs(a.m - alvo) / alvo < 0.15));
+  };
+  const jaCorridas = passadas.length
+    ? `<div class="alvos-passadas"><h3 class="bloco-titulo">${t("Já corridas")}</h3><ul class="lista-provas">${passadas
+        .map((p) => {
+          const a = resultado(p);
+          return `<li><span class="nome">${a ? `<a href="${linkTreino(a.id)}">${esc(tr(p.nome))}</a>` : esc(tr(p.nome))}</span>
+            <span class="info">${dataLonga(p.quando)}${p.prio ? `, ${esc(nomePrioridade(p.prio)).toLowerCase()}` : ""}</span>
+            <span class="tempo">${a ? relogio(a.e || a.s) : "–"}</span></li>`;
+        })
+        .join("")}</ul></div>`
+    : "";
+
+  $("#lista-alvos").innerHTML = `${linha}${futuras.length ? `<ol class="alvos">${futuras.map(cartao).join("")}</ol>` : ""}${jaCorridas}`;
 }
 
 // --------------------------------------------------------------- recordes
