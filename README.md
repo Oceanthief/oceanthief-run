@@ -100,7 +100,8 @@ Para conferir ou desligar: `python scripts/strava_webhook.py ver` e `python scri
 | `nao_sao_provas` | ids de treinos marcados como "Prova" no Strava que não devem aparecer como prova (o id é o número no fim do link do treino) |
 | `conquistas` | conquistas que os números não mostram (pódio, recorde de clube...) |
 | `secoes` | título e frase de cada seção |
-| `links` | Instagram e perfil do Strava |
+| `links` | Instagram e perfil do Strava (o botão "Follow me on Strava" leva a ele) |
+| `feito_por` | uma assinatura "Made by: ..." acima do botão do Strava; vazio, não aparece |
 | `casa` | `{"lat": -23.5, "lng": -46.6}` se quiser fixar a "casa"; vazio, ela é calculada |
 | `privacidade.cortar_inicio_fim_m` | quantos metros do começo e do fim de cada rota esconder (padrão 400) |
 | `privacidade.ocultar_somente_seguidores` | `true` tira do site os treinos visíveis só para seguidores |
