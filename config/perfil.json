@@ -106,17 +106,6 @@
   "nao_sao_provas": [18729044519, 19247754111],
   "conquistas": [],
   "meta_anual_km": { "2026": 1200 },
-  "secoes": {
-    "sobre": ["Sobre", ""],
-    "recordes": ["Recordes", "Os tempos que eu ainda tento bater."],
-    "recentes": ["Recentes", "O que rolou nos últimos dias."],
-    "destaques": ["Destaques", "Os treinos que não saem da memória."],
-    "numeros": ["Números", "Tudo o que o relógio registrou."],
-    "constancia": ["Constância", "Cada quadrado é um dia. Quanto mais forte, mais longe."],
-    "clima": ["Clima", "Chuva, frio de 8 °C ou calor de 30: o treino sai igual."],
-    "lugares": ["Lugares", "Onde já deixei pegadas."],
-    "equipamento": ["Equipamento", "Quantos quilômetros cada tênis aguentou."]
-  },
   "feito_por": "",
   "links": {
     "instagram": "",

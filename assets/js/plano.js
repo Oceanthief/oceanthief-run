@@ -91,13 +91,13 @@ function desenhar() {
     </section>
 
     <section class="secao" id="volume" style="padding-top:2.5rem">
-      <div class="secao-cabeca"><h2>${t("Volume")}</h2><p class="sub">${t("A barra clara é o planejado; a cheia, o que foi corrido de verdade. Toque numa semana para ver os treinos.")}</p></div>
+      <div class="secao-cabeca"><h2>${t("Volume")}</h2></div>
       <div class="grafico" id="g-plano"></div>
-      <div class="legenda-fases">${usadas.map((f) => `<span><i style="background:var(--fase-${esc(f)})"></i>${esc(tx(fases[f] || f))}</span>`).join("")}</div>
+      <div class="legenda-fases"><span><i class="leg-plan"></i>${t("Planejado")}</span><span><i class="leg-feito"></i>${t("Corrido")}</span>${usadas.map((f) => `<span><i style="background:var(--fase-${esc(f)})"></i>${esc(tx(fases[f] || f))}</span>`).join("")}</div>
     </section>
 
     <section class="secao" id="semanas">
-      <div class="secao-cabeca"><h2>${t("Semana a semana")}</h2><p class="sub">${t("Os treinos com a borda colorida são os mais importantes da semana.")}</p></div>
+      <div class="secao-cabeca"><h2>${t("Semana a semana")}</h2></div>
       <ol class="semanas">${semanas.map(itemSemana).join("")}</ol>
     </section>`;
 
@@ -128,7 +128,7 @@ function itemSemana(s) {
     dia.setDate(dia.getDate() + (w.dia ?? 0));
     return `<li class="${w.chave ? "chave" : ""}">
       <span class="dia">${DIAS_CURTOS[w.dia ?? 0]} ${dia.getDate()}</span>
-      <span class="titulo">${esc(tx(w.titulo))}</span>
+      <span class="titulo">${esc(tx(w.titulo))}${w.chave ? ` <span class="selo-chave">${t("Treino-chave")}</span>` : ""}</span>
       ${w.detalhe ? `<span class="detalhe">${esc(tx(w.detalhe))}</span>` : ""}
       <span class="km">${w.km ? esc(dist(w.km * 1000, w.km % 1 ? 1 : 0)) : ""}</span></li>`;
   });

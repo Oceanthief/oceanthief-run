@@ -1121,6 +1121,29 @@ body {
   }
 }
 
+/* legendas do plano: barra planejada (clara) e corrida (cheia) */
+.legenda-fases .leg-plan {
+  background: color-mix(in srgb, var(--texto-3) 35%, var(--fundo));
+}
+
+.legenda-fases .leg-feito {
+  width: 6px;
+  background: var(--texto-2);
+}
+
+/* o treino mais importante da semana leva um selo ao lado do nome */
+.selo-chave {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: var(--destaque-tx);
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: 0.1em;
+}
+
 /* ------------------------------------------------- destaques: mosaico de rotas */
 .mosaico-rotas {
   display: grid;
@@ -1472,9 +1495,6 @@ body {
   padding: 1.35rem 1.35rem 0.9rem;
 }
 
-.equipamento .linha-h + .linha-h:not(.gasto) .trilho i {
-  background: var(--linha-forte) !important;
-}
 
 /* ------------------------------------------------------------- rodapé */
 /* o nome ocupa a largura da página, sem passar dela */
@@ -1663,13 +1683,6 @@ body {
   opacity: 0.7;
 }
 
-.linha-h.gasto .aposentado {
-  color: var(--vermelho);
-}
-
-[data-tema="escuro"] .linha-h.gasto .aposentado {
-  color: #e8735f;
-}
 
 /* --------------------------------------------------- contador de visitas */
 .visitas {

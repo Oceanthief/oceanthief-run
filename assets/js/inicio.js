@@ -14,16 +14,16 @@ const nTreinos = (n) => plural(n, "{n} treino", "{n} treinos");
 const estado = { periodo: "semana", recentesMostrar: 8, destaque: "longos", grupoNumeros: null, ano: "12m", regiao: "todos", viagensTodas: false, provasTodas: false };
 
 const TITULOS = {
-  sobre: [t("Sobre"), t("Quem está por trás dos números.")],
-  alvos: [t("Provas alvo"), t("O calendário da temporada: a prova principal e as outras que estão no caminho.")],
-  recordes: [t("Recordes"), t("Os tempos que eu ainda tento bater.")],
-  recentes: [t("Recentes"), t("O que rolou nos últimos dias.")],
-  destaques: [t("Destaques"), t("Os treinos que não saem da memória.")],
-  numeros: [t("Números"), t("Tudo o que o relógio registrou.")],
-  constancia: [t("Constância"), t("Cada quadrado é um dia. Quanto mais forte, mais longe.")],
-  clima: [t("Clima"), t("Chuva, frio ou calor: o treino sai igual.")],
-  lugares: [t("Lugares"), t("Onde já deixei pegadas.")],
-  equipamento: [t("Equipamento"), t("Quantos quilômetros cada tênis aguentou.")],
+  sobre: t("Sobre"),
+  alvos: t("Provas alvo"),
+  recordes: t("Recordes"),
+  recentes: t("Recentes"),
+  destaques: t("Destaques"),
+  numeros: t("Números"),
+  constancia: t("Constância"),
+  clima: t("Clima"),
+  lugares: t("Lugares"),
+  equipamento: t("Equipamento"),
 };
 
 const ESFORCOS_PRINCIPAIS = ["400m", "1K", "1 mile", "5K", "10K", "15K", "10 mile", "Half-Marathon", "30K", "Marathon", "50K"];
@@ -53,9 +53,10 @@ async function iniciar() {
   montarRodape(S, P);
 
   for (const [id, padrao] of Object.entries(TITULOS)) {
-    // perfil.json pode trazer o título em português (traduzido pelo dicionário) ou {"pt", "en", "es"}
+    // perfil.json pode trocar o título ("Recordes" ou {"pt", "en", "es"}); uma frase embaixo só aparece
+    // se vier de lá, como ["Recordes", "a frase"]
     const doPerfil = tr(P.secoes?.[id]);
-    const [titulo, sub] = Array.isArray(doPerfil) ? doPerfil.map((x) => t(x || "")) : padrao;
+    const [titulo, sub] = Array.isArray(doPerfil) ? doPerfil.map((x) => t(x || "")) : [doPerfil ? t(doPerfil) : padrao, ""];
     const cab = $(`#${id} .secao-cabeca`);
     if (cab) cab.insertAdjacentHTML("afterbegin", `<div><h2>${esc(titulo)}</h2>${sub ? `<p class="sub">${esc(sub)}</p>` : ""}</div>`);
   }
@@ -1052,21 +1053,18 @@ function clima() {
 function equipamento() {
   const lista = (S.equipamento || []).filter((g) => g.m > 0).sort((x, y) => (x.aposentado - y.aposentado) || y.m - x.m);
   if (!lista.length) return $("#equipamento")?.remove();
-  // tênis de corrida costumam durar de 600 a 800 km; o limite pode mudar em perfil.json
-  const vida = (Number(P.vida_tenis_km) || 800) * 1000;
+  // quanto mais quilômetros, mais forte a cor (os aposentados ficam em cinza)
   const maior = Math.max(...lista.map((g) => g.m));
-  barrasH($("#lista-equipamento"), lista.map((g) => {
-    const gasto = g.tipo !== "bike" && !g.aposentado && g.m >= vida;
-    return {
-      rotulo: g.nome,
-      extra: `${g.tipo === "bike" ? t("bike") : t("tênis")}${g.aposentado ? t(", aposentado") : g.principal ? t(", o principal") : ""}${gasto ? t(", passou de {v}", { v: dist(vida, 0) }) : ""}`,
-      valor: g.m, texto: dist(g.m, 0),
-      dica: `${t("{treinos} registrados", { treinos: nTreinos(g.usos) })}${g.tipo !== "bike" ? `\n${t("Tênis de corrida costumam durar de 600 a 800 km.")}` : ""}`,
-      cor: g.aposentado ? "var(--linha-forte)" : g.tipo === "bike" ? "var(--c-pedal)" : gasto ? "var(--vermelho)" : "var(--destaque)",
-      marca: g.tipo !== "bike" && maior > vida ? (vida / maior) * 100 : null,
-      classe: gasto ? "gasto" : "",
-    };
-  }));
+  const forca = (g) => Math.round(30 + 70 * (g.m / maior));
+  barrasH($("#lista-equipamento"), lista.map((g) => ({
+    rotulo: g.nome,
+    extra: `${g.tipo === "bike" ? t("bike") : t("tênis")}${g.aposentado ? t(", aposentado") : g.principal ? t(", o principal") : ""}`,
+    valor: g.m, texto: dist(g.m, 0),
+    dica: t("{treinos} registrados", { treinos: nTreinos(g.usos) }),
+    cor: g.aposentado
+      ? "var(--linha-forte)"
+      : `color-mix(in oklab, ${g.tipo === "bike" ? "var(--c-pedal)" : "var(--destaque)"} ${forca(g)}%, var(--painel-2))`,
+  })));
 }
 
 // ---------------------------------------------------------------- lugares

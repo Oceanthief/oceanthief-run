@@ -101,10 +101,9 @@ Para conferir ou desligar: `python scripts/strava_webhook.py ver` e `python scri
 | `nao_sao_provas` | ids de treinos marcados como "Prova" no Strava que não devem aparecer como prova (o id é o número no fim do link do treino) |
 | `conquistas` | conquistas que os números não mostram (pódio, recorde de clube...) |
 | `meta_anual_km` | a meta de quilômetros do ano no esporte principal: um número (`2000`) ou um por ano (`{"2026": 1800, "2027": 2200}`). Vazio, a comparação usa o total do ano anterior |
-| `vida_tenis_km` | a partir de quantos km um tênis aparece como gasto em "Equipamento" (padrão 800) |
 | `ficha` | linhas a mais na ficha ao lado do "Sobre", cada uma com `rotulo` e `valor` (por exemplo `{"rotulo": "Clube", "valor": "Oceanthief RC"}`). As linhas de sempre (desde quando está no Strava, cidade, melhores tempos e provas) vêm sozinhas |
 | `goatcounter` | o código da sua conta no [GoatCounter](https://www.goatcounter.com) (o que vem antes de `.goatcounter.com`). Liga o contador de visitas, que aparece no rodapé. Vazio, nada é contado |
-| `secoes` | título e frase de cada seção (em português, traduzidos pelo dicionário, ou `{"pt": [...], "en": [...], "es": [...]}`) |
+| `secoes` | para trocar o título de uma seção, como `{"recordes": "Meus tempos"}` (em português, traduzido pelo dicionário, ou `{"pt": "...", "en": "...", "es": "..."}`). Com `["Título", "frase"]`, a frase aparece embaixo do título |
 | `links` | Instagram e perfil do Strava (o botão "Follow me on Strava" leva a ele) |
 | `feito_por` | uma assinatura "Made by: ..." acima do botão do Strava; vazio, não aparece |
 | `casa` | `{"lat": -23.5, "lng": -46.6}` se quiser fixar a "casa"; vazio, ela é calculada |
