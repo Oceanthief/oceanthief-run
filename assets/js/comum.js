@@ -352,14 +352,20 @@ export function montarTopo({ nome, links = [] }) {
   });
 }
 
+// a marca do Strava (Simple Icons, domínio público)
+const LOGO_STRAVA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>`;
+
 export function montarRodape(site, perfil) {
   const gerado = site?.gerado_em ? new Date(site.gerado_em) : null;
   const links = perfil?.links || {};
   const stravaUrl = links.strava || (site?.atleta?.id ? `https://www.strava.com/athletes/${site.atleta.id}` : "https://www.strava.com");
   $(".rodape").innerHTML = `
-    <div class="recipiente">
+    <div class="recipiente seguir">
+      <a class="seguir-strava" href="${esc(stravaUrl)}" target="_blank" rel="noopener">${LOGO_STRAVA}<span>Follow me on Strava</span></a>
+    </div>
+    <div class="recipiente creditos">
       <div>
-        <p>${gerado ? `Dados atualizados em ${dataLonga(gerado)}, às ${hora(gerado)}. O site busca treinos novos três vezes por dia.` : ""}</p>
+        <p>${gerado ? `Dados atualizados em ${dataLonga(gerado)}, às ${hora(gerado)}. O site se atualiza sozinho a cada treino registrado no Strava.` : ""}</p>
         <p>Mapas © <a href="https://www.openstreetmap.org/copyright">colaboradores do OpenStreetMap</a>. Clima: <a href="https://open-meteo.com">Open-Meteo</a>.</p>
       </div>
       <div class="links-sociais">

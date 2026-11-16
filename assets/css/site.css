@@ -1596,21 +1596,75 @@ table.resultados {
 /* ----------------------------------------------------------------- rodapé */
 .rodape {
   margin-top: clamp(4rem, 9vw, 6rem);
-  border-top: 1px solid var(--linha);
-  padding: 2rem 0 3rem;
+  padding: 0 0 3rem;
   color: var(--texto-3);
   font-size: 0.875rem;
 }
 
-.rodape .recipiente {
+/* o convite para seguir no Strava fecha a página */
+.rodape .seguir {
+  display: flex;
+  justify-content: center;
+  padding-bottom: clamp(3rem, 7vw, 4.5rem);
+}
+
+.seguir-strava {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.95rem 1.6rem 0.95rem 1.35rem;
+  border-radius: 6px;
+  background: #fc4c02;
+  color: #190c07 !important;
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: clamp(1rem, 2.4vw, 1.2rem);
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: background-color 0.15s, transform 0.15s;
+}
+
+.seguir-strava svg {
+  width: 1.35em;
+  height: 1.35em;
+  flex: none;
+}
+
+.seguir-strava:hover {
+  background: #ff6a2b;
+  transform: translateY(-1px);
+}
+
+.seguir-strava:focus-visible {
+  outline-color: #fc4c02;
+}
+
+.rodape .creditos {
+  position: relative;
   display: grid;
   gap: 1rem;
+  padding-top: 2rem;
+}
+
+/* a linha acompanha a margem do texto, não a da caixa */
+.rodape .creditos::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  border-top: 1px solid var(--linha);
 }
 
 @media (min-width: 720px) {
-  .rodape .recipiente {
+  .rodape .creditos {
     grid-template-columns: 1fr auto;
     align-items: end;
+  }
+
+  .rodape .creditos::before {
+    left: 32px;
+    right: 32px;
   }
 }
 
