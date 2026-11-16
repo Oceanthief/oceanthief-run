@@ -416,6 +416,10 @@ export function montarTopo({ nome, links = [] }) {
         <button type="button" class="botao-icone" id="botao-tema"></button>
       </div>
     </div>`;
+  // na página com foto de abertura, o cabeçalho fica transparente até a página rolar
+  const marcar = () => topo.classList.toggle("rolou", window.scrollY > 24);
+  window.addEventListener("scroll", marcar, { passive: true });
+  marcar();
   const botaoTema = $("#botao-tema", topo);
   const pintar = () => {
     const claro = temaAtual() === "claro";
@@ -451,6 +455,7 @@ export function montarRodape(site, perfil) {
   const feitoPor = perfil?.feito_por ?? "";
   $(".rodape").innerHTML = `
     <div class="recipiente fim-pagina">
+      ${perfil?.nome_site ? `<p class="marca-rodape" aria-hidden="true">${esc(perfil.nome_site)}</p>` : ""}
       <p class="powered">${LOGO_STRAVA}<span>Powered by Strava</span></p>
       ${feitoPor ? `<p class="feito-por">Made by: ${esc(feitoPor)}</p>` : ""}
       <a class="seguir-strava" href="${esc(stravaUrl)}" target="_blank" rel="noopener">${LOGO_STRAVA}<span>Follow me on</span><b>Strava</b></a>
