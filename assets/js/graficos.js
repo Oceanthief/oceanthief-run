@@ -1,5 +1,5 @@
 // Gráficos em SVG feitos à mão. As cores vêm das variáveis CSS do tema.
-import { esc, num, chaveDia, inicioSemana, MESES_CURTOS } from "./comum.js";
+import { esc, num, chaveDia, inicioSemana, MESES_CURTOS, DIAS_CURTOS, t } from "./comum.js";
 
 function escalaBonita(max, passos = 4) {
   if (!(max > 0)) return { topo: 1, passo: 0.25 };
@@ -64,7 +64,7 @@ export function barras(el, { dados, altura = 220, fmtEixo = (v) => num(v), rotul
 /** Barras horizontais em HTML. dados: [{rotulo, valor, texto, cor, dica, extra}] */
 export function barrasH(el, dados, { max } = {}) {
   if (!dados.length) {
-    el.innerHTML = `<p class="vazio">Sem dados para mostrar aqui.</p>`;
+    el.innerHTML = `<p class="vazio">${t("Sem dados para mostrar aqui.")}</p>`;
     return;
   }
   const maior = max ?? Math.max(...dados.map((d) => d.valor), 1);
@@ -86,7 +86,7 @@ export function dispersao(el, { pontos, altura = 260, fmtX = (v) => num(v), fmtY
   const w = largura - m.l - m.r;
   const h = altura - m.t - m.b;
   if (!pontos.length) {
-    el.innerHTML = `<p class="vazio">Sem dados para mostrar aqui.</p>`;
+    el.innerHTML = `<p class="vazio">${t("Sem dados para mostrar aqui.")}</p>`;
     return;
   }
   const xs = pontos.map((p) => p.x).sort((a, b) => a - b);
@@ -157,7 +157,7 @@ export function calendario(el, { inicio, fim, valores, rotulo = "" }) {
   const largura = 30 + semanas * passo;
   const altura = 20 + 7 * passo;
   let corpo = "";
-  ["seg", "", "qua", "", "sex", "", ""].forEach((d, i) => {
+  [DIAS_CURTOS[0], "", DIAS_CURTOS[2], "", DIAS_CURTOS[4], "", ""].forEach((d, i) => {
     if (d) corpo += `<text x="0" y="${20 + i * passo + lado - 2}">${d}</text>`;
   });
   let mesAnterior = -1;

@@ -1,6 +1,6 @@
 // Desenhos dos quatro números da abertura: muro de tijolos, globo com a volta na Terra,
 // globo com a órbita da ISS e o mapa de relevo da montanha de referência.
-import { esc, reduzirMovimento } from "./comum.js";
+import { esc, num, reduzirMovimento, t } from "./comum.js";
 
 const D3_GEO = "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm";
 const TOPOJSON = "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm";
@@ -117,7 +117,7 @@ export function muro(el, { atividades, corDe, nomeDe }) {
   el.innerHTML = `
     <div class="muro-cena">
       <svg class="muro" viewBox="0 0 ${largura} ${altura}" preserveAspectRatio="xMidYMax meet" role="img"
-        aria-label="Muro com ${n} tijolos, um por atividade, coloridos pelo esporte">
+        aria-label="${esc(t("Muro com {n} tijolos, um por atividade, coloridos pelo esporte", { n: num(n) }))}">
         ${faces}
         ${ordem.map(([g, rects]) => `<g style="fill:${corDe(g)}">${rects.join("")}</g>`).join("")}
       </svg>

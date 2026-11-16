@@ -1,21 +1,82 @@
-// Funções usadas por todas as páginas: dados, formatos, unidades, tema e dicas.
+// Funções usadas por todas as páginas: idioma, dados, formatos, unidades, tema e dicas.
+import TRADUCOES from "./traducoes.js";
 
+// ----------------------------------------------------------------- idioma
+// O texto em português é a própria chave: t("Recordes") vira "Records" em inglês.
+// Sem tradução, aparece o português.
+export const IDIOMAS = { pt: "pt-BR", en: "en-US", es: "es-ES" };
+const CHAVE_IDIOMA = "strava-site:idioma";
+export const idioma = escolherIdioma();
+export const LOCALE = IDIOMAS[idioma];
+document.documentElement.lang = LOCALE;
+
+// ?lang=en no endereço > a escolha guardada > o idioma do navegador > inglês
+function escolherIdioma() {
+  const daUrl = new URLSearchParams(location.search).get("lang");
+  if (IDIOMAS[daUrl]) {
+    gravarPreferencia(CHAVE_IDIOMA, daUrl);
+    return daUrl;
+  }
+  const salvo = lerPreferencia(CHAVE_IDIOMA, null);
+  if (IDIOMAS[salvo]) return salvo;
+  for (const l of navigator.languages || [navigator.language || ""]) {
+    const c = String(l).slice(0, 2).toLowerCase();
+    if (IDIOMAS[c]) return c;
+  }
+  return "en";
+}
+
+export function trocarIdioma(novo) {
+  if (!IDIOMAS[novo] || novo === idioma) return;
+  gravarPreferencia(CHAVE_IDIOMA, novo);
+  const url = new URL(location.href);
+  url.searchParams.delete("lang");
+  location.href = url.href;
+}
+
+// "zona|Ritmo": o que vem antes da barra só separa frases iguais em português com traduções diferentes
+export function t(texto, vars) {
+  let s = idioma === "pt" ? null : TRADUCOES[idioma]?.[texto];
+  if (s == null) s = texto.includes("|") ? texto.slice(texto.indexOf("|") + 1) : texto;
+  if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+  return s;
+}
+
+// singular ou plural: plural(3, "{n} treino", "{n} treinos")
+export const plural = (n, um, varios) => t(n === 1 ? um : varios, { n: num(n) });
+
+// textos do perfil.json e do plano.json: {"pt": ..., "en": ..., "es": ...} ou só o português
+export function tr(v) {
+  if (v && typeof v === "object" && !Array.isArray(v) && ("pt" in v || "en" in v || "es" in v)) return v[idioma] ?? v.pt ?? v.en ?? v.es;
+  return v;
+}
+// o mesmo, e o português que estiver no dicionário também é traduzido
+export const tx = (v) => {
+  const x = tr(v);
+  return typeof x === "string" ? t(x) : x;
+};
+
+// textos fixos do HTML: data-t traduz o texto do elemento; data-t-aria, o aria-label
+for (const el of document.querySelectorAll("[data-t]")) el.textContent = t(el.dataset.t || el.textContent.trim());
+for (const el of document.querySelectorAll("[data-t-aria]")) el.setAttribute("aria-label", t(el.getAttribute("aria-label")));
+
+// ---------------------------------------------------------------- esportes
 export const GRUPOS = {
-  corrida: { nome: "Corrida", tipos: ["Run", "TrailRun", "VirtualRun"] },
-  pedal: { nome: "Pedal", tipos: ["Ride", "GravelRide", "MountainBikeRide", "VirtualRide", "EBikeRide", "EMountainBikeRide", "Velomobile", "Handcycle"] },
-  natacao: { nome: "Natação", tipos: ["Swim"] },
-  caminhada: { nome: "Caminhada", tipos: ["Walk", "Hike", "Snowshoe"] },
-  forca: { nome: "Força e outros treinos", tipos: ["WeightTraining", "Workout", "Crossfit", "HighIntensityIntervalTraining", "Yoga", "Pilates", "StairStepper", "Elliptical", "Rowing", "VirtualRow"] },
-  outros: { nome: "Outros", tipos: [] },
+  corrida: { nome: t("Corrida"), tipos: ["Run", "TrailRun", "VirtualRun"] },
+  pedal: { nome: t("Pedal"), tipos: ["Ride", "GravelRide", "MountainBikeRide", "VirtualRide", "EBikeRide", "EMountainBikeRide", "Velomobile", "Handcycle"] },
+  natacao: { nome: t("Natação"), tipos: ["Swim"] },
+  caminhada: { nome: t("Caminhada"), tipos: ["Walk", "Hike", "Snowshoe"] },
+  forca: { nome: t("Força e outros treinos"), tipos: ["WeightTraining", "Workout", "Crossfit", "HighIntensityIntervalTraining", "Yoga", "Pilates", "StairStepper", "Elliptical", "Rowing", "VirtualRow"] },
+  outros: { nome: t("Outros"), tipos: [] },
 };
 
 const NOMES_TIPO = {
-  Run: "Corrida", TrailRun: "Trail", VirtualRun: "Esteira", Ride: "Pedal", GravelRide: "Gravel",
-  MountainBikeRide: "Mountain bike", VirtualRide: "Rolo", EBikeRide: "Bike elétrica", Swim: "Natação",
-  Walk: "Caminhada", Hike: "Trilha", WeightTraining: "Musculação", Workout: "Treino", Crossfit: "Crossfit",
-  HighIntensityIntervalTraining: "HIIT", Yoga: "Yoga", Pilates: "Pilates", Rowing: "Remo", VirtualRow: "Remo indoor",
-  Elliptical: "Elíptico", StairStepper: "Escada", Soccer: "Futebol", Tennis: "Tênis", Surfing: "Surfe",
-  StandUpPaddling: "Stand up paddle", Kayaking: "Caiaque", Canoeing: "Canoa", AlpineSki: "Esqui", Snowboard: "Snowboard",
+  Run: t("Corrida"), TrailRun: t("Trail"), VirtualRun: t("Esteira"), Ride: t("Pedal"), GravelRide: t("Gravel"),
+  MountainBikeRide: t("Mountain bike"), VirtualRide: t("Rolo"), EBikeRide: t("Bike elétrica"), Swim: t("Natação"),
+  Walk: t("Caminhada"), Hike: t("Trilha"), WeightTraining: t("Musculação"), Workout: t("Treino"), Crossfit: t("Crossfit"),
+  HighIntensityIntervalTraining: t("HIIT"), Yoga: t("Yoga"), Pilates: t("Pilates"), Rowing: t("Remo"), VirtualRow: t("Remo indoor"),
+  Elliptical: t("Elíptico"), StairStepper: t("Escada"), Soccer: t("Futebol"), Tennis: t("Tênis"), Surfing: t("Surfe"),
+  StandUpPaddling: t("Stand up paddle"), Kayaking: t("Caiaque"), Canoeing: t("Canoa"), AlpineSki: t("Esqui"), Snowboard: t("Snowboard"),
 };
 
 export function grupoDe(tipo) {
@@ -24,20 +85,33 @@ export function grupoDe(tipo) {
 }
 
 export const NOMES_ESFORCO = {
-  "400m": "400 m", "1/2 mile": "½ milha", "1K": "1 km", "1 mile": "1 milha", "2 mile": "2 milhas", "5K": "5 km",
-  "10K": "10 km", "15K": "15 km", "10 mile": "10 milhas", "20K": "20 km", "Half-Marathon": "Meia maratona",
-  "30K": "30 km", "Marathon": "Maratona", "50K": "50 km",
+  "400m": "400 m", "1/2 mile": t("½ milha"), "1K": "1 km", "1 mile": t("1 milha"), "2 mile": t("2 milhas"), "5K": "5 km",
+  "10K": "10 km", "15K": "15 km", "10 mile": t("10 milhas"), "20K": "20 km", "Half-Marathon": t("Meia maratona"),
+  "30K": "30 km", "Marathon": t("Maratona"), "50K": "50 km",
 };
 
 export const CONDICOES = [
-  ["Céu limpo", (c) => c === 0], ["Poucas nuvens", (c) => c === 1 || c === 2], ["Nublado", (c) => c === 3],
-  ["Neblina", (c) => c === 45 || c === 48], ["Garoa", (c) => c >= 51 && c <= 57], ["Chuva", (c) => (c >= 61 && c <= 67) || (c >= 80 && c <= 82)],
-  ["Neve", (c) => (c >= 71 && c <= 77) || c === 85 || c === 86], ["Tempestade", (c) => c >= 95],
+  [t("Céu limpo"), (c) => c === 0], [t("Poucas nuvens"), (c) => c === 1 || c === 2], [t("Nublado"), (c) => c === 3],
+  [t("Neblina"), (c) => c === 45 || c === 48], [t("Garoa"), (c) => c >= 51 && c <= 57], [t("Chuva"), (c) => (c >= 61 && c <= 67) || (c >= 80 && c <= 82)],
+  [t("Neve"), (c) => (c >= 71 && c <= 77) || c === 85 || c === 86], [t("Tempestade"), (c) => c >= 95],
 ];
-export const nomeCondicao = (c) => (c == null ? "" : CONDICOES.find(([, t]) => t(c))?.[0] || "");
+export const nomeCondicao = (c) => (c == null ? "" : CONDICOES.find(([, f]) => f(c))?.[0] || "");
 
-export const nomeTipo = (t) => NOMES_TIPO[t] || t.replace(/([a-z])([A-Z])/g, "$1 $2");
+export const nomeTipo = (tipo) => NOMES_TIPO[tipo] || tipo.replace(/([a-z])([A-Z])/g, "$1 $2");
 export const corGrupo = (g) => `var(--c-${g})`;
+
+// o país no idioma da página, pelo código ("BR" vira Brasil, Brazil ou Brasil)
+const fmtRegiao = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames([LOCALE], { type: "region" }) : null;
+export function nomePais(lugar) {
+  if (lugar?.cc && fmtRegiao) {
+    try {
+      return fmtRegiao.of(String(lugar.cc).toUpperCase());
+    } catch {
+      /* código desconhecido: usa o nome guardado */
+    }
+  }
+  return lugar?.pais || "";
+}
 
 // ------------------------------------------------------------------ datas
 export function dataLocal(texto) {
@@ -55,32 +129,39 @@ export function inicioSemana(d) {
   return x;
 }
 
-const fmtDataCurta = new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "short" });
-const fmtDataLonga = new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "short", year: "numeric" });
-const fmtDiaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
-const fmtHora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
+const fmtDataCurta = new Intl.DateTimeFormat(LOCALE, { day: "numeric", month: "short" });
+const fmtDataLonga = new Intl.DateTimeFormat(LOCALE, { day: "numeric", month: "short", year: "numeric" });
+const fmtDiaSemana = new Intl.DateTimeFormat(LOCALE, { weekday: "long" });
+const fmtHora = new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" });
+const fmtDiaCurto = new Intl.DateTimeFormat(LOCALE, { weekday: "short" });
+const fmtMesCurto = new Intl.DateTimeFormat(LOCALE, { month: "short" });
 
 const limpar = (s) => s.replace(/\./g, "").replace(/ de /g, " ");
 export const dataCurta = (d) => limpar(fmtDataCurta.format(d));
 export const dataLonga = (d) => limpar(fmtDataLonga.format(d));
 export const diaSemana = (d) => fmtDiaSemana.format(d);
 export const hora = (d) => fmtHora.format(d);
-export const DIAS_CURTOS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
-export const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+// de segunda a domingo (5 de janeiro de 2026 foi uma segunda-feira)
+const semanaBase = Array.from({ length: 7 }, (_, i) => new Date(2026, 0, 5 + i));
+export const DIAS_CURTOS = semanaBase.map((d) => fmtDiaCurto.format(d).replace(/\./g, ""));
+export const DIAS_LONGOS = semanaBase.map((d) => fmtDiaSemana.format(d).replace(/-feira$/, ""));
+export const MESES_CURTOS = Array.from({ length: 12 }, (_, i) => fmtMesCurto.format(new Date(2026, i, 15)).replace(/\./g, ""));
 
 export function quandoRelativo(d) {
   const hoje = new Date();
   const dias = Math.round((new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
-  if (dias === 0) return `hoje, ${hora(d)}`;
-  if (dias === 1) return `ontem, ${hora(d)}`;
+  if (dias === 0) return t("hoje, {hora}", { hora: hora(d) });
+  if (dias === 1) return t("ontem, {hora}", { hora: hora(d) });
   if (dias < 7) return `${diaSemana(d)}, ${hora(d)}`;
   return d.getFullYear() === hoje.getFullYear() ? dataCurta(d) : dataLonga(d);
 }
 
 // --------------------------------------------------------------- números
-const nf0 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
-const nf1 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-export const num = (n, casas = 0) => (casas === 0 ? nf0.format(n) : new Intl.NumberFormat("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas }).format(n));
+// "always": em espanhol, 3658 também vira 3.658, como 21.245
+const nf0 = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0, useGrouping: "always" });
+const nf1 = new Intl.NumberFormat(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: "always" });
+export const num = (n, casas = 0) =>
+  casas === 0 ? nf0.format(n) : new Intl.NumberFormat(LOCALE, { minimumFractionDigits: casas, maximumFractionDigits: casas, useGrouping: "always" }).format(n);
 export const num1 = (n) => nf1.format(n);
 
 // -------------------------------------------------------------- unidades
@@ -107,7 +188,7 @@ export function dist(m, casas) {
 }
 
 export function elev(m) {
-  return unidade === "mi" ? `${num(m * 3.28084)} pés` : `${num(m)} m`;
+  return unidade === "mi" ? `${num(m * 3.28084)} ${t("pés")}` : `${num(m)} m`;
 }
 
 export function duracao(s) {
@@ -197,7 +278,7 @@ export async function buscarJSON(caminho, opcional = false) {
     return await resp.json();
   } catch (erro) {
     if (opcional) return null;
-    throw new Error(`Não consegui abrir ${caminho} (${erro.message}).`);
+    throw new Error(t("Não consegui abrir {caminho} ({erro}).", { caminho, erro: erro.message }));
   }
 }
 
@@ -323,9 +404,12 @@ export function montarTopo({ nome, links = [] }) {
   topo.innerHTML = `
     <div class="recipiente">
       <a class="marca" href="./">${esc(nome)}</a>
-      <nav class="menu" aria-label="Seções">${links.map(([href, txt]) => `<a href="${href}">${esc(txt)}</a>`).join("")}</nav>
+      <nav class="menu" aria-label="${esc(t("Seções"))}">${links.map(([href, txt]) => `<a href="${href}">${esc(txt)}</a>`).join("")}</nav>
       <div class="ajustes">
-        <div class="alternador" role="group" aria-label="Unidade de distância">
+        <div class="alternador idiomas" role="group" aria-label="${esc(t("Idioma"))}">
+          ${Object.keys(IDIOMAS).map((l) => `<button type="button" data-lang="${l}" lang="${IDIOMAS[l]}" aria-pressed="${l === idioma}" title="${NOMES_IDIOMA[l]}">${l.toUpperCase()}</button>`).join("")}
+        </div>
+        <div class="alternador" role="group" aria-label="${esc(t("Unidade de distância"))}">
           <button type="button" data-u="km" aria-pressed="${unidade === "km"}">km</button>
           <button type="button" data-u="mi" aria-pressed="${unidade === "mi"}">mi</button>
         </div>
@@ -336,7 +420,7 @@ export function montarTopo({ nome, links = [] }) {
   const pintar = () => {
     const claro = temaAtual() === "claro";
     botaoTema.innerHTML = claro ? ICONE_LUA : ICONE_SOL;
-    botaoTema.setAttribute("aria-label", claro ? "Usar tema escuro" : "Usar tema claro");
+    botaoTema.setAttribute("aria-label", claro ? t("Usar tema escuro") : t("Usar tema claro"));
     botaoTema.title = botaoTema.getAttribute("aria-label");
   };
   pintar();
@@ -344,13 +428,18 @@ export function montarTopo({ nome, links = [] }) {
     alternarTema();
     pintar();
   };
-  $$(".alternador button", topo).forEach((b) => {
+  $$("[data-u]", topo).forEach((b) => {
     b.onclick = () => {
-      $$(".alternador button", topo).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      $$("[data-u]", topo).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
       setUnidade(b.dataset.u);
     };
   });
+  $$("[data-lang]", topo).forEach((b) => {
+    b.onclick = () => trocarIdioma(b.dataset.lang);
+  });
 }
+
+const NOMES_IDIOMA = { pt: "Português", en: "English", es: "Español" };
 
 // a marca do Strava (Simple Icons, domínio público)
 const LOGO_STRAVA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>`;
@@ -366,8 +455,8 @@ export function montarRodape(site, perfil) {
       ${feitoPor ? `<p class="feito-por">Made by: ${esc(feitoPor)}</p>` : ""}
       <a class="seguir-strava" href="${esc(stravaUrl)}" target="_blank" rel="noopener">${LOGO_STRAVA}<span>Follow me on</span><b>Strava</b></a>
       <div class="creditos">
-        <p>${gerado ? `Dados atualizados em ${dataLonga(gerado)}, às ${hora(gerado)}. O site se atualiza sozinho a cada treino registrado no Strava.` : ""}</p>
-        <p>Mapas © <a href="https://www.openstreetmap.org/copyright">colaboradores do OpenStreetMap</a>. Clima: <a href="https://open-meteo.com">Open-Meteo</a>.${links.instagram ? ` <a href="${esc(links.instagram)}">Instagram</a>.` : ""}</p>
+        <p>${gerado ? esc(t("Dados atualizados em {data}, às {hora}. O site se atualiza sozinho a cada treino registrado no Strava.", { data: dataLonga(gerado), hora: hora(gerado) })) : ""}</p>
+        <p>${t("Mapas ©")} <a href="https://www.openstreetmap.org/copyright">${t("colaboradores do OpenStreetMap")}</a>. ${t("Clima:")} <a href="https://open-meteo.com">Open-Meteo</a>.${links.instagram ? ` <a href="${esc(links.instagram)}">Instagram</a>.` : ""}</p>
       </div>
     </div>`;
 }
@@ -382,7 +471,7 @@ export function contagemRegressiva(el, alvo) {
     const h = Math.floor(s / 3600); s %= 3600;
     const m = Math.floor(s / 60);
     el.innerHTML = `<span>${d}<small>d</small></span><span>${h}<small>h</small></span><span>${m}<small>min</small></span><span>${s % 60}<small>s</small></span>`;
-    el.setAttribute("aria-label", `Faltam ${d} dias, ${h} horas e ${m} minutos`);
+    el.setAttribute("aria-label", t("Faltam {d} dias, {h} horas e {m} minutos", { d, h, m }));
     el.setAttribute("role", "timer");
   };
   pintar();

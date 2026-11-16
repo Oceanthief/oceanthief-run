@@ -27,8 +27,8 @@
 
   <main id="conteudo">
     <div class="recipiente">
-      <section class="abertura" id="inicio" aria-label="Abertura">
-        <p class="vazio">Carregando os treinos...</p>
+      <section class="abertura" id="inicio" aria-label="Abertura" data-t-aria>
+        <p class="vazio" data-t>Carregando os treinos...</p>
       </section>
 
       <section class="secao sobre" id="sobre">
@@ -40,11 +40,11 @@
         <div class="secao-cabeca"></div>
         <div class="grade-recordes">
           <div>
-            <h3 class="bloco-titulo">Melhores tempos</h3>
+            <h3 class="bloco-titulo" data-t>Melhores tempos</h3>
             <div id="tabela-recordes"></div>
           </div>
           <div>
-            <h3 class="bloco-titulo">Provas</h3>
+            <h3 class="bloco-titulo" data-t>Provas</h3>
             <div id="provas"></div>
           </div>
         </div>
@@ -72,11 +72,11 @@
       <section class="secao" id="constancia">
         <div class="secao-cabeca com-acoes"><div class="abas" id="abas-constancia"></div></div>
         <div class="calendario" id="calendario"></div>
-        <div class="escala" aria-hidden="true">menos <i class="n0"></i><i class="n1"></i><i class="n2"></i><i class="n3"></i><i class="n4"></i> mais</div>
+        <div class="escala" aria-hidden="true"><span data-t>menos</span> <i class="n0"></i><i class="n1"></i><i class="n2"></i><i class="n3"></i><i class="n4"></i> <span data-t>mais</span></div>
         <dl class="fatos" id="fatos-constancia"></dl>
         <div class="cartao-grafico" style="padding:0;background:none">
           <h3 id="titulo-mensal">Por mês</h3>
-          <p class="nota">Distância de cada mês do período escolhido.</p>
+          <p class="nota" data-t>Distância de cada mês do período escolhido.</p>
           <div class="grafico" id="g-mensal"></div>
         </div>
       </section>
@@ -89,7 +89,7 @@
       <section class="secao" id="lugares">
         <div class="secao-cabeca"></div>
         <div class="grade-lugares">
-          <div class="mapa" id="mapa" role="region" aria-label="Mapa com as rotas dos treinos"></div>
+          <div class="mapa" id="mapa" role="region" aria-label="Mapa com as rotas dos treinos" data-t-aria></div>
           <div id="painel-lugares"></div>
         </div>
       </section>

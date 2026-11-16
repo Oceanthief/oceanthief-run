@@ -99,7 +99,7 @@ Para conferir ou desligar: `python scripts/strava_webhook.py ver` e `python scri
 | `provas` | provas com tempo oficial; as marcadas como "Prova" no Strava entram sozinhas |
 | `nao_sao_provas` | ids de treinos marcados como "Prova" no Strava que não devem aparecer como prova (o id é o número no fim do link do treino) |
 | `conquistas` | conquistas que os números não mostram (pódio, recorde de clube...) |
-| `secoes` | título e frase de cada seção |
+| `secoes` | título e frase de cada seção (em português, traduzidos pelo dicionário, ou `{"pt": [...], "en": [...], "es": [...]}`) |
 | `links` | Instagram e perfil do Strava (o botão "Follow me on Strava" leva a ele) |
 | `feito_por` | uma assinatura "Made by: ..." acima do botão do Strava; vazio, não aparece |
 | `casa` | `{"lat": -23.5, "lng": -46.6}` se quiser fixar a "casa"; vazio, ela é calculada |
@@ -111,6 +111,20 @@ Depois de mudar a privacidade ou `nao_sao_provas`, rode `python scripts/sync_str
 **`config/plano.json`**: a prova (`nome`, `data`, `cidade`, `link`, `meta`, `meta_pace`; os dois últimos podem ficar de fora), os nomes das fases e as semanas. Cada semana tem `inicio` (sempre uma segunda-feira), `fase`, `km`, `foco` e `treinos`. Em cada treino, `dia` vai de 0 (segunda) a 6 (domingo) e `chave: true` marca o treino importante da semana.
 
 **Cores:** ficam no começo de `assets/css/site.css`, em `--destaque` (tema escuro e tema claro).
+
+## Idiomas
+
+O site existe em português, inglês e espanhol. O botão PT · EN · ES fica no cabeçalho, e a escolha fica guardada no navegador. Na primeira visita, vale o idioma do navegador (português, inglês ou espanhol; qualquer outro abre em inglês). Para mandar um link já num idioma, acrescente `?lang=en` ou `?lang=es` ao endereço.
+
+- **Textos do site** (títulos, botões, gráficos, dicas): ficam em `assets/js/traducoes.js`. A frase em português é a chave, seguida da versão em inglês e em espanhol. Marcadores como `{n}` ou `{data}` precisam aparecer nas três.
+- **Os seus textos** no `perfil.json` e no `plano.json`: qualquer texto pode virar `{"pt": "...", "en": "...", "es": "..."}`, como já estão o `sobre` e as descrições das fotos. Um texto só em português é procurado no dicionário e, se não estiver lá, aparece em português nos três idiomas.
+- **Os nomes dos treinos** vêm do Strava e ficam como você escreveu.
+
+Depois de mudar textos, confira se nada ficou sem tradução:
+
+```
+python scripts/checar_traducoes.py
+```
 
 ## Privacidade
 

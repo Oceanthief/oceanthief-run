@@ -3,24 +3,25 @@ import {
   decodificarRota, dist, distValor, duracao, elev, esc, GRUPOS, hora, iniciarDicas, inicioSemana, linkTreino, MESES_CURTOS,
   montarRodape, montarTopo, nomeSite, nomeTopo, nomeTipo, num, num1, pace, paceSeg, quandoRelativo, reduzirMovimento, relogio,
   ritmo, rotuloDist, getUnidade, buscarJSON, diaSemana, NOMES_ESFORCO, CONDICOES, contagemRegressiva,
+  DIAS_CURTOS, DIAS_LONGOS, nomePais, plural, t, tr,
 } from "./comum.js";
 import { barras, barrasH, calendario, dispersao, miniLinha, rosca } from "./graficos.js";
 import { globoOrbita, globoVoltas, montanha, muro } from "./capa.js";
 
 let S, P, PLANO, A, PRINCIPAL;
-const nTreinos = (n) => `${num(n)} ${n === 1 ? "treino" : "treinos"}`;
+const nTreinos = (n) => plural(n, "{n} treino", "{n} treinos");
 const estado = { periodo: "semana", recentesMostrar: 8, destaque: "longos", grupoNumeros: null, ano: "12m", pais: "todos", provasTodas: false };
 
 const TITULOS = {
-  sobre: ["Sobre", "Quem está por trás dos números."],
-  recordes: ["Recordes", "Os tempos que eu ainda tento bater."],
-  recentes: ["Recentes", "O que rolou nos últimos dias."],
-  destaques: ["Destaques", "Os treinos que não saem da memória."],
-  numeros: ["Números", "Tudo o que o relógio registrou."],
-  constancia: ["Constância", "Cada quadrado é um dia. Quanto mais forte, mais longe."],
-  clima: ["Clima", "Chuva, frio ou calor: o treino sai igual."],
-  lugares: ["Lugares", "Onde já deixei pegadas."],
-  equipamento: ["Equipamento", "Quantos quilômetros cada tênis aguentou."],
+  sobre: [t("Sobre"), t("Quem está por trás dos números.")],
+  recordes: [t("Recordes"), t("Os tempos que eu ainda tento bater.")],
+  recentes: [t("Recentes"), t("O que rolou nos últimos dias.")],
+  destaques: [t("Destaques"), t("Os treinos que não saem da memória.")],
+  numeros: [t("Números"), t("Tudo o que o relógio registrou.")],
+  constancia: [t("Constância"), t("Cada quadrado é um dia. Quanto mais forte, mais longe.")],
+  clima: [t("Clima"), t("Chuva, frio ou calor: o treino sai igual.")],
+  lugares: [t("Lugares"), t("Onde já deixei pegadas.")],
+  equipamento: [t("Equipamento"), t("Quantos quilômetros cada tênis aguentou.")],
 };
 
 const ESFORCOS_PRINCIPAIS = ["400m", "1K", "1 mile", "5K", "10K", "15K", "10 mile", "Half-Marathon", "30K", "Marathon", "50K"];
@@ -33,9 +34,8 @@ async function iniciar() {
   try {
     ({ site: S, perfil: P, plano: PLANO } = await carregarTudo());
   } catch (erro) {
-    $("#conteudo").innerHTML = `<div class="recipiente"><section class="secao"><h2>Os dados não carregaram</h2>
-      <p class="sub">${esc(erro.message)} Se você abriu o arquivo direto do computador, rode
-      <code>python -m http.server</code> na pasta do site e acesse http://localhost:8000.</p></section></div>`;
+    $("#conteudo").innerHTML = `<div class="recipiente"><section class="secao"><h2>${t("Os dados não carregaram")}</h2>
+      <p class="sub">${esc(erro.message)} ${t("Se você abriu o arquivo direto do computador, rode {cmd} na pasta do site e acesse http://localhost:8000.", { cmd: "<code>python -m http.server</code>" })}</p></section></div>`;
     return;
   }
   A = S.atividades;
@@ -44,20 +44,22 @@ async function iniciar() {
   const nome = nomeSite(S, P);
   document.title = P.titulo_aba || nome;
 
-  const links = [["#sobre", "Sobre"], ["#recordes", "Recordes"], ["#recentes", "Recentes"], ["#destaques", "Destaques"],
-    ["#numeros", "Números"], ["#constancia", "Constância"], ["#clima", "Clima"], ["#lugares", "Lugares"], ["#equipamento", "Equipamento"]];
-  if (PLANO?.semanas?.length) links.push(["plano.html", "Plano"]);
+  const links = [["#sobre", t("Sobre")], ["#recordes", t("Recordes")], ["#recentes", t("Recentes")], ["#destaques", t("Destaques")],
+    ["#numeros", t("Números")], ["#constancia", t("Constância")], ["#clima", t("Clima")], ["#lugares", t("Lugares")], ["#equipamento", t("Equipamento")]];
+  if (PLANO?.semanas?.length) links.push(["plano.html", t("Plano")]);
   montarTopo({ nome: nomeTopo(S, P), links: links.filter(([h]) => !h.startsWith("#") || document.querySelector(h)) });
   montarRodape(S, P);
 
   for (const [id, padrao] of Object.entries(TITULOS)) {
-    const [titulo, sub] = P.secoes?.[id] || padrao;
+    // perfil.json pode trazer o título em português (traduzido pelo dicionário) ou {"pt", "en", "es"}
+    const doPerfil = tr(P.secoes?.[id]);
+    const [titulo, sub] = Array.isArray(doPerfil) ? doPerfil.map((x) => t(x || "")) : padrao;
     const cab = $(`#${id} .secao-cabeca`);
     if (cab) cab.insertAdjacentHTML("afterbegin", `<div><h2>${esc(titulo)}</h2>${sub ? `<p class="sub">${esc(sub)}</p>` : ""}</div>`);
   }
 
   if (!A.length) {
-    $("#inicio").innerHTML = `<div><h2>Nenhum treino ainda</h2><p class="sub">Assim que você registrar uma atividade pública no Strava, ela aparece aqui.</p></div>`;
+    $("#inicio").innerHTML = `<div><h2>${t("Nenhum treino ainda")}</h2><p class="sub">${t("Assim que você registrar uma atividade pública no Strava, ela aparece aqui.")}</p></div>`;
     return;
   }
 
@@ -93,7 +95,7 @@ function grupoPrincipal() {
 
 const soma = (lista, f) => lista.reduce((s, x) => s + (f(x) || 0), 0);
 const doGrupo = (g) => (g === "tudo" ? A : A.filter((a) => a.grupo === g));
-const nomeGrupo = (g) => (g === "tudo" ? "Tudo" : GRUPOS[g]?.nome || g);
+const nomeGrupo = (g) => (g === "tudo" ? t("Tudo") : GRUPOS[g]?.nome || g);
 
 function sequencias(dias) {
   const ordenados = [...dias].sort();
@@ -122,9 +124,9 @@ const MINUTOS_ORBITA_ISS = 92.7;
 const VOLTA_TERRA_KM = 40075;
 const MONTANHA_PADRAO = {
   nome: "Pico da Bandeira",
-  plural: "Picos da Bandeira",
+  plural: { pt: "Picos da Bandeira", en: "Pico da Bandeira climbs", es: "Picos da Bandeira" },
   altura_m: 2892,
-  detalhe: "do nível do mar ao cume",
+  detalhe: { pt: "do nível do mar ao cume", en: "from sea level to summit", es: "del nivel del mar a la cumbre" },
   lat: -20.4345,
   lng: -41.7973,
 };
@@ -152,13 +154,13 @@ function abertura() {
   const fotos = (P.fotos || []).filter((f) => f?.arquivo).slice(0, 2);
   const temContagem = PLANO?.prova?.data && new Date(PLANO.prova.data) > new Date();
   const foto = (f, lado) =>
-    `<figure class="capa-foto ${lado}"><img src="${esc(f.arquivo)}" alt="${esc(f.descricao || `Foto de ${nomeSite(S, P)}`)}" decoding="async"></figure>`;
+    `<figure class="capa-foto ${lado}"><img src="${esc(f.arquivo)}" alt="${esc(tr(f.descricao) || t("Foto de {nome}", { nome: nomeSite(S, P) }))}" decoding="async"></figure>`;
   const bloco = (id) => `
     <div class="num-capa" id="capa-${id}">
       <p class="valor"></p>
       <p class="rotulo"></p>
       <p class="comparacao"></p>
-      <button type="button" class="abrir" aria-expanded="true" aria-controls="viz-${id}" aria-label="Esconder o desenho">${CHEVRON}</button>
+      <button type="button" class="abrir" aria-expanded="true" aria-controls="viz-${id}" aria-label="${esc(t("Esconder o desenho"))}">${CHEVRON}</button>
       <div class="viz" id="viz-${id}"></div>
     </div>`;
 
@@ -172,7 +174,7 @@ function abertura() {
       ${fotos[1] ? foto(fotos[1], "direita") : ""}
     </div>
     <div class="numeros-capa" id="numeros-capa">${["atividades", "distancia", "horas", "subida"].map(bloco).join("")}</div>
-    ${temContagem ? `<a class="contagem" href="plano.html"><div><p>Próxima prova</p><strong>${esc(PLANO.prova.nome)}</strong></div><div class="relogio" id="relogio-prova"></div><span class="ver">Ver o plano de treino</span></a>` : ""}`;
+    ${temContagem ? `<a class="contagem" href="plano.html"><div><p>${t("Próxima prova")}</p><strong>${esc(PLANO.prova.nome)}</strong></div><div class="relogio" id="relogio-prova"></div><span class="ver">${t("Ver o plano de treino")}</span></a>` : ""}`;
 
   atualizarCapa();
 
@@ -181,16 +183,16 @@ function abertura() {
   muro($("#viz-atividades"), { atividades: A, corDe: corGrupo, nomeDe: nomeGrupo });
   globoVoltas($("#viz-distancia"), {
     voltas: metros / 1000 / VOLTA_TERRA_KM,
-    rotulo: `Globo com o pedaço da volta na Terra já percorrido: ${dist(metros, 0)} de ${num(VOLTA_TERRA_KM)} km`,
+    rotulo: t("Globo com o pedaço da volta na Terra já percorrido: {feito} de {total} km", { feito: dist(metros, 0), total: num(VOLTA_TERRA_KM) }),
   });
-  globoOrbita($("#viz-horas"), { rotulo: "Globo com a órbita da Estação Espacial Internacional" });
-  mapaMontanha = montanha($("#viz-subida"), { ...ref, rotulo: `Mapa de relevo do ${ref.nome}, com ${num(ref.altura_m)} m de altitude` });
+  globoOrbita($("#viz-horas"), { rotulo: t("Globo com a órbita da Estação Espacial Internacional") });
+  mapaMontanha = montanha($("#viz-subida"), { ...ref, rotulo: t("Mapa de relevo do {nome}, com {m} m de altitude", { nome: tr(ref.nome), m: num(ref.altura_m) }) });
 
   $$("#numeros-capa .abrir").forEach((b) => {
     b.onclick = () => {
       const aberto = b.getAttribute("aria-expanded") === "true";
       b.setAttribute("aria-expanded", String(!aberto));
-      b.setAttribute("aria-label", aberto ? "Mostrar o desenho" : "Esconder o desenho");
+      b.setAttribute("aria-label", aberto ? t("Mostrar o desenho") : t("Esconder o desenho"));
       document.getElementById(b.getAttribute("aria-controls")).hidden = aberto;
       if (!aberto) mapaMontanha?.invalidateSize();
     };
@@ -234,33 +236,37 @@ function atualizarCapa() {
       c.tabIndex = 0;
     }
   };
-  const info = `Todas as atividades públicas no Strava desde ${dataLonga(A[0].data)}, de todos os esportes. Os quilômetros, as horas e a subida também somam tudo.`;
+  const info = t("Todas as atividades públicas no Strava desde {data}, de todos os esportes. Os quilômetros, as horas e a subida também somam tudo.", { data: dataLonga(A[0].data) });
   preencher(
     "atividades",
     num(A.length),
-    `Atividades <button type="button" class="info" data-dica="${esc(info)}" aria-label="${esc(info)}">i</button>`,
-    `<b>${num(descanso)}</b> ${descanso === 1 ? "dia" : "dias"} de descanso em ${ano}`,
+    `${t("Atividades")} <button type="button" class="info" data-dica="${esc(info)}" aria-label="${esc(info)}">i</button>`,
+    descanso === 1
+      ? t("{b} dia de descanso em {ano}", { b: `<b>${num(descanso)}</b>`, ano })
+      : t("{b} dias de descanso em {ano}", { b: `<b>${num(descanso)}</b>`, ano }),
   );
   preencher(
     "distancia",
     num(distValor(metros)),
-    mi ? "Milhas" : "Quilômetros",
-    voltas < 1 ? `<b>${num(voltas * 100)}%</b> de uma volta na Terra` : `<b>${num(voltas, 2)}</b> voltas na Terra`,
-    `A volta na Terra, pela linha do Equador, tem ${num(VOLTA_TERRA_KM)} km.`,
+    mi ? t("Milhas") : t("Quilômetros"),
+    voltas < 1
+      ? t("{b} de uma volta na Terra", { b: `<b>${num(voltas * 100)}%</b>` })
+      : t("{b} voltas na Terra", { b: `<b>${num(voltas, 2)}</b>` }),
+    t("A volta na Terra, pela linha do Equador, tem {km} km.", { km: num(VOLTA_TERRA_KM) }),
   );
   preencher(
     "horas",
     num(horas),
-    "Horas",
-    `<b>${num(orbitas)}</b> órbitas da ISS ao redor da Terra`,
-    "A Estação Espacial Internacional dá uma volta na Terra a cada 92,7 minutos.",
+    t("Horas"),
+    t("{b} órbitas da ISS ao redor da Terra", { b: `<b>${num(orbitas)}</b>` }),
+    t("A Estação Espacial Internacional dá uma volta na Terra a cada {min} minutos.", { min: num(MINUTOS_ORBITA_ISS, 1) }),
   );
   preencher(
     "subida",
     num(mi ? subida * 3.28084 : subida),
-    mi ? "Pés de subida" : "Metros de subida",
-    `<b>${num(montanhas, 1)}</b> ${esc(montanhas >= 2 ? ref.plural : ref.nome)}, ${esc(ref.detalhe)}`,
-    `${ref.nome}: ${num(ref.altura_m)} m de altitude.`,
+    mi ? t("Pés de subida") : t("Metros de subida"),
+    `<b>${num(montanhas, 1)}</b> ${esc(tr(montanhas >= 2 ? ref.plural : ref.nome))}, ${esc(tr(ref.detalhe))}`,
+    t("{nome}: {m} m de altitude.", { nome: tr(ref.nome), m: num(ref.altura_m) }),
   );
 }
 
@@ -277,13 +283,13 @@ function paragrafo(p) {
 function assinatura() {
   const a = S.atleta || {};
   const nome = P.assinatura?.nome ?? [a.nome, a.sobrenome].filter(Boolean).join(" ");
-  const local = P.assinatura?.local ?? [S.casa?.cidade, S.casa?.estado].filter(Boolean).join(", ");
+  const local = tr(P.assinatura?.local) ?? [S.casa?.cidade, S.casa?.estado].filter(Boolean).join(", ");
   if (!nome) return "";
   return `<footer class="assinatura"><div><strong>${esc(nome)}</strong>${local ? `<span>${esc(local)}</span>` : ""}</div><span>${new Date().getFullYear()}</span></footer>`;
 }
 
 function sobre() {
-  const paragrafos = (P.sobre || []).filter(Boolean);
+  const paragrafos = (tr(P.sobre) || []).filter(Boolean);
   if (!paragrafos.length) return $("#sobre").remove();
   $("#texto-sobre").innerHTML = paragrafos.map(paragrafo).join("") + assinatura();
 }
@@ -294,10 +300,10 @@ function recordes() {
   const corridas = A.filter((a) => a.grupo === "corrida").length;
   const corpo = $("#tabela-recordes");
   if (!lista.length) {
-    corpo.innerHTML = `<p class="vazio">Os recordes aparecem quando os detalhes das corridas forem baixados do Strava.</p>`;
+    corpo.innerHTML = `<p class="vazio">${t("Os recordes aparecem quando os detalhes das corridas forem baixados do Strava.")}</p>`;
   } else {
     corpo.innerHTML = `<div class="tabela-rolagem"><table class="resultados">
-      <thead><tr><th>Distância</th><th class="num">Tempo</th><th class="num">Pace</th><th>Quando</th><th class="so-largo">Evolução por ano</th></tr></thead>
+      <thead><tr><th>${t("Distância")}</th><th class="num">${t("Tempo")}</th><th class="num">${t("Pace")}</th><th>${t("Quando")}</th><th class="so-largo">${t("Evolução por ano")}</th></tr></thead>
       <tbody>${lista
         .map((r) => {
           const m = r.top[0];
@@ -311,7 +317,7 @@ function recordes() {
           </tr>`;
         })
         .join("")}</tbody></table></div>
-      <p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.75rem 0 0">Melhores trechos dentro de qualquer corrida, medidos pelo Strava.${S.detalhados < corridas ? ` Ainda faltam detalhes de algumas corridas antigas: eles chegam aos poucos a cada sincronização.` : ""}</p>`;
+      <p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.75rem 0 0">${t("Melhores trechos dentro de qualquer corrida, medidos pelo Strava.")}${S.detalhados < corridas ? ` ${t("Ainda faltam detalhes de algumas corridas antigas: eles chegam aos poucos a cada sincronização.")}` : ""}</p>`;
     corpo.querySelector("tbody").onclick = (ev) => {
       const tr = ev.target.closest("tr[data-id]");
       if (tr && !ev.target.closest("a")) location.href = linkTreino(tr.dataset.id);
@@ -319,7 +325,7 @@ function recordes() {
   }
 
   // provas: as do perfil.json + as marcadas como prova no Strava
-  const manuais = (P.provas || []).filter((p) => p.nome).map((p) => ({ ...p, data: new Date(`${p.data}T12:00`), manual: true }));
+  const manuais = (P.provas || []).filter((p) => p.nome).map((p) => ({ ...p, nome: tr(p.nome), nota: tr(p.nota), distancia: tr(p.distancia), data: new Date(`${p.data}T12:00`), manual: true }));
   const idsManuais = new Set(manuais.map((p) => String(p.strava_id)));
   const diasManuais = new Set((P.provas || []).map((p) => p.data));
   const auto = A.filter((a) => a.prova && !idsManuais.has(String(a.id)) && !diasManuais.has(a.dia)).map((a) => ({
@@ -333,8 +339,8 @@ function recordes() {
           <span class="nome">${p.strava_id ? `<a href="${linkTreino(p.strava_id)}">${esc(p.nome)}</a>` : esc(p.nome)}</span>
           <span class="info">${dataLonga(p.data)}${p.distancia ? `, ${esc(p.distancia)}` : ""}${p.nota ? `. ${esc(p.nota)}` : ""}</span>
           <span class="tempo">${esc(p.tempo || "")}</span></li>`)
-        .join("")}</ul>${provas.length > 7 ? `<button class="mais" id="provas-todas" type="button">${estado.provasTodas ? "Mostrar menos" : `Mostrar as ${provas.length} provas`}</button>` : ""}`
-    : `<p class="vazio">Marque suas provas no Strava (tipo de corrida: prova) ou liste-as em config/perfil.json.</p>`;
+        .join("")}</ul>${provas.length > 7 ? `<button class="mais" id="provas-todas" type="button">${estado.provasTodas ? t("Mostrar menos") : t("Mostrar as {n} provas", { n: num(provas.length) })}</button>` : ""}`
+    : `<p class="vazio">${t("Marque suas provas no Strava (tipo de corrida: prova) ou liste-as em config/perfil.json.")}</p>`;
   const botao = $("#provas-todas");
   if (botao) botao.onclick = () => { estado.provasTodas = !estado.provasTodas; recordes(); };
 
@@ -345,7 +351,7 @@ function conquistas() {
   const corridas = A.filter((a) => a.grupo === PRINCIPAL);
   const itens = [];
   const longo = corridas.reduce((x, a) => (a.m > (x?.m || 0) ? a : x), null);
-  if (longo) itens.push([dist(longo.m), "Treino mais longo", `${longo.n}, em ${dataLonga(longo.data)}.`, longo.id]);
+  if (longo) itens.push([dist(longo.m), t("Treino mais longo"), t("{nome}, em {data}.", { nome: longo.n, data: dataLonga(longo.data) }), longo.id]);
 
   const porSemana = new Map();
   const porMes = new Map();
@@ -356,29 +362,29 @@ function conquistas() {
     porMes.set(m, (porMes.get(m) || 0) + a.m);
   }
   const [semana, mS] = [...porSemana].sort((x, y) => y[1] - x[1])[0] || [];
-  if (semana) itens.push([dist(mS, 0), "Semana mais forte", `Começou em ${dataLonga(new Date(`${semana}T12:00`))}.`]);
+  if (semana) itens.push([dist(mS, 0), t("Semana mais forte"), t("Começou em {data}.", { data: dataLonga(new Date(`${semana}T12:00`)) })]);
   const [mes, mM] = [...porMes].sort((x, y) => y[1] - x[1])[0] || [];
   if (mes) {
     const [ano, mi] = mes.split("-").map(Number);
-    itens.push([dist(mM, 0), "Mês mais forte", `${MESES_CURTOS[mi]} de ${ano}.`]);
+    itens.push([dist(mM, 0), t("Mês mais forte"), t("{mes} de {ano}.", { mes: MESES_CURTOS[mi], ano })]);
   }
   if (PRINCIPAL === "corrida") {
     const maratonas = corridas.filter((a) => a.m >= 42000).length;
     const meias = corridas.filter((a) => a.m >= 21000 && a.m < 42000).length;
-    if (maratonas) itens.push([num(maratonas), maratonas === 1 ? "Corrida de 42 km ou mais" : "Corridas de 42 km ou mais", "Provas e treinos do tamanho de uma maratona."]);
-    if (meias) itens.push([num(meias), "Corridas de 21 a 42 km", "Pelo menos uma meia maratona em cada uma."]);
+    if (maratonas) itens.push([num(maratonas), maratonas === 1 ? t("Corrida de 42 km ou mais") : t("Corridas de 42 km ou mais"), t("Provas e treinos do tamanho de uma maratona.")]);
+    if (meias) itens.push([num(meias), t("Corridas de 21 a 42 km"), t("Pelo menos uma meia maratona em cada uma.")]);
   }
   const cedo = A.filter((a) => a.data.getHours() < 6).length;
-  if (cedo) itens.push([num(cedo), "Antes das 6h", "Treinos que começaram com o dia ainda escuro."]);
+  if (cedo) itens.push([num(cedo), t("Antes das 6h"), t("Treinos que começaram com o dia ainda escuro.")]);
   const kudos = soma(A, (a) => a.k);
-  if (kudos) itens.push([num(kudos), "Kudos recebidos", "Cada um conta."]);
+  if (kudos) itens.push([num(kudos), t("Kudos recebidos"), t("Cada um conta.")]);
 
   const manuais = (P.conquistas || []).filter((c) => c.titulo);
   $("#conquistas").innerHTML =
     itens
       .map(([v, t, txt, id]) => `<div class="conquista"><strong>${esc(v)}</strong><span class="titulo">${id ? `<a href="${linkTreino(id)}">${esc(t)}</a>` : esc(t)}</span><p>${esc(txt)}</p></div>`)
       .join("") +
-    manuais.map((c) => `<div class="conquista manual"><strong>${esc(c.titulo)}</strong><p>${esc(c.texto || "")}</p></div>`).join("");
+    manuais.map((c) => `<div class="conquista manual"><strong>${esc(tr(c.titulo))}</strong><p>${esc(tr(c.texto) || "")}</p></div>`).join("");
 }
 
 // --------------------------------------------------------------- recentes
@@ -397,8 +403,8 @@ function periodo(chave) {
 
 function recentes() {
   const opcoes = [
-    { valor: "semana", rotulo: "Esta semana" }, { valor: "passada", rotulo: "Semana passada" }, { valor: "mes", rotulo: "Este mês" },
-    { valor: "60", rotulo: "Últimos 60 dias" }, { valor: "ano", rotulo: "Este ano" },
+    { valor: "semana", rotulo: t("Esta semana") }, { valor: "passada", rotulo: t("Semana passada") }, { valor: "mes", rotulo: t("Este mês") },
+    { valor: "60", rotulo: t("Últimos 60 dias") }, { valor: "ano", rotulo: t("Este ano") },
   ];
   abas($("#abas-recentes"), opcoes, estado.periodo, (v) => { estado.periodo = v; estado.recentesMostrar = 8; recentes(); });
   const [ini, fim] = periodo(estado.periodo);
@@ -406,8 +412,8 @@ function recentes() {
 
   const visiveis = lista.slice(0, estado.recentesMostrar);
   $("#lista-recentes").innerHTML = lista.length
-    ? `<ul class="lista-treinos">${visiveis.map(itemTreino).join("")}</ul>${lista.length > visiveis.length ? `<button class="mais" type="button" id="mais-recentes">Mostrar mais ${Math.min(8, lista.length - visiveis.length)}</button>` : ""}`
-    : `<p class="vazio">Nenhum treino neste período ainda. ${estado.periodo === "semana" ? "A semana começa na segunda." : ""}</p>`;
+    ? `<ul class="lista-treinos">${visiveis.map(itemTreino).join("")}</ul>${lista.length > visiveis.length ? `<button class="mais" type="button" id="mais-recentes">${t("Mostrar mais {n}", { n: Math.min(8, lista.length - visiveis.length) })}</button>` : ""}`
+    : `<p class="vazio">${t("Nenhum treino neste período ainda.")} ${estado.periodo === "semana" ? t("A semana começa na segunda.") : ""}</p>`;
   const mais = $("#mais-recentes");
   if (mais) mais.onclick = () => { estado.recentesMostrar += 8; recentes(); };
 
@@ -418,12 +424,12 @@ function recentes() {
     rotulo: GRUPOS[g].nome, valor: s, cor: corGrupo(g), dica: `${GRUPOS[g].nome}\n${duracao(s)}`,
   }));
   $("#resumo-recentes").innerHTML = `
-    <dl><div><dt>Treinos</dt><dd>${num(lista.length)}</dd></div><div><dt>Distância</dt><dd>${dist(soma(lista, (a) => a.m), 0)}</dd></div><div><dt>Tempo</dt><dd>${duracao(tempo)}</dd></div></dl>
-    <h3 class="bloco-titulo" style="font-size:1rem">Tempo por esporte</h3>
+    <dl><div><dt>${t("Treinos")}</dt><dd>${num(lista.length)}</dd></div><div><dt>${t("Distância")}</dt><dd>${dist(soma(lista, (a) => a.m), 0)}</dd></div><div><dt>${t("Tempo")}</dt><dd>${duracao(tempo)}</dd></div></dl>
+    <h3 class="bloco-titulo" style="font-size:1rem">${t("Tempo por esporte")}</h3>
     <div class="rosca-area"><div id="rosca-recentes"></div><ul class="legenda">${fatias
       .map((f) => `<li><i style="background:${f.cor}"></i><span>${esc(f.rotulo)}</span><span>${duracao(f.valor)}, ${num((f.valor / tempo) * 100)}%</span></li>`)
-      .join("") || `<li style="grid-template-columns:1fr;color:var(--texto-3)">Sem treinos no período.</li>`}</ul></div>`;
-  rosca($("#rosca-recentes"), { fatias, centro: [duracao(tempo), "no total"], rotulo: "Tempo por esporte no período" });
+      .join("") || `<li style="grid-template-columns:1fr;color:var(--texto-3)">${t("Sem treinos no período.")}</li>`}</ul></div>`;
+  rosca($("#rosca-recentes"), { fatias, centro: [duracao(tempo), t("no total")], rotulo: t("Tempo por esporte no período") });
 }
 
 function itemTreino(a) {
@@ -431,7 +437,7 @@ function itemTreino(a) {
   const complemento = a.m ? `${duracao(a.s)}, ${ritmo(a)}` : nomeTipo(a.t);
   return `<li><a href="${linkTreino(a.id)}">
     <span class="cor" style="background:${corGrupo(a.grupo)}"></span>
-    <span class="nome">${esc(a.n)}${a.prova ? '<span class="selo-pr" style="background:var(--vermelho);color:var(--sobre-destaque)">prova</span>' : ""}</span>
+    <span class="nome">${esc(a.n)}${a.prova ? `<span class="selo-pr" style="background:var(--vermelho);color:var(--sobre-destaque)">${t("prova")}</span>` : ""}</span>
     <span class="quando">${esc(nomeTipo(a.t))}, ${esc(quandoRelativo(a.data))}</span>
     <span class="medidas"><b>${esc(medida)}</b>${esc(complemento)}</span>
   </a></li>`;
@@ -443,13 +449,13 @@ function destaques() {
   const comClima = principal.filter((a) => a.cl && !a.in);
   const minimoRapido = PRINCIPAL === "corrida" ? 5000 : PRINCIPAL === "pedal" ? 20000 : 1000;
   const categorias = {
-    longos: { rotulo: "Mais longos", lista: () => [...principal].sort((x, y) => y.m - x.m), valor: (a) => ritmo(a), col: PRINCIPAL === "pedal" ? "Velocidade" : "Ritmo" },
-    rapidos: { rotulo: "Mais rápidos", lista: () => principal.filter((a) => a.m >= minimoRapido && !a.in).sort((x, y) => x.s / x.m - y.s / y.m), valor: (a) => ritmo(a), col: PRINCIPAL === "pedal" ? "Velocidade" : "Ritmo" },
-    subida: { rotulo: "Mais subida", lista: () => [...principal].sort((x, y) => y.el - x.el), valor: (a) => elev(a.el), col: "Subida" },
-    provas: { rotulo: "Provas", lista: () => A.filter((a) => a.prova).sort((x, y) => y.data - x.data), valor: (a) => ritmo(a), col: "Ritmo" },
-    kudos: { rotulo: "Mais kudos", lista: () => A.filter((a) => a.k).sort((x, y) => y.k - x.k), valor: (a) => `${num(a.k)} kudos`, col: "Kudos" },
-    quentes: { rotulo: "Mais quentes", lista: () => [...comClima].sort((x, y) => y.cl[0] - x.cl[0]), valor: (a) => `${num1(a.cl[0])} °C`, col: "Temperatura" },
-    frios: { rotulo: "Mais frios", lista: () => [...comClima].sort((x, y) => x.cl[0] - y.cl[0]), valor: (a) => `${num1(a.cl[0])} °C`, col: "Temperatura" },
+    longos: { rotulo: t("Mais longos"), lista: () => [...principal].sort((x, y) => y.m - x.m), valor: (a) => ritmo(a), col: PRINCIPAL === "pedal" ? t("Velocidade") : t("Ritmo") },
+    rapidos: { rotulo: t("Mais rápidos"), lista: () => principal.filter((a) => a.m >= minimoRapido && !a.in).sort((x, y) => x.s / x.m - y.s / y.m), valor: (a) => ritmo(a), col: PRINCIPAL === "pedal" ? t("Velocidade") : t("Ritmo") },
+    subida: { rotulo: t("Mais subida"), lista: () => [...principal].sort((x, y) => y.el - x.el), valor: (a) => elev(a.el), col: t("Subida") },
+    provas: { rotulo: t("Provas"), lista: () => A.filter((a) => a.prova).sort((x, y) => y.data - x.data), valor: (a) => ritmo(a), col: t("Ritmo") },
+    kudos: { rotulo: t("Mais kudos"), lista: () => A.filter((a) => a.k).sort((x, y) => y.k - x.k), valor: (a) => `${num(a.k)} kudos`, col: "Kudos" },
+    quentes: { rotulo: t("Mais quentes"), lista: () => [...comClima].sort((x, y) => y.cl[0] - x.cl[0]), valor: (a) => `${num1(a.cl[0])} °C`, col: t("Temperatura") },
+    frios: { rotulo: t("Mais frios"), lista: () => [...comClima].sort((x, y) => x.cl[0] - y.cl[0]), valor: (a) => `${num1(a.cl[0])} °C`, col: t("Temperatura") },
   };
   if (!comClima.length) { delete categorias.quentes; delete categorias.frios; }
   if (!A.some((a) => a.prova)) delete categorias.provas;
@@ -458,13 +464,13 @@ function destaques() {
   const cat = categorias[estado.destaque];
   const top = cat.lista().slice(0, 10);
   $("#tabela-destaques").innerHTML = top.length
-    ? `<div class="tabela-rolagem"><table class="resultados"><thead><tr><th></th><th>Treino</th><th class="num">Distância</th><th class="num so-largo">Tempo</th><th class="num">${cat.col}</th></tr></thead>
+    ? `<div class="tabela-rolagem"><table class="resultados"><thead><tr><th></th><th>${t("Treino")}</th><th class="num">${t("Distância")}</th><th class="num so-largo">${t("Tempo")}</th><th class="num">${cat.col}</th></tr></thead>
       <tbody>${top
         .map((a, i) => `<tr class="clicavel" data-id="${a.id}"><td class="posicao">${i + 1}</td>
           <td><a href="${linkTreino(a.id)}">${esc(a.n)}</a><div class="secundario">${dataLonga(a.data)}${a.l != null && S.lugares[a.l] ? `, ${esc(S.lugares[a.l].cidade)}` : ""}</div></td>
           <td class="num"><span class="tempo">${esc(dist(a.m))}</span></td><td class="num so-largo">${relogio(a.s)}</td><td class="num">${esc(cat.valor(a))}</td></tr>`)
         .join("")}</tbody></table></div>`
-    : `<p class="vazio">Nenhum treino nesta categoria.</p>`;
+    : `<p class="vazio">${t("Nenhum treino nesta categoria.")}</p>`;
   const tbody = $("#tabela-destaques tbody");
   if (tbody) tbody.onclick = (ev) => {
     const tr = ev.target.closest("tr[data-id]");
@@ -475,7 +481,7 @@ function destaques() {
 // ---------------------------------------------------------------- números
 function numeros() {
   const presentes = Object.keys(GRUPOS).filter((g) => A.some((a) => a.grupo === g));
-  const opcoes = [{ valor: "tudo", rotulo: "Tudo" }, ...presentes.map((g) => ({ valor: g, rotulo: GRUPOS[g].nome, cor: corGrupo(g) }))];
+  const opcoes = [{ valor: "tudo", rotulo: t("Tudo") }, ...presentes.map((g) => ({ valor: g, rotulo: GRUPOS[g].nome, cor: corGrupo(g) }))];
   abas($("#abas-numeros"), opcoes, estado.grupoNumeros, (v) => { estado.grupoNumeros = v; numeros(); });
   const g = estado.grupoNumeros;
   const L = doGrupo(g);
@@ -486,18 +492,18 @@ function numeros() {
 
   const caixas = [];
   const caixa = (id, titulo, nota, largo = false) => caixas.push(`<div class="cartao-grafico${largo ? " largo" : ""}"><h3>${esc(titulo)}</h3><p class="nota">${esc(nota)}</p><div class="grafico" id="${id}"></div></div>`);
-  caixa("g-anos", porDistancia ? "Distância por ano" : "Horas por ano", `${nomeGrupo(g)}, em ${unidadeEixo}.`, true);
-  caixa("g-horas", "Que horas eu começo", "Quantidade de treinos por hora de início.");
-  caixa("g-semana", "Dia da semana", porDistancia ? `Distância média por treino, em ${unidadeEixo}.` : "Quantidade de treinos.");
-  if (porDistancia) caixa("g-distancias", "Tamanho dos treinos", "Quantos treinos em cada faixa de distância.");
+  caixa("g-anos", porDistancia ? t("Distância por ano") : t("Horas por ano"), t("{grupo}, em {unidade}.", { grupo: nomeGrupo(g), unidade: unidadeEixo }), true);
+  caixa("g-horas", t("Que horas eu começo"), t("Quantidade de treinos por hora de início."));
+  caixa("g-semana", t("Dia da semana"), porDistancia ? t("Distância média por treino, em {unidade}.", { unidade: unidadeEixo }) : t("Quantidade de treinos."));
+  if (porDistancia) caixa("g-distancias", t("Tamanho dos treinos"), t("Quantos treinos em cada faixa de distância."));
   const comFC = L.filter((a) => a.hr);
-  if (comFC.length) caixa("g-zonas", "Zonas de frequência cardíaca", "Tempo em cada zona, pela FC média de cada treino.");
+  if (comFC.length) caixa("g-zonas", t("Zonas de frequência cardíaca"), t("Tempo em cada zona, pela FC média de cada treino."));
   const corridas = L.filter((a) => a.grupo === "corrida" && a.m >= 1000 && a.s);
-  if (g === "corrida" && corridas.some((a) => a.hr)) caixa("g-pace-fc", "Ritmo e frequência cardíaca", "Cada ponto é uma corrida. Mais à direita, mais rápido.");
-  if ((g === "corrida" || g === "pedal") && L.length) caixa("g-ritmos", g === "corrida" ? "Ritmos mais comuns" : "Velocidades mais comuns", "Quantos treinos em cada faixa.");
-  caixa("g-ambiente", "Na rua ou dentro de casa", "Esteira, rolo e academia contam como dentro.");
+  if (g === "corrida" && corridas.some((a) => a.hr)) caixa("g-pace-fc", t("Ritmo e frequência cardíaca"), t("Cada ponto é uma corrida. Mais à direita, mais rápido."));
+  if ((g === "corrida" || g === "pedal") && L.length) caixa("g-ritmos", g === "corrida" ? t("Ritmos mais comuns") : t("Velocidades mais comuns"), t("Quantos treinos em cada faixa."));
+  caixa("g-ambiente", t("Na rua ou dentro de casa"), t("Esteira, rolo e academia contam como dentro."));
   const aparelhos = L.filter((a) => a.ap);
-  if (aparelhos.length) caixa("g-aparelhos", "Aparelhos", "O que registrou os treinos.");
+  if (aparelhos.length) caixa("g-aparelhos", t("Aparelhos"), t("O que registrou os treinos."));
   $("#graficos").innerHTML = caixas.join("");
 
   if (!L.length) return;
@@ -510,16 +516,16 @@ function numeros() {
     anos[a.ano].n++;
   }
   barras($("#g-anos"), {
-    dados: Object.entries(anos).map(([ano, x]) => ({ rotulo: ano, valor: x.v, dica: `${ano}\n${fmtMedida(x.v)} em ${nTreinos(x.n)}` })),
-    mostrarValores: true, fmtValor: (v) => num(v), altura: 240, rotulo: "Volume por ano",
+    dados: Object.entries(anos).map(([ano, x]) => ({ rotulo: ano, valor: x.v, dica: `${ano}\n${t("{v} em {treinos}", { v: fmtMedida(x.v), treinos: nTreinos(x.n) })}` })),
+    mostrarValores: true, fmtValor: (v) => num(v), altura: 240, rotulo: t("Volume por ano"),
   });
 
   // horário
   const horas = Array(24).fill(0);
   for (const a of L) horas[a.data.getHours()]++;
   barras($("#g-horas"), {
-    dados: horas.map((n, h) => ({ rotulo: `${h}h`, valor: n, dica: `${h}h às ${h + 1}h\n${nTreinos(n)}` })),
-    rotuloCada: 3, rotulo: "Treinos por hora de início",
+    dados: horas.map((n, h) => ({ rotulo: `${h}h`, valor: n, dica: `${t("{a}h às {b}h", { a: h, b: h + 1 })}\n${nTreinos(n)}` })),
+    rotuloCada: 3, rotulo: t("Treinos por hora de início"),
   });
 
   // dia da semana
@@ -529,13 +535,13 @@ function numeros() {
     dias[d].v += medida(a);
     dias[d].n++;
   }
-  const nomesDias = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"];
+  const nomesDias = DIAS_LONGOS;
   barras($("#g-semana"), {
     dados: dias.map((x, i) => ({
-      rotulo: nomesDias[i].slice(0, 3), valor: porDistancia ? (x.n ? x.v / x.n : 0) : x.n,
-      dica: `${nomesDias[i]}\n${nTreinos(x.n)}${porDistancia && x.n ? `, média de ${fmtMedida(x.v / x.n)}` : ""}`,
+      rotulo: DIAS_CURTOS[i], valor: porDistancia ? (x.n ? x.v / x.n : 0) : x.n,
+      dica: `${nomesDias[i]}\n${nTreinos(x.n)}${porDistancia && x.n ? t(", média de {v}", { v: fmtMedida(x.v / x.n) }) : ""}`,
     })),
-    mostrarValores: true, fmtValor: (v) => (porDistancia ? num1(v) : num(v)), rotulo: "Treinos por dia da semana",
+    mostrarValores: true, fmtValor: (v) => (porDistancia ? num1(v) : num(v)), rotulo: t("Treinos por dia da semana"),
   });
 
   // tamanhos
@@ -545,8 +551,8 @@ function numeros() {
     const faixas = limites.map((ini, i) => ({ ini, fim: limites[i + 1] ?? Infinity, n: 0 }));
     for (const v of km) faixas.findLast((f) => v >= f.ini).n++;
     barras($("#g-distancias"), {
-      dados: faixas.map((f) => ({ rotulo: f.fim === Infinity ? `${f.ini}+` : `${f.ini}–${f.fim}`, valor: f.n, dica: `${f.fim === Infinity ? `${f.ini} ${rotuloDist()} ou mais` : `De ${f.ini} a ${f.fim} ${rotuloDist()}`}\n${nTreinos(f.n)}` })),
-      mostrarValores: true, rotulo: "Treinos por faixa de distância",
+      dados: faixas.map((f) => ({ rotulo: f.fim === Infinity ? `${f.ini}+` : `${f.ini}–${f.fim}`, valor: f.n, dica: `${f.fim === Infinity ? t("{v} {u} ou mais", { v: f.ini, u: rotuloDist() }) : t("De {a} a {b} {u}", { a: f.ini, b: f.fim, u: rotuloDist() })}\n${nTreinos(f.n)}` })),
+      mostrarValores: true, rotulo: t("Treinos por faixa de distância"),
     });
   }
 
@@ -557,7 +563,7 @@ function numeros() {
       const max = Math.max(...comFC.map((a) => a.hrx || a.hr));
       zonas = [0.6, 0.7, 0.8, 0.9, 2].map((f, i, arr) => ({ min: i ? Math.round(max * arr[i - 1]) : 0, max: f >= 2 ? -1 : Math.round(max * f) }));
     }
-    const nomes = ["Recuperação", "Aeróbico", "Ritmo", "Limiar", "Anaeróbico"];
+    const nomes = [t("zona|Recuperação"), t("zona|Aeróbico"), t("zona|Ritmo"), t("zona|Limiar"), t("zona|Anaeróbico")];
     const tempos = zonas.map(() => 0);
     for (const a of comFC) {
       const i = zonas.findIndex((z) => a.hr >= z.min && (z.max === -1 || a.hr < z.max));
@@ -566,7 +572,7 @@ function numeros() {
     const total = tempos.reduce((s, v) => s + v, 0);
     barrasH($("#g-zonas"), zonas.map((z, i) => ({
       rotulo: `Z${i + 1} ${nomes[i] || ""}`, valor: tempos[i], texto: `${num((tempos[i] / total) * 100)}%`,
-      dica: `${z.max === -1 ? `acima de ${z.min}` : `${z.min} a ${z.max}`} bpm\n${duracao(tempos[i])}`,
+      dica: `${z.max === -1 ? t("acima de {v}", { v: z.min }) : t("{a} a {b}", { a: z.min, b: z.max })} bpm\n${duracao(tempos[i])}`,
       cor: `color-mix(in srgb, var(--destaque) ${35 + i * 16}%, var(--fundo-2))`,
     })));
   }
@@ -576,7 +582,7 @@ function numeros() {
     const pontos = corridas.filter((a) => a.hr && !a.in).map((a) => ({
       x: paceSeg(a.m, a.s), y: a.hr, dica: `${a.n}\n${dataLonga(a.data)}\n${pace(a.m, a.s)}, ${a.hr} bpm`,
     }));
-    dispersao($("#g-pace-fc"), { pontos, fmtX: (v) => relogio(v), fmtY: (v) => num(v), rotuloX: `ritmo (min/${rotuloDist()})`, rotuloY: "bpm", inverterX: true, rotulo: "Ritmo e frequência cardíaca" });
+    dispersao($("#g-pace-fc"), { pontos, fmtX: (v) => relogio(v), fmtY: (v) => num(v), rotuloX: t("ritmo (min/{u})", { u: rotuloDist() }), rotuloY: "bpm", inverterX: true, rotulo: t("Ritmo e frequência cardíaca") });
   }
 
   // ritmos
@@ -590,32 +596,32 @@ function numeros() {
       dados = [];
       for (let p = ini; p < fim; p += passo) {
         const n = ps.filter((x) => x >= p && x < p + passo).length;
-        dados.push({ rotulo: relogio(p), valor: n, dica: `${relogio(p)} a ${relogio(p + passo)} /${rotuloDist()}\n${num(n)} corridas` });
+        dados.push({ rotulo: relogio(p), valor: n, dica: `${t("{a} a {b}", { a: relogio(p), b: relogio(p + passo) })} /${rotuloDist()}\n${plural(n, "{n} corrida", "{n} corridas")}` });
       }
     } else {
       const vs = L.filter((a) => a.m && a.s && !a.in).map((a) => distValor(a.m) / (a.s / 3600));
       dados = [];
       for (let v = 10; v < 45; v += 2.5) {
         const n = vs.filter((x) => x >= v && x < v + 2.5).length;
-        if (n || dados.length) dados.push({ rotulo: num(v), valor: n, dica: `${num1(v)} a ${num1(v + 2.5)}\n${num(n)} pedais` });
+        if (n || dados.length) dados.push({ rotulo: num(v), valor: n, dica: `${t("{a} a {b}", { a: num1(v), b: num1(v + 2.5) })}\n${plural(n, "{n} pedal", "{n} pedais")}` });
       }
       while (dados.length && !dados.at(-1).valor) dados.pop();
     }
-    barras($("#g-ritmos"), { dados, rotuloCada: Math.ceil(dados.length / 8), rotulo: "Distribuição de ritmo" });
+    barras($("#g-ritmos"), { dados, rotuloCada: Math.ceil(dados.length / 8), rotulo: t("Distribuição de ritmo") });
   }
 
   // ambiente
   const dentro = L.filter((a) => a.in || (!a.ll && !a.m));
   const fora = L.length - dentro.length;
   $("#g-ambiente").innerHTML = `
-    <div class="divisao" role="img" aria-label="${num((fora / L.length) * 100)}% na rua">
-      <i style="flex:${fora};background:var(--destaque)" data-dica="Na rua\n${nTreinos(fora)}"></i>
-      <i style="flex:${dentro.length};background:var(--linha-forte)" data-dica="Dentro de casa\n${nTreinos(dentro.length)}"></i>
+    <div class="divisao" role="img" aria-label="${esc(t("{p}% na rua", { p: num((fora / L.length) * 100) }))}">
+      <i style="flex:${fora};background:var(--destaque)" data-dica="${t("Na rua")}\n${nTreinos(fora)}"></i>
+      <i style="flex:${dentro.length};background:var(--linha-forte)" data-dica="${t("Dentro de casa")}\n${nTreinos(dentro.length)}"></i>
     </div>
     <ul class="legenda">
-      <li><i style="background:var(--destaque)"></i><span>Na rua</span><span>${nTreinos(fora)}, ${num((fora / L.length) * 100)}%</span></li>
-      <li><i style="background:var(--linha-forte)"></i><span>Dentro de casa</span><span>${nTreinos(dentro.length)}, ${num((dentro.length / L.length) * 100)}%</span></li>
-      <li><i style="background:transparent;border:1px solid var(--texto-3)"></i><span>Em grupo</span><span>${nTreinos(L.filter((a) => a.pessoas > 1).length)}</span></li>
+      <li><i style="background:var(--destaque)"></i><span>${t("Na rua")}</span><span>${nTreinos(fora)}, ${num((fora / L.length) * 100)}%</span></li>
+      <li><i style="background:var(--linha-forte)"></i><span>${t("Dentro de casa")}</span><span>${nTreinos(dentro.length)}, ${num((dentro.length / L.length) * 100)}%</span></li>
+      <li><i style="background:transparent;border:1px solid var(--texto-3)"></i><span>${t("Em grupo")}</span><span>${nTreinos(L.filter((a) => a.pessoas > 1).length)}</span></li>
     </ul>`;
 
   if (aparelhos.length) {
@@ -634,7 +640,7 @@ function autoLimites(valores) {
 // ------------------------------------------------------------- constância
 function constancia() {
   const anos = [...new Set(A.map((a) => a.ano))].sort((x, y) => y - x);
-  abas($("#abas-constancia"), [{ valor: "12m", rotulo: "Últimos 12 meses" }, ...anos.map((a) => ({ valor: String(a), rotulo: String(a) }))], estado.ano, (v) => { estado.ano = v; constancia(); });
+  abas($("#abas-constancia"), [{ valor: "12m", rotulo: t("Últimos 12 meses") }, ...anos.map((a) => ({ valor: String(a), rotulo: String(a) }))], estado.ano, (v) => { estado.ano = v; constancia(); });
   const hoje = new Date();
   let ini, fim;
   if (estado.ano === "12m") {
@@ -664,7 +670,7 @@ function constancia() {
     const data = new Date(`${dia}T12:00`);
     valores.set(dia, { nivel, dica: `${diaSemana(data)}, ${dataLonga(data)}\n${d.m ? dist(d.m) : duracao(d.s)}\n${d.nomes.slice(0, 3).join("\n")}` });
   }
-  calendario($("#calendario"), { inicio: ini, fim, valores, rotulo: "Calendário de treinos" });
+  calendario($("#calendario"), { inicio: ini, fim, valores, rotulo: t("Calendário de treinos") });
 
   const totalDias = Math.round((fim - ini) / 864e5) + 1;
   const seq = sequencias(new Set(porDia.keys()));
@@ -676,10 +682,10 @@ function constancia() {
   }
   const melhorSemana = Math.max(0, ...porSemana.values());
   $("#fatos-constancia").innerHTML = `
-    <div><dt>Dias com treino</dt><dd>${num(porDia.size)}<small>de ${num(totalDias)}</small></dd></div>
-    <div><dt>Dias de descanso</dt><dd>${num(((totalDias - porDia.size) / totalDias) * 100)}%</dd></div>
-    <div><dt>Maior sequência</dt><dd>${num(seq.maior)}<small>dias seguidos</small></dd></div>
-    <div><dt>Semana mais forte</dt><dd>${esc(dist(melhorSemana, 0))}<small>de ${esc(GRUPOS[PRINCIPAL].nome.toLowerCase())}</small></dd></div>`;
+    <div><dt>${t("Dias com treino")}</dt><dd>${num(porDia.size)}<small>${t("de {n}", { n: num(totalDias) })}</small></dd></div>
+    <div><dt>${t("Dias de descanso")}</dt><dd>${num(((totalDias - porDia.size) / totalDias) * 100)}%</dd></div>
+    <div><dt>${t("Maior sequência")}</dt><dd>${num(seq.maior)}<small>${t("dias seguidos")}</small></dd></div>
+    <div><dt>${t("Semana mais forte")}</dt><dd>${esc(dist(melhorSemana, 0))}<small>${esc(t("de {grupo}", { grupo: GRUPOS[PRINCIPAL].nome.toLowerCase() }))}</small></dd></div>`;
 
   // volume mensal
   const meses = [];
@@ -693,10 +699,10 @@ function constancia() {
     const x = meses.find((m) => m.ano === a.ano && m.mes === a.data.getMonth());
     if (x) { x.m += a.m; x.n++; }
   }
-  $("#titulo-mensal").textContent = `${GRUPOS[PRINCIPAL].nome} por mês`;
+  $("#titulo-mensal").textContent = t("{grupo} por mês", { grupo: GRUPOS[PRINCIPAL].nome });
   barras($("#g-mensal"), {
-    dados: meses.map((m) => ({ rotulo: MESES_CURTOS[m.mes], valor: distValor(m.m), dica: `${MESES_CURTOS[m.mes]} de ${m.ano}\n${dist(m.m)} em ${nTreinos(m.n)}` })),
-    mostrarValores: true, fmtValor: (v) => num(v), altura: 220, rotulo: "Volume por mês",
+    dados: meses.map((m) => ({ rotulo: MESES_CURTOS[m.mes], valor: distValor(m.m), dica: `${t("{mes} de {ano}", { mes: MESES_CURTOS[m.mes], ano: m.ano })}\n${t("{v} em {treinos}", { v: dist(m.m), treinos: nTreinos(m.n) })}` })),
+    mostrarValores: true, fmtValor: (v) => num(v), altura: 220, rotulo: t("Volume por mês"),
   });
 }
 
@@ -705,7 +711,7 @@ function clima() {
   const sec = $("#clima");
   const L = A.filter((a) => a.cl);
   if (!L.length) {
-    $("#conteudo-clima").innerHTML = `<p class="vazio">O clima de cada treino é calculado depois da sincronização com o Strava.</p>`;
+    $("#conteudo-clima").innerHTML = `<p class="vazio">${t("O clima de cada treino é calculado depois da sincronização com o Strava.")}</p>`;
     return;
   }
   const chuva = L.filter((a) => a.cl[2] >= 0.3 || (a.cl[1] >= 51 && a.cl[1] < 95) || a.cl[1] >= 95);
@@ -714,14 +720,14 @@ function clima() {
   const media = soma(L, (a) => a.cl[0]) / L.length;
   $("#conteudo-clima").innerHTML = `
     <dl class="fatos" style="margin-top:0">
-      <div><dt>Treinos com chuva</dt><dd>${num(chuva.length)}<small>${num((chuva.length / L.length) * 100)}% dos treinos na rua</small></dd></div>
-      <div><dt>O mais quente</dt><dd>${num1(quente.cl[0])} °C</dd><dd style="font:inherit;font-size:.8125rem;color:var(--texto-3)"><a href="${linkTreino(quente.id)}">${esc(quente.n)}</a>, ${dataLonga(quente.data)}</dd></div>
-      <div><dt>O mais frio</dt><dd>${num1(frio.cl[0])} °C</dd><dd style="font:inherit;font-size:.8125rem;color:var(--texto-3)"><a href="${linkTreino(frio.id)}">${esc(frio.n)}</a>, ${dataLonga(frio.data)}</dd></div>
-      <div><dt>Temperatura média</dt><dd>${num1(media)} °C</dd></div>
+      <div><dt>${t("Treinos com chuva")}</dt><dd>${num(chuva.length)}<small>${t("{p}% dos treinos na rua", { p: num((chuva.length / L.length) * 100) })}</small></dd></div>
+      <div><dt>${t("O mais quente")}</dt><dd>${num1(quente.cl[0])} °C</dd><dd style="font:inherit;font-size:.8125rem;color:var(--texto-3)"><a href="${linkTreino(quente.id)}">${esc(quente.n)}</a>, ${dataLonga(quente.data)}</dd></div>
+      <div><dt>${t("O mais frio")}</dt><dd>${num1(frio.cl[0])} °C</dd><dd style="font:inherit;font-size:.8125rem;color:var(--texto-3)"><a href="${linkTreino(frio.id)}">${esc(frio.n)}</a>, ${dataLonga(frio.data)}</dd></div>
+      <div><dt>${t("Temperatura média")}</dt><dd>${num1(media)} °C</dd></div>
     </dl>
     <div class="grade-graficos">
-      <div class="cartao-grafico"><h3>Temperatura na largada</h3><p class="nota">Quantos treinos em cada faixa de temperatura.</p><div class="grafico" id="g-temperaturas"></div></div>
-      <div class="cartao-grafico"><h3>Como estava o céu</h3><p class="nota">Pela condição mais fechada durante o treino.</p><div class="grafico" id="g-condicoes"></div></div>
+      <div class="cartao-grafico"><h3>${t("Temperatura na largada")}</h3><p class="nota">${t("Quantos treinos em cada faixa de temperatura.")}</p><div class="grafico" id="g-temperaturas"></div></div>
+      <div class="cartao-grafico"><h3>${t("Como estava o céu")}</h3><p class="nota">${t("Pela condição mais fechada durante o treino.")}</p><div class="grafico" id="g-condicoes"></div></div>
     </div>`;
   const faixas = [-Infinity, 0, 5, 10, 15, 20, 25, 30, 35].map((ini, i, arr) => ({ ini, fim: arr[i + 1] ?? Infinity, n: 0 }));
   for (const a of L) faixas.findLast((f) => a.cl[0] >= f.ini).n++;
@@ -730,10 +736,10 @@ function clima() {
   barras($("#g-temperaturas"), {
     dados: faixas.map((f) => ({
       rotulo: f.ini === -Infinity ? `<${f.fim}°` : f.fim === Infinity ? `${f.ini}°+` : `${f.ini}–${f.fim}°`, valor: f.n,
-      dica: `${f.ini === -Infinity ? `abaixo de ${f.fim}` : f.fim === Infinity ? `${f.ini} °C ou mais` : `${f.ini} a ${f.fim} °C`}\n${nTreinos(f.n)}`,
+      dica: `${f.ini === -Infinity ? t("abaixo de {v}", { v: f.fim }) : f.fim === Infinity ? t("{v} °C ou mais", { v: f.ini }) : t("{a} a {b} °C", { a: f.ini, b: f.fim })}\n${nTreinos(f.n)}`,
       cor: `color-mix(in srgb, ${f.ini >= 25 ? "var(--destaque)" : f.ini >= 15 ? "var(--neutro)" : "var(--frio)"} 85%, var(--fundo))`,
     })),
-    mostrarValores: true, rotulo: "Treinos por temperatura",
+    mostrarValores: true, rotulo: t("Treinos por temperatura"),
   });
   const conta = CONDICOES.map(([nome, teste]) => ({ nome, n: L.filter((a) => a.cl[1] != null && teste(a.cl[1])).length })).filter((x) => x.n);
   barrasH($("#g-condicoes"), conta.map((x) => ({ rotulo: x.nome, valor: x.n, texto: num(x.n) })));
@@ -745,8 +751,8 @@ function equipamento() {
   const lista = (S.equipamento || []).filter((g) => g.m > 0).sort((x, y) => (x.aposentado - y.aposentado) || y.m - x.m);
   if (!lista.length) return $("#equipamento")?.remove();
   barrasH($("#lista-equipamento"), lista.map((g) => ({
-    rotulo: g.nome, extra: `${g.tipo === "bike" ? "bike" : "tênis"}${g.aposentado ? ", aposentado" : g.principal ? ", o principal" : ""}`,
-    valor: g.m, texto: dist(g.m, 0), dica: `${nTreinos(g.usos)} registrados`,
+    rotulo: g.nome, extra: `${g.tipo === "bike" ? t("bike") : t("tênis")}${g.aposentado ? t(", aposentado") : g.principal ? t(", o principal") : ""}`,
+    valor: g.m, texto: dist(g.m, 0), dica: t("{treinos} registrados", { treinos: nTreinos(g.usos) }),
     cor: g.aposentado ? "var(--linha-forte)" : g.tipo === "bike" ? "var(--c-pedal)" : "var(--destaque)",
   })));
 }
@@ -780,6 +786,7 @@ function painelLugares() {
   for (const a of A) if (a.l != null && porLugar[a.l]) { porLugar[a.l].n++; porLugar[a.l].m += a.m; }
   const paises = {};
   for (const l of porLugar) {
+    l.pais = nomePais(l);
     paises[l.pais] ||= { n: 0, cidades: 0 };
     paises[l.pais].n += l.n;
     paises[l.pais].cidades++;
@@ -791,18 +798,18 @@ function painelLugares() {
 
   $("#painel-lugares").innerHTML = `
     <dl class="fatos" style="margin:0 0 1.25rem;grid-template-columns:repeat(3,minmax(0,1fr))">
-      <div><dt>Países</dt><dd>${num(listaPaises.length)}</dd></div>
-      <div><dt>Cidades</dt><dd>${num(porLugar.length)}</dd></div>
-      <div><dt>Mais longe de casa</dt><dd>${longe ? `${num(distValor(longe.casa * 1000))}<small>${rotuloDist()}</small>` : "–"}</dd></div>
+      <div><dt>${t("Países")}</dt><dd>${num(listaPaises.length)}</dd></div>
+      <div><dt>${t("Cidades")}</dt><dd>${num(porLugar.length)}</dd></div>
+      <div><dt>${t("Mais longe de casa")}</dt><dd>${longe ? `${num(distValor(longe.casa * 1000))}<small>${rotuloDist()}</small>` : "–"}</dd></div>
     </dl>
-    ${longe ? `<p style="margin:0 0 1.25rem;color:var(--texto-2);font-size:.9375rem">O mais distante foi <button type="button" class="botao-texto" id="ir-longe">${esc(longe.n)}</button>, em ${dataLonga(longe.data)}${longe.l != null && lugaresLista[longe.l] ? `, ${esc(lugaresLista[longe.l].cidade)}` : ""}.</p>` : ""}
+    ${longe ? `<p style="margin:0 0 1.25rem;color:var(--texto-2);font-size:.9375rem">${t("O mais distante foi {treino}, em {data}", { treino: `<button type="button" class="botao-texto" id="ir-longe">${esc(longe.n)}</button>`, data: dataLonga(longe.data) })}${longe.l != null && lugaresLista[longe.l] ? `, ${esc(lugaresLista[longe.l].cidade)}` : ""}.</p>` : ""}
     <div class="abas" id="abas-paises"></div>
     <ul class="lista-lugares">${cidades
       .map((l) => `<li><button type="button" data-lat="${l.lat}" data-lng="${l.lng}">
         <span class="cidade">${esc(l.cidade)}</span><span class="regiao">${esc([l.estado !== l.cidade ? l.estado : "", l.pais].filter(Boolean).join(", "))}</span>
         <span class="conta">${nTreinos(l.n)}<br>${dist(l.m, 0)}</span></button></li>`)
       .join("")}</ul>`;
-  abas($("#abas-paises"), [{ valor: "todos", rotulo: `Todos (${num(porLugar.length)})` }, ...listaPaises.map(([p, x]) => ({ valor: p, rotulo: `${p} (${x.cidades})` }))], estado.pais, (v) => {
+  abas($("#abas-paises"), [{ valor: "todos", rotulo: t("Todos ({n})", { n: num(porLugar.length) }) }, ...listaPaises.map(([p, x]) => ({ valor: p, rotulo: `${p} (${x.cidades})` }))], estado.pais, (v) => {
     estado.pais = v;
     painelLugares();
   });
@@ -886,7 +893,7 @@ async function criarMapa(el) {
   const botaoMundo = L.control({ position: "topright" });
   botaoMundo.onAdd = () => {
     const div = L.DomUtil.create("div", "leaflet-bar");
-    div.innerHTML = `<a href="#" role="button" title="Ver todos os lugares" aria-label="Ver todos os lugares" style="width:auto;padding:0 .6rem;font-size:.8125rem;font-weight:600">Ver tudo</a>`;
+    div.innerHTML = `<a href="#" role="button" title="${esc(t("Ver todos os lugares"))}" aria-label="${esc(t("Ver todos os lugares"))}" style="width:auto;padding:0 .6rem;font-size:.8125rem;font-weight:600">${t("Ver tudo")}</a>`;
     L.DomEvent.on(div, "click", (ev) => {
       L.DomEvent.preventDefault(ev);
       if (S.lugares.length) mapa.flyToBounds(S.lugares.map((l) => [l.lat, l.lng]), { padding: [40, 40], duration: reduzirMovimento() ? 0 : 1.4 });
@@ -902,5 +909,5 @@ async function criarMapa(el) {
 }
 
 function popupTreino(a) {
-  return `<strong>${esc(a.n)}</strong><br>${dataLonga(a.data)}, ${hora(a.data)}<br>${esc(dist(a.m))} em ${relogio(a.s)}${a.m ? `, ${esc(ritmo(a))}` : ""}<br><a href="${linkTreino(a.id)}">Abrir o treino</a>`;
+  return `<strong>${esc(a.n)}</strong><br>${dataLonga(a.data)}, ${hora(a.data)}<br>${esc(t("{d} em {t}", { d: dist(a.m), t: relogio(a.s) }))}${a.m ? `, ${esc(ritmo(a))}` : ""}<br><a href="${linkTreino(a.id)}">${t("Abrir o treino")}</a>`;
 }

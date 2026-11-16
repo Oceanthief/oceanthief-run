@@ -10,59 +10,83 @@
   ],
   "altimetria_referencia": {
     "nome": "Pico da Bandeira",
-    "plural": "Picos da Bandeira",
+    "plural": { "pt": "Picos da Bandeira", "en": "Pico da Bandeira climbs", "es": "Picos da Bandeira" },
     "altura_m": 2892,
-    "detalhe": "do nível do mar ao cume",
+    "detalhe": { "pt": "do nível do mar ao cume", "en": "from sea level to summit", "es": "del nivel del mar a la cumbre" },
     "lat": -20.4345,
     "lng": -41.7973
   },
   "fotos": [
     {
       "arquivo": "assets/img/corrida-dia.jpg",
-      "descricao": "Victor numa meia maratona, fotografado do alto: regata verde, número 3697 no peito, passando ao lado de um muro vermelho com grafite amarelo.",
+      "descricao": {
+        "pt": "Victor numa meia maratona, fotografado do alto: regata verde, número 3697 no peito, passando ao lado de um muro vermelho com grafite amarelo.",
+        "en": "Victor in a half marathon, shot from above: green tank top, bib number 3697, running past a red wall with yellow graffiti.",
+        "es": "Victor en una media maratón, fotografiado desde arriba: camiseta sin mangas verde, dorsal 3697, pasando junto a un muro rojo con grafiti amarillo."
+      },
       "legenda": ""
     },
     {
       "arquivo": "assets/img/corrida-noite.jpg",
-      "descricao": "Victor cruzando a chegada de uma corrida noturna e conferindo o relógio, com o cronômetro da prova marcando 0:30:33.",
+      "descricao": {
+        "pt": "Victor cruzando a chegada de uma corrida noturna e conferindo o relógio, com o cronômetro da prova marcando 0:30:33.",
+        "en": "Victor crossing the finish line of a night race and checking the watch, with the race clock at 0:30:33.",
+        "es": "Victor cruzando la meta de una carrera nocturna y mirando el reloj, con el cronómetro de la carrera en 0:30:33."
+      },
       "legenda": ""
     }
   ],
-  "sobre": [
-    "Eu não sou o corredor mais talentoso. E já fiz as pazes com isso.",
-    "O que eu consigo controlar é a frequência com que apareço, minha disposição para aprender e o quanto de mim estou preparado para entregar quando as coisas começam a ficar desconfortáveis.",
-    "A corrida me ensinou que o limite raramente está onde a gente pensa que está no primeiro momento. O corpo envia sinais, a mente interpreta esses sinais e, em algum ponto entre os dois, surge uma decisão: diminuir, parar ou continuar.",
-    "É isso que me fascina no endurance.",
-    "Eu treino com curiosidade. Estudo o processo, testo ideias, acompanho o que funciona, descarto o que não funciona e começo de novo. Não consigo controlar genética, clima, dias ruins ou quem vai estar ao meu lado na linha de largada. Mas consigo controlar preparação, consistência, paciência e a forma como respondo quando a prova fica difícil.",
-    "Steve Prefontaine acreditava que correr era uma forma de descobrir algo sobre si mesmo. Eu gosto dessa ideia. O relógio importa, o PB importa, a linha de chegada importa — mas o que me interessa ainda mais é descobrir quem eu me torno enquanto corro atrás de tudo isso.",
-    "Consistência se acumula. Resiliência também. E cada treino difícil deixa alguma coisa para o próximo.",
-    "Eu não corro porque sofrer seja algo nobre. Eu corro porque algumas coisas valem o sofrimento.",
-    "Então, quando as pernas pesam, o ritmo começa a cair e a mente começa a negociar, a pergunta é sempre a mesma:",
-    "*How bad do you want it?*",
-    "Não o bastante para se destruir.",
-    "Mas o bastante para descobrir até onde você consegue chegar."
-  ],
+  "sobre": {
+    "pt": [
+      "Eu não sou o corredor mais talentoso. E já fiz as pazes com isso.",
+      "O que eu consigo controlar é a frequência com que apareço, minha disposição para aprender e o quanto de mim estou preparado para entregar quando as coisas começam a ficar desconfortáveis.",
+      "A corrida me ensinou que o limite raramente está onde a gente pensa que está no primeiro momento. O corpo envia sinais, a mente interpreta esses sinais e, em algum ponto entre os dois, surge uma decisão: diminuir, parar ou continuar.",
+      "É isso que me fascina no endurance.",
+      "Eu treino com curiosidade. Estudo o processo, testo ideias, acompanho o que funciona, descarto o que não funciona e começo de novo. Não consigo controlar genética, clima, dias ruins ou quem vai estar ao meu lado na linha de largada. Mas consigo controlar preparação, consistência, paciência e a forma como respondo quando a prova fica difícil.",
+      "Steve Prefontaine acreditava que correr era uma forma de descobrir algo sobre si mesmo. Eu gosto dessa ideia. O relógio importa, o PB importa, a linha de chegada importa — mas o que me interessa ainda mais é descobrir quem eu me torno enquanto corro atrás de tudo isso.",
+      "Consistência se acumula. Resiliência também. E cada treino difícil deixa alguma coisa para o próximo.",
+      "Eu não corro porque sofrer seja algo nobre. Eu corro porque algumas coisas valem o sofrimento.",
+      "Então, quando as pernas pesam, o ritmo começa a cair e a mente começa a negociar, a pergunta é sempre a mesma:",
+      "*How bad do you want it?*",
+      "Não o bastante para se destruir.",
+      "Mas o bastante para descobrir até onde você consegue chegar."
+    ],
+    "en": [
+      "I'm not the most talented runner. And I've made peace with that.",
+      "What I can control is how often I show up, how willing I am to learn and how much of myself I'm ready to give when things start to get uncomfortable.",
+      "Running taught me that the limit is rarely where we think it is at first. The body sends signals, the mind reads them and, somewhere between the two, a decision comes up: slow down, stop or keep going.",
+      "That's what fascinates me about endurance.",
+      "I train with curiosity. I study the process, test ideas, keep track of what works, drop what doesn't and start again. I can't control genetics, weather, bad days or who will be next to me on the start line. But I can control preparation, consistency, patience and how I respond when the race gets hard.",
+      "Steve Prefontaine believed running was a way of finding something out about yourself. I like that idea. The clock matters, the PB matters, the finish line matters — but what interests me even more is finding out who I become while chasing all of it.",
+      "Consistency compounds. So does resilience. And every hard workout leaves something for the next one.",
+      "I don't run because suffering is noble. I run because some things are worth the suffering.",
+      "So when the legs get heavy, the pace starts to drop and the mind starts to negotiate, the question is always the same:",
+      "*How bad do you want it?*",
+      "Not enough to destroy yourself.",
+      "But enough to find out how far you can go."
+    ],
+    "es": [
+      "No soy el corredor más talentoso. Y ya hice las paces con eso.",
+      "Lo que sí puedo controlar es la frecuencia con la que me presento, mis ganas de aprender y cuánto de mí estoy dispuesto a entregar cuando las cosas empiezan a ponerse incómodas.",
+      "Correr me enseñó que el límite rara vez está donde creemos que está al principio. El cuerpo envía señales, la mente las interpreta y, en algún punto entre los dos, aparece una decisión: bajar el ritmo, parar o seguir.",
+      "Eso es lo que me fascina del endurance.",
+      "Entreno con curiosidad. Estudio el proceso, pruebo ideas, sigo lo que funciona, descarto lo que no funciona y vuelvo a empezar. No puedo controlar la genética, el clima, los días malos ni quién va a estar a mi lado en la línea de salida. Pero sí puedo controlar la preparación, la constancia, la paciencia y la forma en que respondo cuando la carrera se pone difícil.",
+      "Steve Prefontaine creía que correr era una forma de descubrir algo sobre uno mismo. Me gusta esa idea. El reloj importa, la marca personal importa, la línea de meta importa — pero lo que más me interesa es descubrir en quién me convierto mientras persigo todo eso.",
+      "La constancia se acumula. La resiliencia también. Y cada entrenamiento difícil deja algo para el siguiente.",
+      "No corro porque sufrir sea algo noble. Corro porque algunas cosas valen el sufrimiento.",
+      "Entonces, cuando las piernas pesan, el ritmo empieza a caer y la mente empieza a negociar, la pregunta es siempre la misma:",
+      "*How bad do you want it?*",
+      "No lo suficiente para destruirte.",
+      "Pero sí lo suficiente para descubrir hasta dónde puedes llegar."
+    ]
+  },
   "assinatura": {
     "nome": "Victor Ramos",
     "local": "Juiz de Fora, Minas Gerais"
   },
-  "provas": [
-    {
-      "nome": "Exemplo: Maratona de São Paulo",
-      "data": "2024-04-07",
-      "distancia": "42,2 km",
-      "tempo": "3:14:05",
-      "nota": "primeira maratona",
-      "strava_id": null
-    }
-  ],
+  "provas": [],
   "nao_sao_provas": [18729044519, 19247754111],
-  "conquistas": [
-    {
-      "titulo": "Exemplo de conquista",
-      "texto": "Algo que os números não mostram sozinhos: um pódio, uma prova difícil, um recorde de clube."
-    }
-  ],
+  "conquistas": [],
   "secoes": {
     "sobre": ["Sobre", ""],
     "recordes": ["Recordes", "Os tempos que eu ainda tento bater."],
