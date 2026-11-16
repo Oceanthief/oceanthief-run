@@ -125,6 +125,10 @@
   "casa": null,
   "privacidade": {
     "cortar_inicio_fim_m": 400,
+    "cortar_variacao_m": 200,
+    "zona_raio_m": 1000,
+    "zonas_automaticas": 1,
+    "zonas_extras": [],
     "ocultar_somente_seguidores": false
   }
 }

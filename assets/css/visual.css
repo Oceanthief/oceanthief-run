@@ -1070,6 +1070,57 @@ h3 {
   background: var(--painel);
 }
 
+/* nomes de treino sem espaço ("LOOOOOONGO!") quebram onde precisar, em vez de alargar a página */
+body {
+  overflow-wrap: break-word;
+}
+
+.mosaico-rotas .nome,
+.resultados a,
+.lista-provas .nome {
+  overflow-wrap: anywhere;
+}
+
+/* no celular, cada recorde vira duas linhas: distância, tempo e pace em cima; o treino embaixo */
+@media (max-width: 599px) {
+  table.resultados.recordes,
+  .resultados.recordes tbody {
+    display: block;
+  }
+
+  .resultados.recordes thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .resultados.recordes tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: baseline;
+    column-gap: 0.9rem;
+    padding: 0.8rem 0.6rem;
+    border-bottom: 1px solid var(--linha);
+  }
+
+  .resultados.recordes td {
+    padding: 0;
+    border: 0;
+  }
+
+  .resultados.recordes td.treino-rec {
+    grid-column: 1 / -1;
+    margin-top: 0.45rem;
+    font-size: 0.875rem;
+  }
+
+  .resultados.recordes td.so-largo {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------- destaques: mosaico de rotas */
 .mosaico-rotas {
   display: grid;

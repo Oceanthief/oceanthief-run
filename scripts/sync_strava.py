@@ -16,6 +16,7 @@ de atividades com as rotas completas fica em data/local/, fora do git.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -134,22 +135,105 @@ def distancia_m(a: tuple[float, float], b: tuple[float, float]) -> float:
     return 6371000 * 2 * math.asin(math.sqrt(h))
 
 
-def cortar_pontas(pontos: list[tuple[float, float]], metros: float) -> list[tuple[float, float]]:
-    """Tira os primeiros e os últimos `metros` da rota (esconde onde você mora)."""
-    if metros <= 0 or len(pontos) < 3:
+def cortar_pontas(pontos: list[tuple[float, float]], metros: float, metros_fim: float | None = None) -> list[tuple[float, float]]:
+    """Tira os primeiros `metros` e os últimos `metros_fim` da rota (esconde onde você mora)."""
+    metros_fim = metros if metros_fim is None else metros_fim
+    if (metros <= 0 and metros_fim <= 0) or len(pontos) < 3:
         return pontos
 
-    def corte(lista):
+    def corte(lista, limite):
+        if limite <= 0:
+            return 0
         andado = 0.0
         for i in range(1, len(lista)):
             andado += distancia_m(lista[i - 1], lista[i])
-            if andado >= metros:
+            if andado >= limite:
                 return i
         return len(lista)
 
-    inicio = corte(pontos)
-    fim = len(pontos) - corte(pontos[::-1])
+    inicio = corte(pontos, metros)
+    fim = len(pontos) - corte(pontos[::-1], metros_fim)
     return pontos[inicio:fim] if fim - inicio >= 2 else []
+
+
+def zonas_de_privacidade(atividades: list[dict], perfil: dict, sal: str) -> list[tuple[float, float, float]]:
+    """Círculos onde nenhuma rota aparece: em volta do lugar de onde você mais sai (quase sempre a casa)
+    e dos lugares listados em privacidade.zonas_extras no perfil.json (trabalho, casa de alguém...).
+
+    Como nas zonas de privacidade do Strava, o centro de cada círculo fica deslocado do lugar real,
+    numa direção e distância sorteadas com o segredo do app: o "buraco" no mapa não aponta para o endereço.
+    Devolve (lat, lng, raio em metros) de cada zona.
+    """
+    priv = perfil.get("privacidade") or {}
+    raio = float(priv.get("zona_raio_m", 1000))
+    if raio <= 0:
+        return []
+    passo = 0.002  # células de uns 200 m
+    pontas = []
+    for a in atividades:
+        if a.get("polyline"):
+            pts = decodificar(a["polyline"])
+            if pts:
+                pontas += [pts[0], pts[-1]]
+    centros = []
+    casa = perfil.get("casa")
+    for lugar in ([casa] if casa else []) + list(priv.get("zonas_extras") or []):
+        if lugar and lugar.get("lat") is not None:
+            centros.append((round(float(lugar["lat"]) / passo) * passo, round(float(lugar["lng"]) / passo) * passo))
+    # automáticas: os lugares de onde mais saem treinos (o 1º costuma ser a casa; parques e pistas
+    # também aparecem nessa lista, por isso o padrão é só 1)
+    automaticas = int(priv.get("zonas_automaticas", 1))
+    minimo = max(8, len(atividades) // 100)
+    for (i, j), n in Counter((round(lat / passo), round(lng / passo)) for lat, lng in pontas).most_common():
+        if n < minimo or automaticas <= 0:
+            break
+        c = (i * passo, j * passo)
+        if all(distancia_m(c, x) > raio * 1.5 for x in centros):
+            centros.append(c)
+            automaticas -= 1
+    zonas = []
+    for lat, lng in centros:
+        h = hashlib.sha256(f"{sal}:zona:{lat:.4f}:{lng:.4f}".encode()).digest()
+        angulo = int.from_bytes(h[:4], "big") / 2**32 * 2 * math.pi
+        desloc = raio * (0.25 + 0.25 * int.from_bytes(h[4:8], "big") / 2**32)  # de 25% a 50% do raio
+        zonas.append((
+            lat + desloc * math.cos(angulo) / 111320,
+            lng + desloc * math.sin(angulo) / (111320 * math.cos(math.radians(lat))),
+            raio,
+        ))
+    return zonas
+
+
+def tirar_zonas(pontos: list[tuple[float, float]], zonas: list[tuple[float, float, float]]) -> list[list[tuple[float, float]]]:
+    """Apaga os pedaços da rota dentro das zonas; o que sobra vira trechos separados."""
+    trechos, atual = [], []
+
+    def fechar():
+        if len(atual) >= 2 and sum(distancia_m(atual[i - 1], atual[i]) for i in range(1, len(atual))) >= 150:
+            trechos.append(atual[:])
+
+    for p in pontos:
+        if any(distancia_m(p, (z[0], z[1])) < z[2] for z in zonas):
+            fechar()
+            atual = []
+        else:
+            atual.append(p)
+    fechar()
+    return trechos
+
+
+def corte_da_ponta(aid: str, ponta: str, base: float, variacao: float, sal: str) -> float:
+    """Metros a cortar numa ponta da rota: `base` mais um extra entre 0 e `variacao`,
+    sempre o mesmo para o mesmo treino e a mesma ponta.
+
+    Com o mesmo corte em todo treino, as pontas se amontoam nas ruas por onde você sai de casa
+    e o centro delas entrega o endereço. Variando o corte, elas se espalham. O segredo do app
+    entra na conta para ninguém recalcular, a partir deste código, quanto foi cortado de cada treino.
+    """
+    if variacao <= 0:
+        return base
+    h = hashlib.sha256(f"{sal}:{aid}:{ponta}".encode()).digest()
+    return base + int.from_bytes(h[:4], "big") / 2**32 * variacao
 
 
 def simplificar(pontos: list[tuple[float, float]], tolerancia: float) -> list[tuple[float, float]]:
@@ -574,6 +658,8 @@ def gerar_site() -> None:
     perfil = ler_json(CONFIG, {})
     priv = perfil.get("privacidade") or {}
     corte = float(priv.get("cortar_inicio_fim_m", 400))
+    variacao = float(priv.get("cortar_variacao_m", 200))
+    sal = ler_env().get("STRAVA_CLIENT_SECRET", "")
     so_publicas = bool(priv.get("ocultar_somente_seguidores", False))
     nao_sao_provas = {str(x) for x in perfil.get("nao_sao_provas") or []}
 
@@ -605,6 +691,9 @@ def gerar_site() -> None:
     else:
         casa_pt = None
 
+    zonas_priv = zonas_de_privacidade(atividades, perfil, sal)
+    log(f"Zonas de privacidade: {len(zonas_priv)}.")
+
     lugares, indice_lugar = [], {}
     compactas, rotas = [], []
     pasta_ativ = SAIDA / "atividades"
@@ -614,8 +703,20 @@ def gerar_site() -> None:
     for a, inicio in zip(atividades, inicios):
         aid = str(a["id"])
         ids_validos.add(aid)
-        pontos = cortar_pontas(decodificar(a["polyline"]), corte) if a.get("polyline") else []
-        ponto_mapa = pontos[0] if pontos else (round(inicio[0], 2), round(inicio[1], 2)) if inicio else None
+        # rota publicada: sem as pontas e sem o que passa dentro das zonas de privacidade
+        trechos = (
+            tirar_zonas(
+                cortar_pontas(
+                    decodificar(a["polyline"]),
+                    corte_da_ponta(aid, "inicio", corte, variacao, sal),
+                    corte_da_ponta(aid, "fim", corte, variacao, sal),
+                ),
+                zonas_priv,
+            )
+            if a.get("polyline")
+            else []
+        )
+        ponto_mapa = trechos[0][0] if trechos else (round(inicio[0], 2), round(inicio[1], 2)) if inicio else None
 
         lugar_idx = None
         if inicio:
@@ -668,8 +769,9 @@ def gerar_site() -> None:
             c["ap"] = det["aparelho"]
         compactas.append(c)
 
-        if len(pontos) >= 2:
-            rotas.append([a["id"], codificar(simplificar(pontos, 0.00015))])
+        # vários trechos vão no mesmo texto, separados por espaço (que não existe no formato polyline)
+        if trechos:
+            rotas.append([a["id"], " ".join(codificar(simplificar(tr, 0.00015)) for tr in trechos)])
 
         arquivo = {
             **c,
@@ -678,7 +780,9 @@ def gerar_site() -> None:
             "cad": round(a["average_cadence"], 1) if a.get("average_cadence") else None,
             "w": round(a["average_watts"]) if a.get("average_watts") else None,
             "cal": det.get("calorias"),
-            "rota": codificar(pontos) if len(pontos) >= 2 else "",
+            "rota": " ".join(codificar(tr) for tr in trechos),
+            # tinha GPS, mas a rota toda ficou dentro do que é escondido
+            "oculta": 1 if a.get("polyline") and not trechos else None,
             "parciais": det.get("parciais") or [],
             "esforcos": [{k: e[k] for k in ("nome", "dist", "t", "pr")} for e in det.get("esforcos") or []],
             "serie": ler_json(SERIES / f"{aid}.json", {}) or None,

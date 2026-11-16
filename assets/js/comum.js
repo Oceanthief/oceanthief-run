@@ -296,6 +296,8 @@ export async function carregarTudo() {
     buscarJSON("config/plano.json", true),
   ]);
   site.atividades = prepararAtividades(site.atividades);
+  // "rascunho": true no plano.json esconde as semanas (a prova e a contagem continuam)
+  if (plano?.rascunho) plano.semanas = [];
   return { site, perfil: perfil || {}, plano };
 }
 
@@ -331,6 +333,14 @@ export function decodificarRota(texto) {
   }
   return pontos;
 }
+
+// a rota pode vir em trechos separados por espaço: as partes dentro das zonas de privacidade ficam de fora
+export const trechosRota = (texto) =>
+  String(texto || "")
+    .split(" ")
+    .filter(Boolean)
+    .map(decodificarRota)
+    .filter((p) => p.length > 1);
 
 // --------------------------------------------------------------- HTML
 export const esc = (s) =>

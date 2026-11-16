@@ -1,9 +1,9 @@
 import {
   $, $$, abas, aoMudarTema, aoMudarUnidade, aoRedimensionar, carregarTudo, chaveDia, corGrupo, dataCurta, dataLonga,
-  decodificarRota, dist, distValor, duracao, elev, esc, GRUPOS, hora, iniciarDicas, inicioSemana, linkTreino, MESES_CURTOS,
+  dist, distValor, duracao, elev, esc, GRUPOS, hora, iniciarDicas, inicioSemana, linkTreino, MESES_CURTOS,
   montarRodape, montarTopo, nomeSite, nomeTopo, nomeTipo, num, num1, pace, paceSeg, quandoRelativo, reduzirMovimento, relogio,
   ritmo, rotuloDist, getUnidade, buscarJSON, diaSemana, NOMES_ESFORCO, CONDICOES, contagemRegressiva,
-  DIAS_CURTOS, DIAS_LONGOS, LOCALE, nomePais, plural, t, tr,
+  DIAS_CURTOS, DIAS_LONGOS, LOCALE, nomePais, plural, t, tr, trechosRota,
 } from "./comum.js";
 import { barras, barrasH, calendario, dispersao, miniLinha, rosca } from "./graficos.js";
 import { globoOrbita, globoVoltas, montanha, muro } from "./capa.js";
@@ -169,7 +169,9 @@ function abertura() {
   const imagem = (f, tamanhos) =>
     `<img src="${esc(f.arquivo)}"${f.grande ? ` srcset="${esc(f.arquivo)} 1000w, ${esc(f.grande)} 1920w" sizes="${tamanhos}"` : ""} alt="${esc(tr(f.descricao) || t("Foto de {nome}", { nome: nomeSite(S, P) }))}" decoding="async"${tamanhos.includes("60vw") ? ' fetchpriority="high"' : ""}>`;
   const contagem = temContagem
-    ? `<a class="contagem" href="plano.html"><p>${t("Próxima prova")}</p><strong>${esc(PLANO.prova.nome)}</strong><div class="relogio" id="relogio-prova"></div><span class="ver">${t("Ver o plano de treino")}</span></a>`
+    ? PLANO.semanas?.length
+      ? `<a class="contagem" href="plano.html"><p>${t("Próxima prova")}</p><strong>${esc(PLANO.prova.nome)}</strong><div class="relogio" id="relogio-prova"></div><span class="ver">${t("Ver o plano de treino")}</span></a>`
+      : `<a class="contagem" href="#alvos"><p>${t("Próxima prova")}</p><strong>${esc(PLANO.prova.nome)}</strong><div class="relogio" id="relogio-prova"></div><span class="ver">${t("Ver as provas da temporada")}</span></a>`
     : "";
 
   $("#inicio").innerHTML = `
@@ -506,13 +508,14 @@ function recordesComProvas() {
 }
 
 function recordes() {
-  const lista = recordesComProvas().filter((r) => ESFORCOS_PRINCIPAIS.includes(r.nome) && r.top?.length);
+  // as distâncias em milhas só aparecem para quem escolheu milhas
+  const lista = recordesComProvas().filter((r) => ESFORCOS_PRINCIPAIS.includes(r.nome) && r.top?.length && (getUnidade() === "mi" || !/mile/.test(r.nome)));
   const corridas = A.filter((a) => a.grupo === "corrida").length;
   const corpo = $("#tabela-recordes");
   if (!lista.length) {
     corpo.innerHTML = `<p class="vazio">${t("Os recordes aparecem quando os detalhes das corridas forem baixados do Strava.")}</p>`;
   } else {
-    corpo.innerHTML = `<div class="tabela-rolagem"><table class="resultados">
+    corpo.innerHTML = `<div class="tabela-rolagem"><table class="resultados recordes">
       <thead><tr><th>${t("Distância")}</th><th class="num">${t("Tempo")}</th><th class="num">${t("Pace")}</th><th>${t("Quando")}</th><th class="so-largo">${t("Evolução por ano")}</th></tr></thead>
       <tbody>${lista
         .map((r) => {
@@ -522,7 +525,7 @@ function recordes() {
             <td><b>${esc(NOMES_ESFORCO[r.nome] || r.nome)}</b></td>
             <td class="num"><span class="tempo">${relogio(m.t)}</span></td>
             <td class="num">${pace(r.dist, m.t)}</td>
-            <td><a href="${linkTreino(m.id)}">${esc(m.n)}</a>${m.oficial ? `<span class="selo-pr" style="background:var(--vermelho);color:var(--sobre-destaque)">${t("prova")}</span>` : ""}<div class="secundario">${dataLonga(new Date(`${m.d}T12:00`))}</div></td>
+            <td class="treino-rec"><a href="${linkTreino(m.id)}">${esc(m.n)}</a>${m.oficial ? `<span class="selo-pr" style="background:var(--vermelho);color:var(--sobre-destaque)">${t("prova")}</span>` : ""}<div class="secundario">${dataLonga(new Date(`${m.d}T12:00`))}</div></td>
             <td class="so-largo" data-dica="${esc(Object.entries(r.por_ano).map(([a, t]) => `${a}: ${relogio(t)}`).join("\n"))}">${miniLinha(anos)}</td>
           </tr>`;
         })
@@ -692,7 +695,7 @@ function destaques() {
 
 // o desenho de uma ou mais rotas encaixado num quadrado (a longitude é corrigida pela latitude)
 function desenhoRotas(textos) {
-  const linhas = textos.map(decodificarRota).filter((p) => p.length > 1);
+  const linhas = textos.flatMap(trechosRota);
   if (!linhas.length) return "";
   const k = Math.cos((linhas[0][0][0] * Math.PI) / 180);
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -1210,7 +1213,7 @@ async function criarMapa(el) {
   for (const [id, texto] of rotas) {
     const a = porId.get(id);
     if (!a) continue;
-    const linha = L.polyline(decodificarRota(texto), { renderer, color: cor, weight: 1.6, opacity: 0.32, interactive: true });
+    const linha = L.polyline(trechosRota(texto), { renderer, color: cor, weight: 1.6, opacity: 0.32, interactive: true });
     linha.on("click", (ev) => L.popup().setLatLng(ev.latlng).setContent(popupTreino(a)).openOn(mapa));
     linha.on("mouseover", () => linha.setStyle({ opacity: 1, weight: 3 }));
     linha.on("mouseout", () => linha.setStyle({ opacity: 0.32, weight: 1.6 }));

@@ -108,12 +108,16 @@ Para conferir ou desligar: `python scripts/strava_webhook.py ver` e `python scri
 | `links` | Instagram e perfil do Strava (o botão "Follow me on Strava" leva a ele) |
 | `feito_por` | uma assinatura "Made by: ..." acima do botão do Strava; vazio, não aparece |
 | `casa` | `{"lat": -23.5, "lng": -46.6}` se quiser fixar a "casa"; vazio, ela é calculada |
-| `privacidade.cortar_inicio_fim_m` | quantos metros do começo e do fim de cada rota esconder (padrão 400) |
+| `privacidade.cortar_inicio_fim_m` | quantos metros do começo e do fim de cada rota esconder, no mínimo (padrão 400) |
+| `privacidade.cortar_variacao_m` | quanto esse corte pode crescer, num valor diferente para cada treino (padrão 200: de 400 a 600 m) |
+| `privacidade.zona_raio_m` | o raio das zonas de privacidade (padrão 1000). Nada do que passa dentro delas aparece no site. Como no Strava, o centro de cada zona fica deslocado do lugar real, numa direção sorteada, para o buraco no mapa não apontar para o endereço |
+| `privacidade.zonas_automaticas` | quantas zonas o site cria sozinho nos lugares de onde mais saem treinos (padrão 1, que costuma ser a casa). Mais que 1 pode esconder parques e pistas, que também aparecem muito |
+| `privacidade.zonas_extras` | outros lugares para esconder, como `[{"lat": -21.75, "lng": -43.35}]` (trabalho, casa de alguém) |
 | `privacidade.ocultar_somente_seguidores` | `true` tira do site os treinos visíveis só para seguidores |
 
 Depois de mudar a privacidade ou `nao_sao_provas`, rode `python scripts/sync_strava.py --so-gerar` para refazer os arquivos.
 
-**`config/plano.json`**: a prova (`nome`, `data`, `cidade`, `link`, `meta`, `meta_pace`; os dois últimos podem ficar de fora), os nomes das fases e as semanas. Cada semana tem `inicio` (sempre uma segunda-feira), `fase`, `km`, `foco` e `treinos`. Em cada treino, `dia` vai de 0 (segunda) a 6 (domingo) e `chave: true` marca o treino importante da semana.
+**`config/plano.json`**: a prova (`nome`, `data`, `cidade`, `link`, `meta`, `meta_pace`; os dois últimos podem ficar de fora), os nomes das fases e as semanas. Com `"rascunho": true`, as semanas ficam escondidas: a página do plano avisa que ele está sendo montado, e a contagem regressiva continua na abertura. Cada semana tem `inicio` (sempre uma segunda-feira), `fase`, `km`, `foco` e `treinos`. Em cada treino, `dia` vai de 0 (segunda) a 6 (domingo) e `chave: true` marca o treino importante da semana.
 
 **Cores:** ficam no começo de `assets/css/site.css`, em `--destaque` (tema escuro e tema claro).
 
@@ -136,7 +140,8 @@ python scripts/checar_traducoes.py
 ## Privacidade
 
 - O site pede ao Strava só a permissão `activity:read`. Treinos marcados como "Só eu" e os trechos dentro das suas zonas de privacidade nunca chegam aqui.
-- Além disso, o começo e o fim de cada rota são cortados (400 m por padrão) antes de publicar.
+- Em volta do lugar de onde você mais sai (a casa), há uma zona de privacidade de 1 km de raio: nenhum trecho de rota dentro dela é publicado, e o centro da zona fica deslocado em segredo do endereço real.
+- Além disso, o começo e o fim de cada rota são cortados antes de publicar (de 400 a 600 m, variando por treino).
 - As cidades e os pontos do mapa geral são arredondados.
 
 ## Ver com dados de mentira

@@ -17,9 +17,15 @@ async function iniciar() {
     $("#plano").innerHTML = `<p class="vazio">${esc(erro.message)}</p>`;
     return;
   }
-  montarTopo({ nome: nomeTopo(S, P), links: [["./", t("Início")], ["#volume", t("Volume")], ["#semanas", t("Semana a semana")]] });
+  const temSemanas = PL?.semanas?.length > 0;
+  montarTopo({ nome: nomeTopo(S, P), links: temSemanas ? [["./", t("Início")], ["#volume", t("Volume")], ["#semanas", t("Semana a semana")]] : [["./", t("Início")]] });
   montarRodape(S, P);
-  if (!PL?.semanas?.length) {
+  if (PL?.rascunho) {
+    $("#plano").innerHTML = `<a class="voltar" href="./">${t("Voltar para o início")}</a><section class="secao" style="padding-top:2rem">
+      <h2>${t("O plano ainda está sendo montado")}</h2><p class="sub">${esc(t("O plano de treino para a {prova} aparece aqui assim que estiver pronto.", { prova: tx(PL.prova?.nome) || t("próxima prova") }))}</p></section>`;
+    return;
+  }
+  if (!temSemanas) {
     $("#plano").innerHTML = `<a class="voltar" href="./">${t("Voltar para o início")}</a><section class="secao" style="padding-top:2rem">
       <h2>${t("Nenhum plano cadastrado")}</h2><p class="sub">${t("Escreva o seu plano em config/plano.json e ele aparece aqui, com o que você já fez no Strava ao lado.")}</p></section>`;
     return;

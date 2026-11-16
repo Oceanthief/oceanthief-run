@@ -1,5 +1,5 @@
 import {
-  $, aoMudarTema, aoMudarUnidade, buscarJSON, corGrupo, dataLonga, decodificarRota, diaSemana, dist, duracao, elev, esc,
+  $, aoMudarTema, aoMudarUnidade, buscarJSON, corGrupo, dataLonga, diaSemana, dist, duracao, elev, esc, trechosRota,
   grupoDe, hora, iniciarDicas, linkTreino, montarRodape, montarTopo, nomeCondicao, nomeSite, nomeTipo, nomeTopo, num, num1, pace,
   NOMES_ESFORCO, relogio, ritmo, prepararAtividades, rotuloDist, nomePais, plural, t, getUnidade, aoRedimensionar,
 } from "./comum.js";
@@ -68,7 +68,7 @@ function desenhar() {
     <dl class="treino-medidas">${medidas.slice(0, 8).map(([dt, dd]) => `<div><dt>${esc(dt)}</dt><dd>${esc(dd)}</dd></div>`).join("")}</dl>
     <div class="treino-grade">
       <div>
-        ${T.rota ? `<div class="mapa" id="mapa-treino" role="region" aria-label="${esc(t("Mapa da rota"))}"></div><p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.5rem 0 0">${t("O começo e o fim da rota ficam escondidos para proteger a privacidade.")}</p>` : `<p class="vazio">${t("Este treino não tem mapa: foi feito em lugar fechado ou com o GPS desligado.")}</p>`}
+        ${T.rota ? `<div class="mapa" id="mapa-treino" role="region" aria-label="${esc(t("Mapa da rota"))}"></div><p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.5rem 0 0">${t("O começo, o fim e os trechos perto de casa ficam escondidos, para proteger a privacidade.")}</p>` : `<p class="vazio">${T.oculta ? t("O mapa deste treino fica escondido: ele foi todo perto de casa.") : t("Este treino não tem mapa: foi feito em lugar fechado ou com o GPS desligado.")}</p>`}
         <a class="ver-strava" href="https://www.strava.com/activities/${encodeURIComponent(T.id)}">View on Strava</a>
       </div>
       <div>
@@ -108,16 +108,17 @@ function desenhar() {
 function desenharMapa() {
   if (!window.L) return setTimeout(desenharMapa, 150);
   const L = window.L;
-  const pontos = decodificarRota(T.rota);
+  const trechos = trechosRota(T.rota);
+  if (!trechos.length) return;
   const mapa = L.map("mapa-treino", { scrollWheelZoom: false });
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19,
   }).addTo(mapa);
   const cor = () => getComputedStyle(document.documentElement).getPropertyValue("--destaque-tx").trim();
-  const linha = L.polyline(pontos, { color: cor(), weight: 4, opacity: 0.95 }).addTo(mapa);
+  const linha = L.polyline(trechos, { color: cor(), weight: 4, opacity: 0.95 }).addTo(mapa);
   const texto = getComputedStyle(document.documentElement).getPropertyValue("--texto").trim();
-  L.circleMarker(pontos[0], { radius: 6, color: texto, fillColor: texto, fillOpacity: 1, weight: 2 }).bindTooltip(t("Início visível")).addTo(mapa);
-  L.circleMarker(pontos.at(-1), { radius: 6, color: cor(), fillColor: "#fff", fillOpacity: 1, weight: 3 }).bindTooltip(t("Fim visível")).addTo(mapa);
+  L.circleMarker(trechos[0][0], { radius: 6, color: texto, fillColor: texto, fillOpacity: 1, weight: 2 }).bindTooltip(t("Início visível")).addTo(mapa);
+  L.circleMarker(trechos.at(-1).at(-1), { radius: 6, color: cor(), fillColor: "#fff", fillOpacity: 1, weight: 3 }).bindTooltip(t("Fim visível")).addTo(mapa);
   mapa.fitBounds(linha.getBounds(), { padding: [24, 24] });
   mapa.on("focus", () => mapa.scrollWheelZoom.enable());
   aoMudarTema(() => linha.setStyle({ color: cor() }));
