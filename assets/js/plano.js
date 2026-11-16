@@ -77,7 +77,7 @@ function desenhar() {
       </div>
       <dl class="metas">
         ${futura ? `<div style="grid-column:1/-1"><dt>${t("Falta")}</dt><dd><div class="relogio" id="relogio-plano"></div></dd></div>` : ""}
-        ${prova.meta ? `<div><dt>${t("Meta")}</dt><dd>${esc(prova.meta)}</dd></div>` : ""}
+        ${prova.meta ? `<div><dt>${t("Meta")}</dt><dd>${esc(tx(prova.meta))}</dd></div>` : ""}
         ${prova.meta_pace ? `<div><dt>${t("Ritmo alvo")}</dt><dd>${esc(paceAlvo(prova.meta_pace))}</dd></div>` : ""}
         <div><dt>${atual ? t("Semana atual") : futura ? t("Começa em") : t("Situação")}</dt><dd>${atual ? t("{a} de {b}", { a: atual.n, b: semanas.length }) : futura && semanas[0].ini > new Date() ? plural(Math.ceil((semanas[0].ini - new Date()) / 864e5), "{n} dia", "{n} dias") : t("Concluído")}</dd></div>
         <div><dt>${t("Corrido no plano")}</dt><dd>${esc(dist(feito, 0))}</dd></div>

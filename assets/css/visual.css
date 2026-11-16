@@ -746,6 +746,42 @@ h3 {
   color: var(--sobre-destaque);
 }
 
+/* dois marcos muito perto: o segundo sobe, ligado à linha por um traço */
+.linha-alvos.com-degrau {
+  padding-top: 30px;
+}
+
+.marco.acima {
+  margin-top: -44px;
+}
+
+.marco.acima::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 1px;
+  height: 16px;
+  background: var(--linha-forte);
+}
+
+/* prova ainda sem data: o marco fica tracejado, na posição aproximada */
+.marco.aprox {
+  border-style: dashed;
+  background: var(--painel);
+  color: var(--texto-2);
+}
+
+.marco.aprox.prio-A {
+  border-color: var(--vermelho);
+  color: var(--vermelho);
+}
+
+.marco.aprox.prio-B {
+  border-color: var(--destaque);
+  color: var(--destaque-tx);
+}
+
 .alvos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
@@ -840,6 +876,52 @@ h3 {
   margin: 0.6rem 0 0;
   font-size: 0.9rem;
   color: var(--texto-2);
+}
+
+/* os tempos das edições anteriores da mesma prova */
+.historico-alvo {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--linha);
+}
+
+.historico-alvo p {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  color: var(--texto-3);
+}
+
+.historico-alvo ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historico-alvo a {
+  display: grid;
+  gap: 0.15rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.historico-alvo span,
+.historico-alvo small {
+  font-size: 0.75rem;
+  color: var(--texto-3);
+}
+
+.historico-alvo b {
+  font-size: 1.1rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.historico-alvo a:hover b,
+.historico-alvo a:focus-visible b {
+  color: var(--destaque-tx);
 }
 
 .alvo .acoes {
@@ -1497,6 +1579,11 @@ h3 {
 .ano-alvo span:first-child {
   font-weight: 650;
   color: var(--texto-2);
+}
+
+.ano-fatos .meta-batida {
+  color: var(--destaque-tx);
+  font-weight: 600;
 }
 
 .ano-fatos {

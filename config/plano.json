@@ -4,6 +4,8 @@
   "data": "2027-08-22T06:00:00-03:00",
   "cidade": "Porto Alegre",
   "distancia_km": 42.195,
+  "meta": { "pt": "Sub 3h20", "en": "Sub 3:20", "es": "Sub 3h20" },
+  "meta_pace": "4:44",
   "link": "https://www.ticketsports.com.br/e/NEW+BALANCE+42K+PORTO+ALEGRE+2027-87987"
  },
  "fases": {

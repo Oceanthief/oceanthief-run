@@ -93,14 +93,19 @@
       "cidade": "Porto Alegre",
       "distancia_km": 42.195,
       "prioridade": "A",
-      "meta": "",
+      "meta": { "pt": "Sub 3h20", "en": "Sub 3:20", "es": "Sub 3h20" },
       "link": "https://www.ticketsports.com.br/e/NEW+BALANCE+42K+PORTO+ALEGRE+2027-87987",
       "plano": true
-    }
+    },
+    { "nome": "Corrida da Fogueira", "previsao": "2027-07", "cidade": "Juiz de Fora", "prioridade": "C", "busca": "fogueira" },
+    { "nome": "Meia Maratona de Petrópolis", "previsao": "2027-S2", "cidade": "Petrópolis", "distancia_km": 21.0975, "prioridade": "B", "busca": "petropolis" },
+    { "nome": "Corrida Camilo dos Santos", "previsao": "2027-S2", "cidade": "Juiz de Fora", "prioridade": "C", "busca": "camilo" },
+    { "nome": "Volta da Pampulha", "previsao": "2027-12", "cidade": "Belo Horizonte", "distancia_km": 18, "prioridade": "B", "busca": "pampulha" }
   ],
   "provas": [],
   "nao_sao_provas": [18729044519, 19247754111],
   "conquistas": [],
+  "meta_anual_km": { "2026": 1200 },
   "secoes": {
     "sobre": ["Sobre", ""],
     "recordes": ["Recordes", "Os tempos que eu ainda tento bater."],

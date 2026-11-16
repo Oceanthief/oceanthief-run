@@ -3,7 +3,7 @@ import {
   decodificarRota, dist, distValor, duracao, elev, esc, GRUPOS, hora, iniciarDicas, inicioSemana, linkTreino, MESES_CURTOS,
   montarRodape, montarTopo, nomeSite, nomeTopo, nomeTipo, num, num1, pace, paceSeg, quandoRelativo, reduzirMovimento, relogio,
   ritmo, rotuloDist, getUnidade, buscarJSON, diaSemana, NOMES_ESFORCO, CONDICOES, contagemRegressiva,
-  DIAS_CURTOS, DIAS_LONGOS, nomePais, plural, t, tr,
+  DIAS_CURTOS, DIAS_LONGOS, LOCALE, nomePais, plural, t, tr,
 } from "./comum.js";
 import { barras, barrasH, calendario, dispersao, miniLinha, rosca } from "./graficos.js";
 import { globoOrbita, globoVoltas, montanha, muro } from "./capa.js";
@@ -15,7 +15,7 @@ const estado = { periodo: "semana", recentesMostrar: 8, destaque: "longos", grup
 
 const TITULOS = {
   sobre: [t("Sobre"), t("Quem está por trás dos números.")],
-  alvos: [t("Provas alvo"), t("O calendário da temporada, da prova principal às de preparação.")],
+  alvos: [t("Provas alvo"), t("O calendário da temporada: a prova principal e as outras que estão no caminho.")],
   recordes: [t("Recordes"), t("Os tempos que eu ainda tento bater.")],
   recentes: [t("Recentes"), t("O que rolou nos últimos dias.")],
   destaques: [t("Destaques"), t("Os treinos que não saem da memória.")],
@@ -80,7 +80,10 @@ async function iniciar() {
     desenharSecoes();
     painelLugares();
   });
-  aoRedimensionar(desenharSecoes);
+  aoRedimensionar(() => {
+    alvos();
+    desenharSecoes();
+  });
 }
 
 function desenharSecoes() {
@@ -331,52 +334,119 @@ function ficha() {
 
 // ----------------------------------------------------------- provas alvo
 // o calendário da temporada; a prova A é a principal (a do plano)
-const nomePrioridade = (p) => ({ A: t("prioridade|Principal"), B: t("prioridade|Preparação"), C: t("prioridade|Treino") })[p] || p;
+const nomePrioridade = (p) => ({ A: t("prioridade|Principal"), B: t("prioridade|Secundária"), C: t("prioridade|Treino") })[p] || p;
+const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const fmtMesAno = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric" });
+
+// prova ainda sem data: "previsao" pode ser um mês ("2027-07"), um semestre ("2027-S2") ou só o ano ("2027")
+function periodoPrevisto(prev) {
+  const texto = String(prev || "").trim();
+  let m = /^(\d{4})-(\d{2})$/.exec(texto);
+  if (m) {
+    const ini = new Date(+m[1], +m[2] - 1, 1);
+    const nome = fmtMesAno.format(ini);
+    return { ini, fim: new Date(+m[1], +m[2], 1), texto: nome.charAt(0).toLocaleUpperCase(LOCALE) + nome.slice(1), mes: true };
+  }
+  m = /^(\d{4})-S([12])$/i.exec(texto);
+  if (m) {
+    const primeiro = m[2] === "1";
+    return {
+      ini: new Date(+m[1], primeiro ? 0 : 6, 1),
+      fim: new Date(+m[1], primeiro ? 6 : 12, 1),
+      texto: primeiro ? t("1º semestre de {ano}", { ano: m[1] }) : t("2º semestre de {ano}", { ano: m[1] }),
+    };
+  }
+  m = /^(\d{4})$/.exec(texto);
+  if (m) return { ini: new Date(+m[1], 0, 1), fim: new Date(+m[1] + 1, 0, 1), texto: m[1] };
+  return null;
+}
+
+// as edições anteriores, pelos treinos marcados como prova cujo nome bate com "busca"
+function edicoes(p) {
+  if (!p.busca) return [];
+  let re;
+  try {
+    re = new RegExp(semAcento(p.busca), "i");
+  } catch {
+    return [];
+  }
+  return A.filter((a) => a.prova && a.grupo === "corrida" && re.test(semAcento(a.n))).sort((x, y) => x.data - y.data);
+}
 
 function alvos() {
   const sec = $("#alvos");
   if (!sec) return;
   const lista = (P.provas_alvo || [])
-    .filter((p) => p?.nome && p.data)
-    .map((p) => ({ ...p, quando: new Date(p.data.length <= 10 ? `${p.data}T12:00` : p.data), prio: String(p.prioridade || "").toUpperCase() }))
+    .filter((p) => p?.nome && (p.data || periodoPrevisto(p.previsao)))
+    .map((p) => {
+      const prev = p.data ? null : periodoPrevisto(p.previsao);
+      // sem data, a prova fica no meio do período previsto (só para a ordem e a linha do tempo)
+      const quando = prev ? new Date((prev.ini.getTime() + prev.fim.getTime()) / 2) : new Date(p.data.length <= 10 ? `${p.data}T12:00` : p.data);
+      return { ...p, prev, quando, prio: String(p.prioridade || "").toUpperCase(), hist: edicoes(p) };
+    })
     .sort((x, y) => x.quando - y.quando);
   if (!lista.length) return sec.remove();
   const agora = new Date();
   const hoje0 = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   const dia0 = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const futuras = lista.filter((p) => dia0(p.quando) >= hoje0);
-  const passadas = lista.filter((p) => dia0(p.quando) < hoje0).reverse();
+  const aindaVem = (p) => (p.prev ? p.prev.fim > hoje0 : dia0(p.quando) >= hoje0);
+  const futuras = lista.filter(aindaVem);
+  const passadas = lista.filter((p) => !aindaVem(p)).reverse();
   const distancia = (p) => (p.distancia_km ? dist(p.distancia_km * 1000, p.distancia_km % 1 ? 1 : 0) : tr(p.distancia) || "");
+  const quandoTexto = (p) => (p.prev ? p.prev.texto : dataLonga(p.quando));
 
-  // linha do tempo: de hoje até a última prova marcada
-  const ultima = futuras.at(-1)?.quando;
-  const linha = futuras.length
-    ? `<div class="linha-alvos">
+  // linha do tempo: de hoje até a última prova com data ou mês previsto (as de semestre ficam só nos cartões)
+  const naLinha = futuras.filter((p) => !p.prev || p.prev.mes);
+  const ultima = naLinha.at(-1);
+  const posicao = (p) => Math.min(100, Math.max(0, ultima.quando > hoje0 ? ((p.quando - hoje0) / (ultima.quando - hoje0)) * 100 : 100));
+  // marcos a menos de 32 px um do outro: o seguinte sobe um degrau, para os dois aparecerem
+  const larguraTrilho = Math.max(120, ($("#lista-alvos").clientWidth || 900) - 230);
+  let anterior = -Infinity;
+  let degrau = 0;
+  for (const p of naLinha) {
+    const pos = posicao(p);
+    degrau = ((pos - anterior) / 100) * larguraTrilho < 32 ? 1 - degrau : 0;
+    p.acima = degrau === 1;
+    anterior = pos;
+  }
+  const linha = naLinha.length
+    ? `<div class="linha-alvos${naLinha.some((p) => p.acima) ? " com-degrau" : ""}">
         <span class="ponta">${t("Hoje")}</span>
-        <div class="trilho-alvos" role="img" aria-label="${esc(t("Linha do tempo das próximas provas"))}">${futuras
+        <div class="trilho-alvos" role="img" aria-label="${esc(t("Linha do tempo das próximas provas"))}">${naLinha
           .map((p) => {
-            const pos = ultima > hoje0 ? ((p.quando - hoje0) / (ultima - hoje0)) * 100 : 100;
-            return `<i class="marco prio-${esc(p.prio || "B")}" style="left:${Math.min(100, Math.max(0, pos)).toFixed(2)}%" data-dica="${esc(`${tr(p.nome)}\n${dataLonga(p.quando)}`)}">${esc(p.prio)}</i>`;
+            const dica = `${tr(p.nome)}\n${quandoTexto(p)}${p.prev ? ` (${t("data a confirmar")})` : ""}`;
+            return `<i class="marco prio-${esc(p.prio || "B")}${p.prev ? " aprox" : ""}${p.acima ? " acima" : ""}" style="left:${posicao(p).toFixed(2)}%" data-dica="${esc(dica)}">${esc(p.prio)}</i>`;
           })
           .join("")}</div>
-        <span class="ponta">${esc(dataLonga(ultima))}</span>
+        <span class="ponta">${esc(quandoTexto(ultima))}</span>
       </div>`
     : "";
 
   const cartao = (p) => {
     const n = Math.round((dia0(p.quando) - hoje0) / 864e5);
     const meta = tr(p.meta);
-    const d = distancia(p);
+    const ultimaVez = p.hist.at(-1);
+    // sem distância no perfil, vale a da última edição
+    const d = distancia(p) || (ultimaVez ? `≈ ${dist(ultimaVez.m, 1)}` : "");
     const temPlano = p.plano && PLANO?.semanas?.length;
+    const faltam = p.prev ? t("Data a confirmar") : n === 0 ? t("É hoje") : plural(n, "em {n} dia", "em {n} dias");
+    const quando = p.prev ? p.prev.texto : `${diaSemana(p.quando)}, ${dataLonga(p.quando)}`;
+    const historico = p.hist.length
+      ? `<div class="historico-alvo"><p>${t("Suas edições")}</p><ol>${p.hist
+          .slice(-4)
+          .map((a) => `<li><a href="${linkTreino(a.id)}"><span>${a.ano}</span><b>${relogio(a.e || a.s)}</b><small>${esc(dist(a.m, 1))}</small></a></li>`)
+          .join("")}</ol></div>`
+      : "";
     return `<li class="alvo${p.prio === "A" ? " principal" : ""}">
       <div class="alvo-topo">
         ${p.prio ? `<span class="selo-prio"><b>${esc(p.prio)}</b>${esc(nomePrioridade(p.prio))}</span>` : "<span></span>"}
-        <span class="faltam">${n === 0 ? t("É hoje") : plural(n, "em {n} dia", "em {n} dias")}</span>
+        <span class="faltam">${faltam}</span>
       </div>
       <h3>${esc(tr(p.nome))}</h3>
-      <p class="quando">${esc(diaSemana(p.quando))}, ${dataLonga(p.quando)}${p.cidade ? `, ${esc(tr(p.cidade))}` : ""}</p>
+      <p class="quando">${esc(quando)}${p.cidade ? `, ${esc(tr(p.cidade))}` : ""}</p>
       ${d || meta ? `<dl>${d ? `<div><dt>${t("Distância")}</dt><dd>${esc(d)}</dd></div>` : ""}${meta ? `<div><dt>${t("Meta")}</dt><dd>${esc(meta)}</dd></div>` : ""}</dl>` : ""}
       ${p.nota ? `<p class="nota-alvo">${esc(tr(p.nota))}</p>` : ""}
+      ${historico}
       <div class="acoes">
         ${temPlano ? `<a href="plano.html">${t("Ver o plano de treino")}</a>` : ""}
         ${/^https?:\/\//.test(p.link || "") ? `<a href="${esc(p.link)}" target="_blank" rel="noopener">${t("Página da prova")}</a>` : ""}
@@ -384,8 +454,10 @@ function alvos() {
     </li>`;
   };
 
-  // as que já passaram: o tempo vem do treino do Strava no mesmo dia, com distância parecida
+  // as que já passaram: o tempo vem do treino do Strava no mesmo dia, com distância parecida;
+  // numa prova que estava sem data, vale a edição encontrada dentro do período previsto
   const resultado = (p) => {
+    if (p.prev) return p.hist.find((a) => a.data >= p.prev.ini && a.data < p.prev.fim);
     const dia = chaveDia(p.quando);
     const alvo = (p.distancia_km || 0) * 1000;
     return A.find((a) => a.dia === dia && a.grupo === "corrida" && (!alvo || Math.abs(a.m - alvo) / alvo < 0.15));
@@ -395,7 +467,7 @@ function alvos() {
         .map((p) => {
           const a = resultado(p);
           return `<li><span class="nome">${a ? `<a href="${linkTreino(a.id)}">${esc(tr(p.nome))}</a>` : esc(tr(p.nome))}</span>
-            <span class="info">${dataLonga(p.quando)}${p.prio ? `, ${esc(nomePrioridade(p.prio)).toLowerCase()}` : ""}</span>
+            <span class="info">${a ? dataLonga(a.data) : esc(quandoTexto(p))}${p.prio ? `, ${esc(nomePrioridade(p.prio)).toLowerCase()}` : ""}</span>
             <span class="tempo">${a ? relogio(a.e || a.s) : "–"}</span></li>`;
         })
         .join("")}</ul></div>`
@@ -825,7 +897,21 @@ function anoEmCurso() {
     : totalAnterior
       ? t("Total de {ano}: {v}", { ano: ano - 1, v: dist(alvo, 0) })
       : "";
-  const pct = alvo ? Math.min(100, (feito / alvo) * 100) : 0;
+  const pctReal = alvo ? (feito / alvo) * 100 : 0;
+  const pct = Math.min(100, pctReal);
+  // o dia em que a soma do ano passou da meta
+  let batida = null;
+  if (metaKm) {
+    let acumulado = 0;
+    for (const a of L.filter((x) => x.ano === ano).sort((x, y) => x.data - y.data)) {
+      acumulado += a.m;
+      if (acumulado >= alvo) {
+        batida = a.data;
+        break;
+      }
+    }
+  }
+  const semanasRestantes = (fimAno - hoje) / (7 * 864e5);
   const esperado = alvo ? Math.min(100, fracao * 100) : null;
   const variacao = anterior ? (feito / anterior - 1) * 100 : null;
   const grupo = GRUPOS[PRINCIPAL].nome.toLowerCase();
@@ -839,8 +925,10 @@ function anoEmCurso() {
       <i class="feito" style="width:${pct.toFixed(1)}%"></i>
       <i class="esperado" style="left:${esperado.toFixed(1)}%" data-dica="${esc(t("Onde a meta pede estar hoje: {v}", { v: dist(alvo * fracao, 0) }))}"></i>
     </div>
-    <p class="ano-alvo"><span>${num(pct)}%</span><span>${esc(rotuloAlvo)}</span></p>` : ""}
+    <p class="ano-alvo"><span>${num(Math.floor(pctReal))}%</span><span>${esc(rotuloAlvo)}</span></p>` : ""}
     <ul class="ano-fatos">
+      ${batida ? `<li class="meta-batida">${esc(t("Meta batida em {data}.", { data: dataLonga(batida) }))}</li>` : ""}
+      ${metaKm && !batida ? `<li>${esc(t("Faltam {v} para a meta.", { v: dist(alvo - feito, 0) }))}${semanasRestantes >= 1 && alvo - feito > alvo * 0.05 ? ` ${esc(t("Dá {v} por semana até o fim do ano.", { v: dist((alvo - feito) / semanasRestantes, 1) }))}` : ""}</li>` : ""}
       ${projecao ? `<li>${esc(t("No ritmo atual, {ano} fecha com {v}.", { ano, v: dist(projecao, 0) }))}</li>` : ""}
       ${variacao != null ? `<li>${esc(variacao >= 0
         ? t("{p}% a mais que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior, 0) })
