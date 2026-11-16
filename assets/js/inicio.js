@@ -11,7 +11,7 @@ import { globoOrbita, globoVoltas, montanha, muro } from "./capa.js";
 let S, P, PLANO, A, PRINCIPAL;
 let ROTAS = new Map();
 const nTreinos = (n) => plural(n, "{n} treino", "{n} treinos");
-const estado = { periodo: "semana", recentesMostrar: 8, destaque: "longos", grupoNumeros: null, ano: "12m", pais: "todos", provasTodas: false };
+const estado = { periodo: "semana", recentesMostrar: 8, destaque: "longos", grupoNumeros: null, ano: "12m", regiao: "todos", viagensTodas: false, provasTodas: false };
 
 const TITULOS = {
   sobre: [t("Sobre"), t("Quem está por trás dos números.")],
@@ -471,20 +471,27 @@ function destaques() {
     : `<p class="vazio">${t("Nenhum treino nesta categoria.")}</p>`;
 }
 
-// o desenho da rota encaixado num quadrado (a longitude é corrigida pela latitude)
-function miniRota(texto) {
-  const pts = decodificarRota(texto);
-  if (pts.length < 2) return "";
-  const k = Math.cos((pts[0][0] * Math.PI) / 180);
-  const xs = pts.map((p) => p[1] * k);
-  const ys = pts.map((p) => -p[0]);
-  const x0 = Math.min(...xs), y0 = Math.min(...ys);
-  const w = Math.max(...xs) - x0 || 1e-9, h = Math.max(...ys) - y0 || 1e-9;
+// o desenho de uma ou mais rotas encaixado num quadrado (a longitude é corrigida pela latitude)
+function desenhoRotas(textos) {
+  const linhas = textos.map(decodificarRota).filter((p) => p.length > 1);
+  if (!linhas.length) return "";
+  const k = Math.cos((linhas[0][0][0] * Math.PI) / 180);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const proj = linhas.map((pts) =>
+    pts.map(([lat, lng]) => {
+      const x = lng * k, y = -lat;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+      return [x, y];
+    }),
+  );
+  const w = x1 - x0 || 1e-9, h = y1 - y0 || 1e-9;
   const e = 100 / Math.max(w, h);
   const dx = (100 - w * e) / 2, dy = (100 - h * e) / 2;
-  const d = xs.map((x, i) => `${i ? "L" : "M"}${(dx + (x - x0) * e).toFixed(1)} ${(dy + (ys[i] - y0) * e).toFixed(1)}`).join("");
+  const d = proj.map((pts) => pts.map(([x, y], i) => `${i ? "L" : "M"}${(dx + (x - x0) * e).toFixed(1)} ${(dy + (y - y0) * e).toFixed(1)}`).join("")).join("");
   return `<svg viewBox="-6 -6 112 112" aria-hidden="true"><path d="${d}"/></svg>`;
 }
+
+const miniRota = (texto) => desenhoRotas([texto]);
 
 // ---------------------------------------------------------------- números
 function numeros() {
@@ -788,52 +795,90 @@ function lugares() {
 }
 
 function painelLugares() {
-  if (!$("#painel-lugares")) return;
-  const lugaresLista = S.lugares || [];
-  const porLugar = lugaresLista.map((l, i) => ({ ...l, i, n: 0, m: 0 }));
-  for (const a of A) if (a.l != null && porLugar[a.l]) { porLugar[a.l].n++; porLugar[a.l].m += a.m; }
-  const paises = {};
-  for (const l of porLugar) {
-    l.pais = nomePais(l);
-    paises[l.pais] ||= { n: 0, cidades: 0 };
-    paises[l.pais].n += l.n;
-    paises[l.pais].cidades++;
+  const faixa = $("#geo-faixa");
+  const viagens = $("#painel-lugares");
+  if (!faixa || !viagens) return;
+  const lista = S.lugares || [];
+  const porLugar = lista.map((l, i) => ({ ...l, i, pais: nomePais(l), n: 0, m: 0, ids: [], ini: null, fim: null }));
+  for (const a of A) {
+    const l = a.l != null ? porLugar[a.l] : null;
+    if (!l) continue;
+    l.n++;
+    l.m += a.m;
+    l.ids.push(a.id);
+    if (!l.ini || a.data < l.ini) l.ini = a.data;
+    if (!l.fim || a.data > l.fim) l.fim = a.data;
   }
+  const usados = porLugar.filter((l) => l.n).sort((x, y) => y.n - x.n);
+  const casa = usados.find((l) => S.casa && l.cidade === S.casa.cidade) || usados[0];
+  const fora = usados.filter((l) => l !== casa);
+  const paises = new Set(usados.map((l) => l.pais));
+  const estados = new Set(usados.map((l) => `${l.estado}|${l.pais}`));
+  const treinosFora = fora.reduce((s, l) => s + l.n, 0);
   const longe = A.filter((a) => a.casa != null).reduce((x, a) => (a.casa > (x?.casa ?? -1) ? a : x), null);
-  const listaPaises = Object.entries(paises).sort((x, y) => y[1].n - x[1].n);
-  if (estado.pais !== "todos" && !paises[estado.pais]) estado.pais = "todos";
-  const cidades = porLugar.filter((l) => estado.pais === "todos" || l.pais === estado.pais).sort((x, y) => y.n - x.n);
+  const ir = (l) => `data-lat="${l.lat}" data-lng="${l.lng}"`;
 
-  $("#painel-lugares").innerHTML = `
-    <dl class="fatos" style="margin:0 0 1.25rem;grid-template-columns:repeat(3,minmax(0,1fr))">
-      <div><dt>${t("Países")}</dt><dd>${num(listaPaises.length)}</dd></div>
-      <div><dt>${t("Cidades")}</dt><dd>${num(porLugar.length)}</dd></div>
-      <div><dt>${t("Mais longe de casa")}</dt><dd>${longe ? `${num(distValor(longe.casa * 1000))}<small>${rotuloDist()}</small>` : "–"}</dd></div>
-    </dl>
-    ${longe ? `<p style="margin:0 0 1.25rem;color:var(--texto-2);font-size:.9375rem">${t("O mais distante foi {treino}, em {data}", { treino: `<button type="button" class="botao-texto" id="ir-longe">${esc(longe.n)}</button>`, data: dataLonga(longe.data) })}${longe.l != null && lugaresLista[longe.l] ? `, ${esc(lugaresLista[longe.l].cidade)}` : ""}.</p>` : ""}
-    <div class="abas" id="abas-paises"></div>
-    <ul class="lista-lugares">${cidades
-      .map((l) => `<li><button type="button" data-lat="${l.lat}" data-lng="${l.lng}">
-        <span class="cidade">${esc(l.cidade)}</span><span class="regiao">${esc([l.estado !== l.cidade ? l.estado : "", l.pais].filter(Boolean).join(", "))}</span>
-        <span class="conta">${nTreinos(l.n)}<br>${dist(l.m, 0)}</span></button></li>`)
-      .join("")}</ul>`;
-  abas($("#abas-paises"), [{ valor: "todos", rotulo: t("Todos ({n})", { n: num(porLugar.length) }) }, ...listaPaises.map(([p, x]) => ({ valor: p, rotulo: `${p} (${x.cidades})` }))], estado.pais, (v) => {
-    estado.pais = v;
-    painelLugares();
-  });
-  $(".lista-lugares").onclick = (ev) => {
+  // a faixa presa ao mapa: onde mais treino e o resumo
+  faixa.innerHTML = `
+    <div class="geo-linha"><span class="geo-rotulo">${t("Onde mais treino")}</span>
+      <ul>${usados
+        .slice(0, 4)
+        .map((l) => `<li><button type="button" ${ir(l)}><b>${num(l.n)}</b> ${esc(t("em {lugar}", { lugar: [l.cidade, l.pais].join(", ") }))}</button></li>`)
+        .join("")}</ul></div>
+    <div class="geo-linha"><span class="geo-rotulo">${t("Em resumo")}</span>
+      <ul>
+        <li>${plural(usados.length, "{n} cidade", "{n} cidades")}</li>
+        <li>${paises.size > 1 ? plural(paises.size, "{n} país", "{n} países") : plural(estados.size, "{n} estado", "{n} estados")}</li>
+        <li>${plural(treinosFora, "{n} treino fora de casa", "{n} treinos fora de casa")}</li>
+        ${longe ? `<li><button type="button" id="ir-longe" title="${esc(`${longe.n}, ${dataLonga(longe.data)}`)}">${esc(t("Mais longe: {d}", { d: `${num(distValor(longe.casa * 1000))} ${rotuloDist()}` }))}</button></li>` : ""}
+      </ul></div>`;
+
+  // as viagens, filtradas por estado (um país só) ou por país
+  const porPais = paises.size > 1;
+  const regiao = (l) => (porPais ? l.pais : l.estado || l.pais);
+  const contagem = {};
+  for (const l of fora) contagem[regiao(l)] = (contagem[regiao(l)] || 0) + 1;
+  if (estado.regiao !== "todos" && !contagem[estado.regiao]) estado.regiao = "todos";
+  const filtrados = fora.filter((l) => estado.regiao === "todos" || regiao(l) === estado.regiao);
+  const visiveis = estado.viagensTodas ? filtrados : filtrados.slice(0, 8);
+  const cartao = (l) => {
+    const rotas = l.ids.map((id) => ROTAS.get(id)).filter(Boolean);
+    const periodo = l.ini && chaveDia(l.ini) !== chaveDia(l.fim) ? `${dataLonga(l.ini)} – ${dataLonga(l.fim)}` : dataLonga(l.ini);
+    return `<li><button type="button" ${ir(l)}>
+      <span class="desenho">${rotas.length ? desenhoRotas(rotas) : ""}</span>
+      <span class="cidade">${esc(l.cidade)}</span>
+      <span class="regiao">${esc([l.estado !== l.cidade ? l.estado : "", l.pais].filter(Boolean).join(", "))}</span>
+      <span class="periodo">${periodo}</span>
+      <span class="conta"><b>${nTreinos(l.n)}</b>${dist(l.m, 0)}</span>
+    </button></li>`;
+  };
+  viagens.innerHTML = fora.length
+    ? `<div class="geo-cabeca"><h3>${t("Por onde passei")}</h3><div class="abas" id="abas-regioes"></div></div>
+      <ul class="viagens">${visiveis.map(cartao).join("")}</ul>
+      ${filtrados.length > visiveis.length ? `<button class="mais" type="button" id="mais-viagens">${t("Mostrar mais {n}", { n: filtrados.length - visiveis.length })}</button>` : ""}`
+    : `<p class="vazio">${esc(t("Todos os treinos até agora foram em {cidade}.", { cidade: casa?.cidade || "" }))}</p>`;
+  if (fora.length) {
+    abas($("#abas-regioes"), [{ valor: "todos", rotulo: t("Todos ({n})", { n: num(fora.length) }) }, ...Object.entries(contagem).sort((x, y) => y[1] - x[1]).map(([r, n]) => ({ valor: r, rotulo: `${r} (${n})` }))], estado.regiao, (v) => {
+      estado.regiao = v;
+      estado.viagensTodas = false;
+      painelLugares();
+    });
+  }
+  const mais = $("#mais-viagens");
+  if (mais) mais.onclick = () => { estado.viagensTodas = true; painelLugares(); };
+
+  // qualquer cidade clicada leva o mapa até ela
+  $("#lugares").onclick = (ev) => {
     const b = ev.target.closest("button[data-lat]");
-    if (b && mapa) {
-      mapa.flyTo([+b.dataset.lat, +b.dataset.lng], 12, { duration: reduzirMovimento() ? 0 : 1.2 });
-      $("#mapa").scrollIntoView({ behavior: reduzirMovimento() ? "auto" : "smooth", block: "center" });
-    }
+    if (b && mapa) voar([+b.dataset.lat, +b.dataset.lng]);
   };
-  const ir = $("#ir-longe");
-  if (ir) ir.onclick = () => {
-    if (!mapa) return;
-    mapa.flyTo(longe.ll, 12, { duration: reduzirMovimento() ? 0 : 1.6 });
-    $("#mapa").scrollIntoView({ behavior: reduzirMovimento() ? "auto" : "smooth", block: "center" });
-  };
+  const botaoLonge = $("#ir-longe");
+  if (botaoLonge) botaoLonge.onclick = () => mapa && voar(longe.ll);
+}
+
+function voar(ponto) {
+  mapa.flyTo(ponto, 12, { duration: reduzirMovimento() ? 0 : 1.4 });
+  $("#mapa").scrollIntoView({ behavior: reduzirMovimento() ? "auto" : "smooth", block: "center" });
 }
 
 // no mapa, o tom de texto do destaque: mais claro no tema escuro e mais escuro no claro, para a rota aparecer

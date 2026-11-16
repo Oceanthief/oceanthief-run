@@ -838,46 +838,204 @@ h3 {
 }
 
 /* ---------------------------------------------------------------- lugares */
-/* o mapa de borda a borda, com o painel de cidades flutuando por cima */
-.grade-lugares {
-  position: relative;
-  display: block;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
+/* o mapa e uma faixa de dados presa embaixo dele formam um bloco só */
+.geo {
+  overflow: hidden;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--painel);
 }
 
-.grade-lugares .mapa {
-  height: clamp(460px, 78vh, 760px);
+.geo .mapa {
+  height: clamp(380px, 58vh, 600px);
   border: 0;
   border-radius: 0;
 }
 
-#painel-lugares {
-  position: relative;
-  margin: -4rem 16px 0;
-  padding: 1.35rem;
-  border: 1px solid var(--vidro-borda);
-  border-radius: var(--raio);
-  background: var(--vidro);
-  backdrop-filter: blur(18px) saturate(1.1);
-  -webkit-backdrop-filter: blur(18px) saturate(1.1);
-  z-index: 500;
+.geo-faixa {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.15rem 1.35rem 1.3rem;
+  border-top: 1px solid var(--linha);
 }
 
-@media (min-width: 960px) {
-  #painel-lugares {
-    position: absolute;
-    top: 24px;
-    right: max(24px, calc(50vw - 600px + 32px));
-    bottom: 24px;
-    width: min(400px, 34vw);
-    margin: 0;
-    overflow-y: auto;
+.geo-linha {
+  display: grid;
+  gap: 0.4rem;
+}
+
+@media (min-width: 900px) {
+  .geo-linha {
+    grid-template-columns: 11rem minmax(0, 1fr);
+    align-items: baseline;
   }
 }
 
-.lista-lugares button {
+.geo-rotulo {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--texto-3);
+}
+
+.geo-linha ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* separadores finos entre os itens, em vez de pontos */
+.geo-linha li {
+  position: relative;
+  font-size: 0.95rem;
+  color: var(--texto-2);
+}
+
+.geo-linha li + li::before {
+  content: "";
+  position: absolute;
+  left: -0.75rem;
+  top: 0.3em;
+  bottom: 0.3em;
+  width: 1px;
+  background: var(--linha-forte);
+}
+
+.geo-linha button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.geo-linha button:hover {
+  color: var(--texto);
+}
+
+.geo-linha b {
+  font-weight: 700;
+  color: var(--destaque-tx);
+}
+
+#ir-longe {
+  text-decoration: underline;
+  text-decoration-color: var(--linha-forte);
+  text-underline-offset: 3px;
+}
+
+/* por onde passei: as viagens em cartões, com o desenho das rotas de cada cidade */
+.geo-viagens {
+  margin-top: clamp(2.75rem, 6vw, 4rem);
+}
+
+.geo-cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.geo-cabeca h3 {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+  line-height: 1;
+}
+
+.viagens {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.viagens button {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 0.85rem 0.95rem 1rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--painel);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.viagens button:hover {
+  border-color: var(--destaque);
+  transform: translateY(-2px);
+}
+
+.viagens .desenho {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  margin-bottom: 0.9rem;
   border-radius: var(--raio-p);
+  background: var(--painel-2);
+}
+
+.viagens .desenho svg {
+  width: 72%;
+  height: 82%;
+  overflow: visible;
+}
+
+.viagens .desenho path {
+  fill: none;
+  stroke: var(--destaque-tx);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.viagens .cidade {
+  font-family: var(--serifa);
+  font-size: 1.5rem;
+  line-height: 1.1;
+  color: var(--texto);
+}
+
+.viagens .regiao {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--texto-3);
+}
+
+.viagens .periodo {
+  margin-top: 0.65rem;
+  font-size: 0.82rem;
+  color: var(--texto-2);
+}
+
+.viagens .conta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.7rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--texto-3);
+}
+
+.viagens .conta b {
+  font-weight: 650;
+  color: var(--texto);
 }
 
 /* ------------------------------------------------------------ equipamento */
