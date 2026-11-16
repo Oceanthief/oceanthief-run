@@ -1,0 +1,86 @@
+{
+  "nome_site": "The Oceanthief Run",
+  "titulo": ["The Oceanthief", "Run"],
+  "nome_topo": "",
+  "esporte_principal": "corrida",
+  "frase": [
+    "SOMEWHERE AFTER COMFORT",
+    "— YOU FIND OUT —",
+    "WHO YOU REALLY ARE"
+  ],
+  "altimetria_referencia": {
+    "nome": "Pico da Bandeira",
+    "plural": "Picos da Bandeira",
+    "altura_m": 2892,
+    "detalhe": "do nível do mar ao cume",
+    "lat": -20.4345,
+    "lng": -41.7973
+  },
+  "fotos": [
+    {
+      "arquivo": "assets/img/corrida-dia.jpg",
+      "descricao": "Victor numa meia maratona, fotografado do alto: regata verde, número 3697 no peito, passando ao lado de um muro vermelho com grafite amarelo.",
+      "legenda": ""
+    },
+    {
+      "arquivo": "assets/img/corrida-noite.jpg",
+      "descricao": "Victor cruzando a chegada de uma corrida noturna e conferindo o relógio, com o cronômetro da prova marcando 0:30:33.",
+      "legenda": ""
+    }
+  ],
+  "sobre": [
+    "Eu não sou o corredor mais talentoso. E já fiz as pazes com isso.",
+    "O que eu consigo controlar é a frequência com que apareço, minha disposição para aprender e o quanto de mim estou preparado para entregar quando as coisas começam a ficar desconfortáveis.",
+    "A corrida me ensinou que o limite raramente está onde a gente pensa que está no primeiro momento. O corpo envia sinais, a mente interpreta esses sinais e, em algum ponto entre os dois, surge uma decisão: diminuir, parar ou continuar.",
+    "É isso que me fascina no endurance.",
+    "Eu treino com curiosidade. Estudo o processo, testo ideias, acompanho o que funciona, descarto o que não funciona e começo de novo. Não consigo controlar genética, clima, dias ruins ou quem vai estar ao meu lado na linha de largada. Mas consigo controlar preparação, consistência, paciência e a forma como respondo quando a prova fica difícil.",
+    "Steve Prefontaine acreditava que correr era uma forma de descobrir algo sobre si mesmo. Eu gosto dessa ideia. O relógio importa, o PB importa, a linha de chegada importa — mas o que me interessa ainda mais é descobrir quem eu me torno enquanto corro atrás de tudo isso.",
+    "Consistência se acumula. Resiliência também. E cada treino difícil deixa alguma coisa para o próximo.",
+    "Eu não corro porque sofrer seja algo nobre. Eu corro porque algumas coisas valem o sofrimento.",
+    "Então, quando as pernas pesam, o ritmo começa a cair e a mente começa a negociar, a pergunta é sempre a mesma:",
+    "*How bad do you want it?*",
+    "Não o bastante para se destruir.",
+    "Mas o bastante para descobrir até onde você consegue chegar."
+  ],
+  "assinatura": {
+    "nome": "Victor Ramos",
+    "local": "Juiz de Fora, Minas Gerais"
+  },
+  "provas": [
+    {
+      "nome": "Exemplo: Maratona de São Paulo",
+      "data": "2024-04-07",
+      "distancia": "42,2 km",
+      "tempo": "3:14:05",
+      "nota": "primeira maratona",
+      "strava_id": null
+    }
+  ],
+  "nao_sao_provas": [18729044519, 19247754111],
+  "conquistas": [
+    {
+      "titulo": "Exemplo de conquista",
+      "texto": "Algo que os números não mostram sozinhos: um pódio, uma prova difícil, um recorde de clube."
+    }
+  ],
+  "secoes": {
+    "sobre": ["Sobre", ""],
+    "recordes": ["Recordes", "Os tempos que eu ainda tento bater."],
+    "recentes": ["Recentes", "O que rolou nos últimos dias."],
+    "destaques": ["Destaques", "Os treinos que não saem da memória."],
+    "numeros": ["Números", "Tudo o que o relógio registrou."],
+    "constancia": ["Constância", "Cada quadrado é um dia. Quanto mais forte, mais longe."],
+    "clima": ["Clima", "Chuva, frio de 8 °C ou calor de 30: o treino sai igual."],
+    "lugares": ["Lugares", "Onde já deixei pegadas."],
+    "equipamento": ["Equipamento", "Quantos quilômetros cada tênis aguentou."]
+  },
+  "links": {
+    "instagram": "",
+    "strava": ""
+  },
+  "casa": null,
+  "privacidade": {
+    "cortar_inicio_fim_m": 400,
+    "ocultar_somente_seguidores": false
+  }
+}

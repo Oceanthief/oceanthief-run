@@ -1,0 +1,184 @@
+import {
+  $, $$, aoMudarUnidade, aoRedimensionar, carregarTudo, contagemRegressiva, dataCurta, dataLonga, diaSemana, dist, distValor,
+  DIAS_CURTOS, esc, hora, iniciarDicas, linkTreino, MESES_CURTOS, montarRodape, montarTopo, nomeSite, nomeTopo, num, relogio, rotuloDist,
+  getUnidade,
+} from "./comum.js";
+
+iniciarDicas();
+let S, P, PL, semanas;
+const abertas = new Set();
+
+iniciar();
+
+async function iniciar() {
+  try {
+    ({ site: S, perfil: P, plano: PL } = await carregarTudo());
+  } catch (erro) {
+    $("#plano").innerHTML = `<p class="vazio">${esc(erro.message)}</p>`;
+    return;
+  }
+  montarTopo({ nome: nomeTopo(S, P), links: [["./", "Início"], ["#volume", "Volume"], ["#semanas", "Semana a semana"]] });
+  montarRodape(S, P);
+  if (!PL?.semanas?.length) {
+    $("#plano").innerHTML = `<a class="voltar" href="./">Voltar para o início</a><section class="secao" style="padding-top:2rem">
+      <h2>Nenhum plano cadastrado</h2><p class="sub">Escreva o seu plano em config/plano.json e ele aparece aqui, com o que você já fez no Strava ao lado.</p></section>`;
+    return;
+  }
+  document.title = `Plano: ${PL.prova?.nome || "próxima prova"}`;
+
+  const corridas = S.atividades.filter((a) => ["Run", "TrailRun", "VirtualRun"].includes(a.t));
+  const hoje = new Date();
+  semanas = PL.semanas.map((s, i) => {
+    const ini = new Date(`${s.inicio}T00:00`);
+    const fim = new Date(ini);
+    fim.setDate(fim.getDate() + 7);
+    const feitas = corridas.filter((a) => a.data >= ini && a.data < fim);
+    return { ...s, n: i + 1, ini, fim, feitas, feito: feitas.reduce((t, a) => t + a.m, 0), passou: fim <= hoje, atual: ini <= hoje && hoje < fim };
+  });
+  const atual = semanas.find((s) => s.atual);
+  if (atual) abertas.add(atual.n);
+  desenhar();
+  aoMudarUnidade(desenhar);
+  aoRedimensionar(grafico);
+}
+
+function intervalo(ini) {
+  const fim = new Date(ini);
+  fim.setDate(fim.getDate() + 6);
+  return ini.getMonth() === fim.getMonth()
+    ? `${ini.getDate()} a ${fim.getDate()} ${MESES_CURTOS[fim.getMonth()]}`
+    : `${ini.getDate()} ${MESES_CURTOS[ini.getMonth()]} a ${fim.getDate()} ${MESES_CURTOS[fim.getMonth()]}`;
+}
+
+function paceAlvo(texto) {
+  if (!texto) return "";
+  const [m, s] = texto.split(":").map(Number);
+  const seg = m * 60 + (s || 0);
+  return `${relogio(getUnidade() === "mi" ? seg * 1.609344 : seg)} /${rotuloDist()}`;
+}
+
+function desenhar() {
+  const prova = PL.prova || {};
+  const data = prova.data ? new Date(prova.data) : null;
+  const futura = data && data > new Date();
+  const atual = semanas.find((s) => s.atual);
+  const planejado = semanas.reduce((t, s) => t + (s.km || 0), 0);
+  const feito = semanas.reduce((t, s) => t + s.feito, 0);
+  const fases = PL.fases || {};
+  const usadas = [...new Set(semanas.map((s) => s.fase))];
+
+  $("#plano").innerHTML = `
+    <a class="voltar" href="./">Voltar para o início</a>
+    <section class="plano-cabeca">
+      <div>
+        <h1>${esc(prova.nome || "Próxima prova")}</h1>
+        <p class="quando">${data ? `${esc(diaSemana(data))}, ${dataLonga(data)}, às ${hora(data)}` : ""}${prova.cidade ? `, em ${esc(prova.cidade)}` : ""}. Plano de ${semanas.length} semanas, ${esc(dist(planejado * 1000, 0))} no total.</p>
+        ${/^https?:\/\//.test(prova.link || "") ? `<p class="quando"><a href="${esc(prova.link)}" target="_blank" rel="noopener">Página da prova</a></p>` : ""}
+      </div>
+      <dl class="metas">
+        ${futura ? `<div style="grid-column:1/-1"><dt>Falta</dt><dd><div class="relogio" id="relogio-plano"></div></dd></div>` : ""}
+        ${prova.meta ? `<div><dt>Meta</dt><dd>${esc(prova.meta)}</dd></div>` : ""}
+        ${prova.meta_pace ? `<div><dt>Ritmo alvo</dt><dd>${esc(paceAlvo(prova.meta_pace))}</dd></div>` : ""}
+        <div><dt>${atual ? "Semana atual" : futura ? "Começa em" : "Situação"}</dt><dd>${atual ? `${atual.n} de ${semanas.length}` : futura && semanas[0].ini > new Date() ? `${Math.ceil((semanas[0].ini - new Date()) / 864e5)} dias` : "Concluído"}</dd></div>
+        <div><dt>Corrido no plano</dt><dd>${esc(dist(feito, 0))}</dd></div>
+      </dl>
+    </section>
+
+    <section class="secao" id="volume" style="padding-top:2.5rem">
+      <div class="secao-cabeca"><h2>Volume</h2><p class="sub">A barra clara é o planejado; a cheia, o que foi corrido de verdade. Toque numa semana para ver os treinos.</p></div>
+      <div class="grafico" id="g-plano"></div>
+      <div class="legenda-fases">${usadas.map((f) => `<span><i style="background:var(--fase-${esc(f)})"></i>${esc(fases[f] || f)}</span>`).join("")}</div>
+    </section>
+
+    <section class="secao" id="semanas">
+      <div class="secao-cabeca"><h2>Semana a semana</h2><p class="sub">Os treinos com a borda colorida são os mais importantes da semana.</p></div>
+      <ol class="semanas">${semanas.map(itemSemana).join("")}</ol>
+    </section>`;
+
+  if (futura) contagemRegressiva($("#relogio-plano"), data);
+  grafico();
+  $(".semanas").onclick = (ev) => {
+    const b = ev.target.closest(".semana > button");
+    if (!b) return;
+    alternar(+b.closest(".semana").dataset.n);
+  };
+}
+
+function alternar(n, abrir) {
+  const li = $(`.semana[data-n="${n}"]`);
+  const aberta = abrir ?? !abertas.has(n);
+  if (aberta) abertas.add(n);
+  else abertas.delete(n);
+  li.classList.toggle("aberta", aberta);
+  $("button", li).setAttribute("aria-expanded", String(aberta));
+  $(".semana-corpo", li).hidden = !aberta;
+}
+
+function itemSemana(s) {
+  const fases = PL.fases || {};
+  const aberta = abertas.has(s.n);
+  const treinos = (s.treinos || []).map((t) => {
+    const dia = new Date(s.ini);
+    dia.setDate(dia.getDate() + (t.dia ?? 0));
+    return `<li class="${t.chave ? "chave" : ""}">
+      <span class="dia">${DIAS_CURTOS[t.dia ?? 0]} ${dia.getDate()}</span>
+      <span class="titulo">${esc(t.titulo)}</span>
+      ${t.detalhe ? `<span class="detalhe">${esc(t.detalhe)}</span>` : ""}
+      <span class="km">${t.km ? esc(dist(t.km * 1000, t.km % 1 ? 1 : 0)) : ""}</span></li>`;
+  });
+  const feitas = s.feitas.length
+    ? `No Strava nesta semana: ${s.feitas.map((a) => `<a href="${linkTreino(a.id)}">${esc(a.n)}</a> (${esc(dist(a.m))})`).join(", ")}.`
+    : s.passou || s.atual ? "Nenhuma corrida registrada no Strava nesta semana." : "";
+  return `<li class="semana${s.atual ? " atual" : ""}${aberta ? " aberta" : ""}" data-n="${s.n}" style="--cor-fase:var(--fase-${esc(s.fase)})">
+    <button type="button" aria-expanded="${aberta}" aria-controls="corpo-${s.n}">
+      <span class="num-semana">${s.n}</span>
+      <span class="datas">${intervalo(s.ini)}${s.atual ? ", esta semana" : ""}<span class="foco">${esc(s.foco || "")}</span></span>
+      <span class="fase">${esc(fases[s.fase] || s.fase)}</span>
+      <span class="volume"><b>${esc(dist((s.km || 0) * 1000, 0))}</b>${s.passou || s.atual ? `feito: ${esc(dist(s.feito, 0))}` : "planejado"}</span>
+    </button>
+    <div class="semana-corpo" id="corpo-${s.n}"${aberta ? "" : " hidden"}>
+      <ul class="treinos-semana">${treinos.join("")}</ul>
+      ${feitas ? `<p class="feito-semana">${feitas}</p>` : ""}
+    </div>
+  </li>`;
+}
+
+function grafico() {
+  const el = $("#g-plano");
+  if (!el) return;
+  const largura = Math.max(300, el.clientWidth);
+  const altura = 250;
+  const m = { t: 10, r: 2, b: 24, l: 36 };
+  const w = largura - m.l - m.r;
+  const h = altura - m.t - m.b;
+  const valores = semanas.map((s) => ({ plan: distValor((s.km || 0) * 1000), feito: distValor(s.feito) }));
+  const maximo = Math.max(1, ...valores.map((v) => Math.max(v.plan, v.feito)));
+  const passo = maximo > 120 ? 40 : maximo > 60 ? 20 : 10;
+  const topo = Math.ceil(maximo / passo) * passo;
+  const y = (v) => m.t + h - (v / topo) * h;
+  const banda = w / semanas.length;
+  const bw = Math.max(4, banda - Math.min(10, banda * 0.25));
+  let corpo = "";
+  for (let v = 0; v <= topo; v += passo) {
+    corpo += `<line class="${v ? "grade" : "eixo"}" x1="${m.l}" x2="${largura - m.r}" y1="${y(v)}" y2="${y(v)}"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end">${num(v)}</text>`;
+  }
+  semanas.forEach((s, i) => {
+    const x = m.l + i * banda + (banda - bw) / 2;
+    const cor = `var(--fase-${s.fase})`;
+    const v = valores[i];
+    const dica = `Semana ${s.n}, ${intervalo(s.ini)}\nPlanejado: ${dist((s.km || 0) * 1000, 0)}${s.passou || s.atual ? `\nFeito: ${dist(s.feito, 0)}` : ""}`;
+    corpo += `<g data-n="${s.n}" data-dica="${esc(dica)}" style="cursor:pointer"><rect x="${m.l + i * banda}" y="${m.t}" width="${banda}" height="${h}" fill="transparent"/>`;
+    corpo += `<rect x="${x}" y="${y(v.plan)}" width="${bw}" height="${y(0) - y(v.plan)}" rx="2" style="fill:color-mix(in srgb, ${cor} 30%, var(--fundo))${s.atual ? ";stroke:var(--texto);stroke-width:1.5" : ""}"/>`;
+    if (v.feito > 0) corpo += `<rect x="${x + bw * 0.2}" y="${y(v.feito)}" width="${bw * 0.6}" height="${y(0) - y(v.feito)}" rx="1.5" style="fill:${cor}"/>`;
+    corpo += `</g>`;
+    if (semanas.length <= 24 || i % 2 === 0) corpo += `<text x="${x + bw / 2}" y="${altura - 6}" text-anchor="middle">${s.n}</text>`;
+  });
+  el.innerHTML = `<svg width="${largura}" height="${altura}" viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Volume planejado e feito por semana, em ${rotuloDist()}">${corpo}</svg>`;
+  el.onclick = (ev) => {
+    const g = ev.target.closest("g[data-n]");
+    if (!g) return;
+    const n = +g.dataset.n;
+    alternar(n, true);
+    $(`.semana[data-n="${n}"]`).scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+}

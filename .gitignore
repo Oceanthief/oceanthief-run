@@ -1,0 +1,9 @@
+# segredos do Strava: nunca vão para o GitHub
+.env
+
+# lista completa de atividades, com rotas sem corte (fica só no seu PC)
+data/local/
+
+__pycache__/
+*.tmp
+_site/

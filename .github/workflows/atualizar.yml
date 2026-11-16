@@ -1,0 +1,70 @@
+name: Atualizar com o Strava
+
+on:
+  # o aviso do Strava (via Cloudflare Worker) a cada atividade criada, editada ou apagada
+  repository_dispatch:
+    types: [strava]
+  schedule:
+    # rede de segurança, caso algum aviso se perca: 06h, 13h e 21h no horário de Brasília
+    - cron: "0 0,9,16 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: atualizar-site
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Baixar treinos novos do Strava
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+        run: python scripts/sync_strava.py --max-detalhes 90
+
+      - name: Guardar os dados no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "Nada novo no Strava."
+          else
+            git commit -m "Atualiza dados do Strava"
+            git push
+          fi
+
+      - name: Montar a pasta do site
+        run: |
+          mkdir _site
+          cp -r index.html atividade.html plano.html assets config _site/
+          mkdir _site/data
+          cp -r data/site.json data/rotas.json data/atividades _site/data/
+          if [ -f CNAME ]; then cp CNAME _site/; fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: publicar
+        uses: actions/deploy-pages@v4

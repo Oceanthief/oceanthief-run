@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plano de treino</title>
+  <meta name="description" content="O plano de treino semana a semana até a próxima prova, com o que já foi feito.">
+  <link rel="icon" href="assets/img/icone.svg" type="image/svg+xml">
+  <script>
+    try {
+      var t = localStorage.getItem("strava-site:tema");
+      document.documentElement.dataset.tema = t || (matchMedia("(prefers-color-scheme: light)").matches ? "claro" : "escuro");
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+  <header class="topo"></header>
+  <main id="conteudo">
+    <div class="recipiente" id="plano">
+      <p class="vazio">Carregando o plano...</p>
+    </div>
+  </main>
+  <footer class="rodape"></footer>
+  <script type="module" src="assets/js/plano.js"></script>
+</body>
+</html>

@@ -1,0 +1,813 @@
+{
+ "prova": {
+  "nome": "New Balance 42K Porto Alegre",
+  "data": "2027-08-22T06:00:00-03:00",
+  "cidade": "Porto Alegre",
+  "distancia_km": 42.195,
+  "link": "https://www.ticketsports.com.br/e/NEW+BALANCE+42K+PORTO+ALEGRE+2027-87987"
+ },
+ "fases": {
+  "base": "Base",
+  "construcao": "Construção",
+  "especifico": "Específico",
+  "polimento": "Polimento",
+  "prova": "Prova"
+ },
+ "semanas": [
+  {
+   "inicio": "2027-04-05",
+   "fase": "base",
+   "km": 48,
+   "foco": "Rodar fácil, criar rotina e fortalecer.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "Fartlek 10x1 min forte / 1 min leve",
+     "km": 10,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 7,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 8,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 7,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 16 km",
+     "km": 16,
+     "detalhe": "Ritmo confortável do começo ao fim.",
+     "chave": false
+    }
+   ]
+  },
+  {
+   "inicio": "2027-04-12",
+   "fase": "base",
+   "km": 52,
+   "foco": "Rodar fácil, criar rotina e fortalecer.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "Subidas curtas 8x30 s",
+     "km": 9,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 8,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 8,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 9,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 18 km",
+     "km": 18,
+     "detalhe": "Ritmo confortável do começo ao fim.",
+     "chave": false
+    }
+   ]
+  },
+  {
+   "inicio": "2027-04-19",
+   "fase": "base",
+   "km": 56,
+   "foco": "Rodar fácil, criar rotina e fortalecer.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "Fartlek 10x1 min forte / 1 min leve",
+     "km": 10,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 8,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 9,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 10,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 19 km",
+     "km": 19,
+     "detalhe": "Ritmo confortável do começo ao fim.",
+     "chave": false
+    }
+   ]
+  },
+  {
+   "inicio": "2027-04-26",
+   "fase": "base",
+   "km": 46,
+   "foco": "Rodar fácil, criar rotina e fortalecer. Semana mais leve.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "Subidas curtas 8x30 s",
+     "km": 9,
+     "detalhe": "Semana de recuperação: menos volume para absorver o treino.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 7,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 7,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 7,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 16 km",
+     "km": 16,
+     "detalhe": "Ritmo confortável do começo ao fim.",
+     "chave": false
+    }
+   ]
+  },
+  {
+   "inicio": "2027-05-03",
+   "fase": "construcao",
+   "km": 58,
+   "foco": "Entram os tiros e o tempo run; o longão cresce.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "5x1600 m no ritmo de meia",
+     "km": 14,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 9,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 9,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 6,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 20 km",
+     "km": 20,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-05-10",
+   "fase": "construcao",
+   "km": 62,
+   "foco": "Entram os tiros e o tempo run; o longão cresce.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "Tempo run 3x3 km",
+     "km": 13,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 9,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 10,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 9,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 21 km",
+     "km": 21,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-05-17",
+   "fase": "construcao",
+   "km": 66,
+   "foco": "Entram os tiros e o tempo run; o longão cresce.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "6x1000 m no ritmo de 10K",
+     "km": 12,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 10,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 11,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 12,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 22 km",
+     "km": 22,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-05-24",
+   "fase": "construcao",
+   "km": 70,
+   "foco": "Entram os tiros e o tempo run; o longão cresce.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "5x1600 m no ritmo de meia",
+     "km": 14,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 10,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 11,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 10,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 24 km",
+     "km": 24,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-05-31",
+   "fase": "construcao",
+   "km": 58,
+   "foco": "Entram os tiros e o tempo run; o longão cresce. Semana mais leve.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "Tempo run 3x3 km",
+     "km": 13,
+     "detalhe": "Semana de recuperação: menos volume para absorver o treino.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 9,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 9,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 7,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 20 km",
+     "km": 20,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-06-07",
+   "fase": "especifico",
+   "km": 72,
+   "foco": "Blocos no ritmo de maratona e longões de 30 km.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "3x5 km no ritmo de maratona",
+     "km": 18,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 11,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 12,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 5,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 27 km com 12 km no ritmo de maratona",
+     "km": 27,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-06-14",
+   "fase": "especifico",
+   "km": 76,
+   "foco": "Blocos no ritmo de maratona e longões de 30 km.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "8x1000 m + 4 km no ritmo de maratona",
+     "km": 16,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 11,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 12,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 7,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 29 km",
+     "km": 29,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-06-21",
+   "fase": "especifico",
+   "km": 80,
+   "foco": "Blocos no ritmo de maratona e longões de 30 km.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "2x8 km no ritmo de maratona",
+     "km": 20,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 12,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 13,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 5,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 30 km com 12 km no ritmo de maratona",
+     "km": 30,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-06-28",
+   "fase": "especifico",
+   "km": 68,
+   "foco": "Blocos no ritmo de maratona e longões de 30 km. Semana mais leve.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "3x5 km no ritmo de maratona",
+     "km": 18,
+     "detalhe": "Semana de recuperação: menos volume para absorver o treino.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 10,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 11,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 5,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 26 km",
+     "km": 26,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-07-05",
+   "fase": "especifico",
+   "km": 84,
+   "foco": "Blocos no ritmo de maratona e longões de 30 km.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "8x1000 m + 4 km no ritmo de maratona",
+     "km": 16,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 13,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 13,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 10,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 32 km com 12 km no ritmo de maratona",
+     "km": 32,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-07-12",
+   "fase": "especifico",
+   "km": 88,
+   "foco": "Blocos no ritmo de maratona e longões de 30 km.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "2x8 km no ritmo de maratona",
+     "km": 20,
+     "detalhe": "Aquecimento de 2 km e desaquecimento de 2 km incluídos.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 13,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 14,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 8,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 33 km",
+     "km": 33,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-07-19",
+   "fase": "especifico",
+   "km": 78,
+   "foco": "Blocos no ritmo de maratona e longões de 30 km. Semana mais leve.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "3x5 km no ritmo de maratona",
+     "km": 18,
+     "detalhe": "Semana de recuperação: menos volume para absorver o treino.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 12,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 12,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 6,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 30 km com 12 km no ritmo de maratona",
+     "km": 30,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-07-26",
+   "fase": "polimento",
+   "km": 66,
+   "foco": "Volume cai, intensidade fica. Dormir bem. Semana mais leve.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "4x2 km no ritmo de maratona",
+     "km": 12,
+     "detalhe": "Semana de recuperação: menos volume para absorver o treino.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 10,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 11,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 12,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 22 km",
+     "km": 22,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-08-02",
+   "fase": "polimento",
+   "km": 54,
+   "foco": "Volume cai, intensidade fica. Dormir bem. Semana mais leve.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "6x800 m soltos",
+     "km": 10,
+     "detalhe": "Semana de recuperação: menos volume para absorver o treino.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 8,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 9,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 9,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 18 km",
+     "km": 18,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-08-09",
+   "fase": "polimento",
+   "km": 40,
+   "foco": "Volume cai, intensidade fica. Dormir bem. Semana mais leve.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "4x2 km no ritmo de maratona",
+     "km": 12,
+     "detalhe": "Semana de recuperação: menos volume para absorver o treino.",
+     "chave": true
+    },
+    {
+     "dia": 2,
+     "titulo": "Rodagem leve",
+     "km": 6,
+     "detalhe": "Conversando, sem olhar o pace."
+    },
+    {
+     "dia": 3,
+     "titulo": "Rodagem com 6 acelerações",
+     "km": 6,
+     "detalhe": "Acelerações de 20 s no fim."
+    },
+    {
+     "dia": 5,
+     "titulo": "Regenerativo",
+     "km": 5,
+     "detalhe": "O mais leve da semana."
+    },
+    {
+     "dia": 6,
+     "titulo": "Longão de 14 km",
+     "km": 14,
+     "detalhe": "Hidratar a cada 5 km e testar o gel da prova.",
+     "chave": true
+    }
+   ]
+  },
+  {
+   "inicio": "2027-08-16",
+   "fase": "prova",
+   "km": 52,
+   "foco": "Semana da prova: pouco, leve e com confiança.",
+   "treinos": [
+    {
+     "dia": 1,
+     "titulo": "Rodagem leve",
+     "km": 8,
+     "detalhe": "Bem confortável, com 4 acelerações no fim."
+    },
+    {
+     "dia": 3,
+     "titulo": "Ativação: 3 km no ritmo de maratona",
+     "km": 8,
+     "detalhe": "Aquecer 3 km, 3 km no ritmo de prova, soltar 2 km.",
+     "chave": true
+    },
+    {
+     "dia": 5,
+     "titulo": "Trote de 20 minutos",
+     "km": 4,
+     "detalhe": "Só para soltar as pernas."
+    },
+    {
+     "dia": 6,
+     "titulo": "New Balance 42K Porto Alegre",
+     "km": 42.2,
+     "detalhe": "Largada às 6h na Av. Padre Cacique, 1359, ao lado do Imperadores do Samba. Percurso plano.",
+     "chave": true,
+     "prova": true
+    }
+   ]
+  }
+ ]
+}

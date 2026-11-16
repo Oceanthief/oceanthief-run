@@ -1,0 +1,41 @@
+{
+ "id": 136036041,
+ "nome": "Victor",
+ "sobrenome": "Ramos",
+ "cidade": "Juiz de Fora",
+ "estado": "Minas Gerais",
+ "pais": "Brazil",
+ "foto": "https://dgalywyr863hv.cloudfront.net/pictures/athletes/136036041/30960421/19/large.jpg",
+ "desde": "2024-04-24",
+ "tenis": [
+  {
+   "id": "g25413397",
+   "nome": "ASICS Novablast 3",
+   "m": 938056,
+   "principal": false,
+   "aposentado": false
+  },
+  {
+   "id": "g25641227",
+   "nome": "Mizuno Neo Vista 2",
+   "m": 41595,
+   "principal": false,
+   "aposentado": false
+  },
+  {
+   "id": "g28712798",
+   "nome": "Mizuno NEO VISTA",
+   "m": 90633,
+   "principal": false,
+   "aposentado": false
+  },
+  {
+   "id": "g29060490",
+   "nome": "ASICS KAYANO 32",
+   "m": 985484,
+   "principal": false,
+   "aposentado": false
+  }
+ ],
+ "bikes": []
+}

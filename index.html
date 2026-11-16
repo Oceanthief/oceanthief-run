@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Oceanthief Run</title>
+  <meta name="description" content="Meus treinos do Strava em números: recordes, constância, mapas e o plano para a próxima prova.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Oceanthief Run">
+  <meta property="og:description" content="Meus treinos do Strava em números.">
+  <meta name="theme-color" content="#190c07">
+  <link rel="icon" href="assets/img/icone.svg" type="image/svg+xml">
+  <script>
+    try {
+      var t = localStorage.getItem("strava-site:tema");
+      document.documentElement.dataset.tema = t || (matchMedia("(prefers-color-scheme: light)").matches ? "claro" : "escuro");
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+  <header class="topo"></header>
+
+  <main id="conteudo">
+    <div class="recipiente">
+      <section class="abertura" id="inicio" aria-label="Abertura">
+        <p class="vazio">Carregando os treinos...</p>
+      </section>
+
+      <section class="secao sobre" id="sobre">
+        <div class="secao-cabeca"></div>
+        <div class="texto-sobre" id="texto-sobre"></div>
+      </section>
+
+      <section class="secao" id="recordes">
+        <div class="secao-cabeca"></div>
+        <div class="grade-recordes">
+          <div>
+            <h3 class="bloco-titulo">Melhores tempos</h3>
+            <div id="tabela-recordes"></div>
+          </div>
+          <div>
+            <h3 class="bloco-titulo">Provas</h3>
+            <div id="provas"></div>
+          </div>
+        </div>
+        <div class="conquistas" id="conquistas"></div>
+      </section>
+
+      <section class="secao" id="recentes">
+        <div class="secao-cabeca com-acoes"><div class="abas" id="abas-recentes"></div></div>
+        <div class="grade-recentes">
+          <div id="lista-recentes"></div>
+          <div class="resumo-periodo" id="resumo-recentes"></div>
+        </div>
+      </section>
+
+      <section class="secao" id="destaques">
+        <div class="secao-cabeca com-acoes"><div class="abas" id="abas-destaques"></div></div>
+        <div id="tabela-destaques"></div>
+      </section>
+
+      <section class="secao" id="numeros">
+        <div class="secao-cabeca com-acoes"><div class="abas" id="abas-numeros"></div></div>
+        <div class="grade-graficos" id="graficos"></div>
+      </section>
+
+      <section class="secao" id="constancia">
+        <div class="secao-cabeca com-acoes"><div class="abas" id="abas-constancia"></div></div>
+        <div class="calendario" id="calendario"></div>
+        <div class="escala" aria-hidden="true">menos <i class="n0"></i><i class="n1"></i><i class="n2"></i><i class="n3"></i><i class="n4"></i> mais</div>
+        <dl class="fatos" id="fatos-constancia"></dl>
+        <div class="cartao-grafico" style="padding:0;background:none">
+          <h3 id="titulo-mensal">Por mês</h3>
+          <p class="nota">Distância de cada mês do período escolhido.</p>
+          <div class="grafico" id="g-mensal"></div>
+        </div>
+      </section>
+
+      <section class="secao" id="clima">
+        <div class="secao-cabeca"></div>
+        <div id="conteudo-clima"></div>
+      </section>
+
+      <section class="secao" id="lugares">
+        <div class="secao-cabeca"></div>
+        <div class="grade-lugares">
+          <div class="mapa" id="mapa" role="region" aria-label="Mapa com as rotas dos treinos"></div>
+          <div id="painel-lugares"></div>
+        </div>
+      </section>
+
+      <section class="secao" id="equipamento">
+        <div class="secao-cabeca"></div>
+        <div class="equipamento" id="lista-equipamento"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="rodape"></footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+  <script type="module" src="assets/js/inicio.js"></script>
+</body>
+</html>
