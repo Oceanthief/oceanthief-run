@@ -60,6 +60,16 @@ jobs:
           cp -r data/site.json data/rotas.json data/atividades _site/data/
           if [ -f CNAME ]; then cp CNAME _site/; fi
 
+      # O GitHub Pages deixa o navegador guardar os arquivos por 10 minutos.
+      # Com uma etiqueta que muda quando o código muda, a versão nova aparece na hora.
+      - name: Etiquetar a versão do CSS e dos scripts
+        working-directory: _site
+        run: |
+          V=$(cat assets/css/*.css assets/js/*.js *.html | sha1sum | cut -c1-10)
+          sed -i -E "s#(assets/(css|js)/[a-z]+\.(css|js))\"#\1?v=$V\"#g" *.html
+          sed -i -E "s#from \"\./([a-z]+)\.js\"#from \"./\1.js?v=$V\"#g" assets/js/*.js
+          echo "Versão do código: $V"
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
