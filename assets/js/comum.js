@@ -359,18 +359,15 @@ export function montarRodape(site, perfil) {
   const gerado = site?.gerado_em ? new Date(site.gerado_em) : null;
   const links = perfil?.links || {};
   const stravaUrl = links.strava || (site?.atleta?.id ? `https://www.strava.com/athletes/${site.atleta.id}` : "https://www.strava.com");
+  const feitoPor = perfil?.feito_por ?? "";
   $(".rodape").innerHTML = `
-    <div class="recipiente seguir">
-      <a class="seguir-strava" href="${esc(stravaUrl)}" target="_blank" rel="noopener">${LOGO_STRAVA}<span>Follow me on Strava</span></a>
-    </div>
-    <div class="recipiente creditos">
-      <div>
+    <div class="recipiente fim-pagina">
+      <p class="powered">${LOGO_STRAVA}<span>Powered by Strava</span></p>
+      ${feitoPor ? `<p class="feito-por">Made by: ${esc(feitoPor)}</p>` : ""}
+      <a class="seguir-strava" href="${esc(stravaUrl)}" target="_blank" rel="noopener">${LOGO_STRAVA}<span>Follow me on</span><b>Strava</b></a>
+      <div class="creditos">
         <p>${gerado ? `Dados atualizados em ${dataLonga(gerado)}, às ${hora(gerado)}. O site se atualiza sozinho a cada treino registrado no Strava.` : ""}</p>
-        <p>Mapas © <a href="https://www.openstreetmap.org/copyright">colaboradores do OpenStreetMap</a>. Clima: <a href="https://open-meteo.com">Open-Meteo</a>.</p>
-      </div>
-      <div class="links-sociais">
-        ${links.instagram ? `<a href="${esc(links.instagram)}">Instagram</a>` : ""}
-        <a class="strava" href="${esc(stravaUrl)}">Powered by Strava</a>
+        <p>Mapas © <a href="https://www.openstreetmap.org/copyright">colaboradores do OpenStreetMap</a>. Clima: <a href="https://open-meteo.com">Open-Meteo</a>.${links.instagram ? ` <a href="${esc(links.instagram)}">Instagram</a>.` : ""}</p>
       </div>
     </div>`;
 }

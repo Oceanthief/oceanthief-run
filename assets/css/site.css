@@ -37,6 +37,7 @@
   --fase-prova: #c22b1f;
   --calor-0: #2a1a11;
   --numero-capa: #db7444;
+  --assinatura: color-mix(in srgb, #db7444 65%, #190c07);
   --globo-mar: #1d2430;
   --globo-terra: #6b5240;
   --globo-borda: #4a3a30;
@@ -73,6 +74,7 @@
   --fase-prova: #c22b1f;
   --calor-0: #e6d8c0;
   --numero-capa: #b65127;
+  --assinatura: color-mix(in srgb, #b65127 80%, #f3eadb);
   --globo-mar: #1d2430;
   --globo-terra: #6b5240;
   --globo-borda: #190c07;
@@ -1596,76 +1598,9 @@ table.resultados {
 /* ----------------------------------------------------------------- rodapé */
 .rodape {
   margin-top: clamp(4rem, 9vw, 6rem);
-  padding: 0 0 3rem;
+  padding: 0 0 2.5rem;
   color: var(--texto-3);
   font-size: 0.875rem;
-}
-
-/* o convite para seguir no Strava fecha a página */
-.rodape .seguir {
-  display: flex;
-  justify-content: center;
-  padding-bottom: clamp(3rem, 7vw, 4.5rem);
-}
-
-.seguir-strava {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.95rem 1.6rem 0.95rem 1.35rem;
-  border-radius: 6px;
-  background: #fc4c02;
-  color: #190c07 !important;
-  font-stretch: 112%;
-  font-weight: 800;
-  font-size: clamp(1rem, 2.4vw, 1.2rem);
-  letter-spacing: 0.01em;
-  text-decoration: none;
-  transition: background-color 0.15s, transform 0.15s;
-}
-
-.seguir-strava svg {
-  width: 1.35em;
-  height: 1.35em;
-  flex: none;
-}
-
-.seguir-strava:hover {
-  background: #ff6a2b;
-  transform: translateY(-1px);
-}
-
-.seguir-strava:focus-visible {
-  outline-color: #fc4c02;
-}
-
-.rodape .creditos {
-  position: relative;
-  display: grid;
-  gap: 1rem;
-  padding-top: 2rem;
-}
-
-/* a linha acompanha a margem do texto, não a da caixa */
-.rodape .creditos::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 16px;
-  right: 16px;
-  border-top: 1px solid var(--linha);
-}
-
-@media (min-width: 720px) {
-  .rodape .creditos {
-    grid-template-columns: 1fr auto;
-    align-items: end;
-  }
-
-  .rodape .creditos::before {
-    left: 32px;
-    right: 32px;
-  }
 }
 
 .rodape p {
@@ -1676,19 +1611,104 @@ table.resultados {
   color: var(--texto-2);
 }
 
-.strava {
-  display: inline-flex;
+/* o fecho da página: Strava, assinatura e o convite para seguir */
+.fim-pagina {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  color: #fc4c02 !important;
-  font-weight: 700;
-  text-decoration: none;
+  text-align: center;
+  padding-top: clamp(2.5rem, 6vw, 3.5rem);
 }
 
-.links-sociais {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+/* a linha acompanha a margem do texto, não a da caixa */
+.fim-pagina::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  border-top: 1px solid var(--linha);
+}
+
+@media (min-width: 720px) {
+  .fim-pagina::before {
+    left: 32px;
+    right: 32px;
+  }
+}
+
+.powered {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--texto-3);
+}
+
+.powered svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: #fc4c02;
+  flex: none;
+}
+
+.feito-por {
+  margin-top: clamp(1.75rem, 4vw, 2.5rem) !important;
+  font-stretch: 125%;
+  font-weight: 900;
+  font-size: clamp(1rem, 2.8vw, 1.45rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--assinatura);
+}
+
+/* no formato do botão oficial do Strava */
+.seguir-strava {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: clamp(2rem, 5vw, 2.75rem);
+  padding: 0.65rem 1.05rem 0.65rem 0.85rem;
+  border-radius: 6px;
+  background: #fc4c02;
+  color: #fff !important;
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.seguir-strava svg {
+  width: 1.45rem;
+  height: 1.45rem;
+  margin-right: 0.2rem;
+  flex: none;
+}
+
+.seguir-strava b {
+  font-stretch: 125%;
+  font-weight: 900;
+  font-size: 1.12em;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.seguir-strava:hover {
+  background: #e34402;
+}
+
+.seguir-strava:focus-visible {
+  outline-color: #fc4c02;
+}
+
+.creditos {
+  margin-top: clamp(2.75rem, 6vw, 3.5rem);
+  font-size: 0.75rem;
+  line-height: 1.7;
 }
 
 /* --------------------------------------------------------------- dica */
