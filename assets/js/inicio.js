@@ -9,6 +9,7 @@ import { barras, barrasH, calendario, dispersao, miniLinha, rosca } from "./graf
 import { globoOrbita, globoVoltas, montanha, muro } from "./capa.js";
 
 let S, P, PLANO, A, PRINCIPAL;
+let ROTAS = new Map();
 const nTreinos = (n) => plural(n, "{n} treino", "{n} treinos");
 const estado = { periodo: "semana", recentesMostrar: 8, destaque: "longos", grupoNumeros: null, ano: "12m", pais: "todos", provasTodas: false };
 
@@ -63,6 +64,7 @@ async function iniciar() {
     return;
   }
 
+  ROTAS = new Map((await buscarJSON("data/rotas.json", true)) || []);
   abertura();
   sobre();
   desenharSecoes();
@@ -130,7 +132,6 @@ const MONTANHA_PADRAO = {
   lat: -20.4345,
   lng: -41.7973,
 };
-const CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>`;
 let mapaMontanha = null;
 
 const montanhaRef = () => ({ ...MONTANHA_PADRAO, ...(P.altimetria_referencia || {}) });
@@ -148,33 +149,33 @@ function partesTitulo(nome) {
   return palavras.length > 1 ? [palavras.slice(0, -1).join(" "), palavras.at(-1)] : [nome];
 }
 
+const IDS_CAPA = ["atividades", "distancia", "horas", "subida"];
+
 function abertura() {
   const [linha1, linha2] = partesTitulo(nomeSite(S, P));
   const frase = (P.frase || []).filter(Boolean);
   const fotos = (P.fotos || []).filter((f) => f?.arquivo).slice(0, 2);
   const temContagem = PLANO?.prova?.data && new Date(PLANO.prova.data) > new Date();
-  const foto = (f, lado) =>
-    `<figure class="capa-foto ${lado}"><img src="${esc(f.arquivo)}" alt="${esc(tr(f.descricao) || t("Foto de {nome}", { nome: nomeSite(S, P) }))}" decoding="async"></figure>`;
-  const bloco = (id) => `
-    <div class="num-capa" id="capa-${id}">
-      <p class="valor"></p>
-      <p class="rotulo"></p>
-      <p class="comparacao"></p>
-      <button type="button" class="abrir" aria-expanded="true" aria-controls="viz-${id}" aria-label="${esc(t("Esconder o desenho"))}">${CHEVRON}</button>
-      <div class="viz" id="viz-${id}"></div>
-    </div>`;
+  // a versão grande da foto ("grande" no perfil.json) só é baixada em telas largas
+  const imagem = (f, tamanhos) =>
+    `<img src="${esc(f.arquivo)}"${f.grande ? ` srcset="${esc(f.arquivo)} 1000w, ${esc(f.grande)} 1600w" sizes="${tamanhos}"` : ""} alt="${esc(tr(f.descricao) || t("Foto de {nome}", { nome: nomeSite(S, P) }))}" decoding="async">`;
+  const contagem = temContagem
+    ? `<a class="contagem" href="plano.html"><p>${t("Próxima prova")}</p><strong>${esc(PLANO.prova.nome)}</strong><div class="relogio" id="relogio-prova"></div><span class="ver">${t("Ver o plano de treino")}</span></a>`
+    : "";
 
   $("#inicio").innerHTML = `
     <div class="capa${fotos.length ? "" : " sem-fotos"}">
-      ${fotos[0] ? foto(fotos[0], "esquerda") : ""}
-      <div class="capa-centro">
-        <h1 class="titulo-site"><span>${esc(linha1)}</span>${linha2 ? `<span class="cor">${esc(linha2)}</span>` : ""}</h1>
-        ${frase.length ? `<p class="mote">${frase.map(linhaFrase).join("")}</p>` : ""}
+      <div class="painel-foto principal">
+        ${fotos[0] ? imagem(fotos[0], "(min-width: 900px) 60vw, 100vw") : ""}
+        <div class="capa-texto">
+          <h1 class="titulo-site"><span>${esc(linha1)}</span>${linha2 ? `<span class="cor">${esc(linha2)}</span>` : ""}</h1>
+          ${frase.length ? `<p class="mote">${frase.map(linhaFrase).join("")}</p>` : ""}
+        </div>
       </div>
-      ${fotos[1] ? foto(fotos[1], "direita") : ""}
+      ${fotos[1] ? `<div class="painel-foto lateral">${imagem(fotos[1], "(min-width: 900px) 40vw, 100vw")}${contagem}</div>` : contagem}
     </div>
-    <div class="numeros-capa" id="numeros-capa">${["atividades", "distancia", "horas", "subida"].map(bloco).join("")}</div>
-    ${temContagem ? `<a class="contagem" href="plano.html"><div><p>${t("Próxima prova")}</p><strong>${esc(PLANO.prova.nome)}</strong></div><div class="relogio" id="relogio-prova"></div><span class="ver">${t("Ver o plano de treino")}</span></a>` : ""}`;
+    <dl class="faixa-numeros" id="numeros-capa">${IDS_CAPA.map((id) => `<div class="num-capa" id="capa-${id}"><dt class="rotulo"></dt><dd class="valor"></dd></div>`).join("")}</dl>
+    <div class="perspectiva">${IDS_CAPA.map((id) => `<article class="cartao-perspectiva" id="persp-${id}"><p class="comparacao"></p><div class="viz" id="viz-${id}"></div></article>`).join("")}</div>`;
 
   atualizarCapa();
 
@@ -187,16 +188,6 @@ function abertura() {
   });
   globoOrbita($("#viz-horas"), { rotulo: t("Globo com a órbita da Estação Espacial Internacional") });
   mapaMontanha = montanha($("#viz-subida"), { ...ref, rotulo: t("Mapa de relevo do {nome}, com {m} m de altitude", { nome: tr(ref.nome), m: num(ref.altura_m) }) });
-
-  $$("#numeros-capa .abrir").forEach((b) => {
-    b.onclick = () => {
-      const aberto = b.getAttribute("aria-expanded") === "true";
-      b.setAttribute("aria-expanded", String(!aberto));
-      b.setAttribute("aria-label", aberto ? t("Mostrar o desenho") : t("Esconder o desenho"));
-      document.getElementById(b.getAttribute("aria-controls")).hidden = aberto;
-      if (!aberto) mapaMontanha?.invalidateSize();
-    };
-  });
   if (temContagem) contagemRegressiva($("#relogio-prova"), new Date(PLANO.prova.data));
 }
 
@@ -229,7 +220,7 @@ function atualizarCapa() {
     if (!el) return;
     $(".valor", el).textContent = valor;
     $(".rotulo", el).innerHTML = rotulo;
-    const c = $(".comparacao", el);
+    const c = $(".comparacao", $(`#persp-${id}`) || el);
     c.innerHTML = comparacao;
     if (dica) {
       c.dataset.dica = dica;
@@ -464,18 +455,35 @@ function destaques() {
   const cat = categorias[estado.destaque];
   const top = cat.lista().slice(0, 10);
   $("#tabela-destaques").innerHTML = top.length
-    ? `<div class="tabela-rolagem"><table class="resultados"><thead><tr><th></th><th>${t("Treino")}</th><th class="num">${t("Distância")}</th><th class="num so-largo">${t("Tempo")}</th><th class="num">${cat.col}</th></tr></thead>
-      <tbody>${top
-        .map((a, i) => `<tr class="clicavel" data-id="${a.id}"><td class="posicao">${i + 1}</td>
-          <td><a href="${linkTreino(a.id)}">${esc(a.n)}</a><div class="secundario">${dataLonga(a.data)}${a.l != null && S.lugares[a.l] ? `, ${esc(S.lugares[a.l].cidade)}` : ""}</div></td>
-          <td class="num"><span class="tempo">${esc(dist(a.m))}</span></td><td class="num so-largo">${relogio(a.s)}</td><td class="num">${esc(cat.valor(a))}</td></tr>`)
-        .join("")}</tbody></table></div>`
+    ? `<ol class="mosaico-rotas">${top
+        .map((a, i) => {
+          const rota = ROTAS.get(a.id);
+          const cidade = a.l != null && S.lugares[a.l] ? `, ${esc(S.lugares[a.l].cidade)}` : "";
+          return `<li><a href="${linkTreino(a.id)}">
+            <span class="desenho">${rota ? miniRota(rota) : `<span class="sem-rota">${esc(nomeTipo(a.t))}</span>`}</span>
+            <span class="posicao">${i + 1}</span>
+            <span class="nome">${esc(a.n)}</span>
+            <span class="quando">${dataLonga(a.data)}${cidade}</span>
+            <span class="medidas"><b>${esc(dist(a.m))}</b><span>${relogio(a.s)}</span><span>${esc(cat.valor(a))}</span></span>
+          </a></li>`;
+        })
+        .join("")}</ol>`
     : `<p class="vazio">${t("Nenhum treino nesta categoria.")}</p>`;
-  const tbody = $("#tabela-destaques tbody");
-  if (tbody) tbody.onclick = (ev) => {
-    const tr = ev.target.closest("tr[data-id]");
-    if (tr && !ev.target.closest("a")) location.href = linkTreino(tr.dataset.id);
-  };
+}
+
+// o desenho da rota encaixado num quadrado (a longitude é corrigida pela latitude)
+function miniRota(texto) {
+  const pts = decodificarRota(texto);
+  if (pts.length < 2) return "";
+  const k = Math.cos((pts[0][0] * Math.PI) / 180);
+  const xs = pts.map((p) => p[1] * k);
+  const ys = pts.map((p) => -p[0]);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys);
+  const w = Math.max(...xs) - x0 || 1e-9, h = Math.max(...ys) - y0 || 1e-9;
+  const e = 100 / Math.max(w, h);
+  const dx = (100 - w * e) / 2, dy = (100 - h * e) / 2;
+  const d = xs.map((x, i) => `${i ? "L" : "M"}${(dx + (x - x0) * e).toFixed(1)} ${(dy + (ys[i] - y0) * e).toFixed(1)}`).join("");
+  return `<svg viewBox="-6 -6 112 112" aria-hidden="true"><path d="${d}"/></svg>`;
 }
 
 // ---------------------------------------------------------------- números
@@ -856,7 +864,7 @@ async function criarMapa(el) {
   else mapa.setView([0, 0], 2);
 
   const porId = new Map(A.map((a) => [a.id, a]));
-  const rotas = (await buscarJSON("data/rotas.json", true)) || [];
+  const rotas = [...ROTAS];
   const renderer = L.canvas({ padding: 0.3, tolerance: 6 });
   camadaRotas = L.layerGroup().addTo(mapa);
   const cor = corDestaque();

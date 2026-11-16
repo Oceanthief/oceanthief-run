@@ -1,0 +1,933 @@
+/* ==========================================================================
+   TESTE de redesenho (ramo teste-visual). Fica por cima de site.css.
+   Estrutura inspirada em duas referências:
+   - editorial de fotografia (Oak & Ember): fotos de borda a borda, títulos
+     em serifa clássica, faixa de números com linhas finas, mosaicos;
+   - painel de dados (Ridgeline): painéis de vidro sobre foto e mapa,
+     mini-blocos de dados, abas em pílula, um cartão cheio de cor.
+   As cores continuam as do Moka (site.css).
+   ========================================================================== */
+
+:root {
+  --serifa: "Forum", "Cormorant Garamond", Georgia, serif;
+  --sans: "Manrope", system-ui, -apple-system, sans-serif;
+  --mono: var(--sans);
+  --raio: 18px;
+  --raio-p: 12px;
+  --creme-foto: #f3e8d6; /* texto sobre foto, igual nos dois temas */
+  --vidro-foto: rgba(22, 11, 6, 0.52);
+}
+
+:root,
+[data-tema="escuro"] {
+  --vidro: color-mix(in srgb, #1f120b 70%, transparent);
+  --vidro-borda: color-mix(in srgb, #e1cda8 16%, transparent);
+  --painel-2: #2c1b12;
+}
+
+[data-tema="claro"] {
+  --vidro: color-mix(in srgb, #fffaf1 78%, transparent);
+  --vidro-borda: color-mix(in srgb, #190c07 12%, transparent);
+  --painel-2: #f1e7d6;
+}
+
+body {
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+  letter-spacing: 0.003em;
+}
+
+/* títulos: serifa clássica, sem caixa-alta forçada */
+h1,
+h2 {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-stretch: normal;
+  letter-spacing: -0.005em;
+}
+
+h2 {
+  font-size: clamp(2.5rem, 5.4vw, 4.25rem);
+  line-height: 0.98;
+}
+
+h3 {
+  font-weight: 600;
+}
+
+.sub {
+  font-size: 1.05rem;
+  color: var(--texto-2);
+  margin-top: 0.7rem;
+  max-width: 46ch;
+}
+
+/* números: a fonte geométrica, sem a versão estreita de antes */
+.tempo,
+.relogio,
+.fatos dd,
+.treino-medidas dd,
+.metas dd,
+.lista-provas .tempo,
+.resumo-periodo dd,
+.lista-treinos .medidas b,
+.semana .volume b,
+.semana .num-semana {
+  font-family: var(--sans);
+  font-stretch: normal;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+/* ------------------------------------------------------------- cabeçalho */
+.marca {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-stretch: normal;
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+  color: var(--texto);
+}
+
+.menu a {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* na página inicial, o cabeçalho fica por cima da foto até a página rolar */
+.com-capa .topo {
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(14, 7, 3, 0.62), rgba(14, 7, 3, 0));
+  border-bottom-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: background-color 0.25s, border-color 0.25s;
+}
+
+.com-capa .topo:not(.rolou) .marca,
+.com-capa .topo:not(.rolou) .menu a,
+.com-capa .topo:not(.rolou) .botao-icone {
+  color: var(--creme-foto);
+}
+
+.com-capa .topo:not(.rolou) .menu a:hover {
+  background: rgba(243, 232, 214, 0.12);
+}
+
+.com-capa .topo:not(.rolou) .alternador,
+.com-capa .topo:not(.rolou) .botao-icone {
+  background: rgba(22, 11, 6, 0.32);
+  border-color: rgba(243, 232, 214, 0.22);
+}
+
+.com-capa .topo:not(.rolou) .alternador button {
+  color: rgba(243, 232, 214, 0.82);
+}
+
+.com-capa .topo:not(.rolou) .alternador button[aria-pressed="true"] {
+  background: var(--creme-foto);
+  color: #190c07;
+}
+
+.com-capa .topo.rolou {
+  background: color-mix(in srgb, var(--fundo) 90%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: var(--linha);
+}
+
+/* ------------------------------------------------------------- abertura */
+.com-capa .abertura {
+  padding-top: 0;
+}
+
+/* dois painéis de foto, de borda a borda */
+.capa {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: none;
+  gap: 4px;
+  align-items: stretch;
+  background: var(--fundo);
+}
+
+.painel-foto {
+  position: relative;
+  overflow: hidden;
+  min-height: min(86svh, 780px);
+  background: var(--painel);
+}
+
+.painel-foto.lateral {
+  min-height: min(70svh, 620px);
+}
+
+.painel-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.painel-foto.principal img {
+  object-position: 55% 55%;
+}
+
+.painel-foto.lateral img {
+  object-position: 50% 22%;
+}
+
+/* escurece o alto (para o cabeçalho) e o pé (para o texto) */
+.painel-foto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(14, 7, 3, 0.5) 0%, rgba(14, 7, 3, 0) 24%, rgba(14, 7, 3, 0) 48%, rgba(14, 7, 3, 0.82) 100%);
+}
+
+.capa.sem-fotos .painel-foto::after {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .capa {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    height: min(100svh, 940px);
+    min-height: 620px;
+  }
+
+  .painel-foto,
+  .painel-foto.lateral {
+    min-height: 0;
+  }
+}
+
+.capa-texto {
+  position: absolute;
+  z-index: 1;
+  left: clamp(20px, 4.5vw, 64px);
+  right: clamp(20px, 4vw, 48px);
+  bottom: clamp(32px, 7vh, 72px);
+  padding: 0;
+  text-align: left;
+  color: var(--creme-foto);
+}
+
+.capa.sem-fotos .capa-texto {
+  color: var(--texto);
+}
+
+.titulo-site {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-stretch: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.015em;
+  line-height: 0.9;
+  font-size: clamp(3rem, 7.4vw, 7.25rem);
+  color: inherit;
+}
+
+.titulo-site .cor {
+  color: #e98a58;
+}
+
+/* a frase: alinhada à esquerda, sem os traços dos lados */
+.mote {
+  margin: clamp(1.25rem, 3vh, 2rem) 0 0;
+  font-size: clamp(0.78rem, 1.05vw, 0.9rem);
+  letter-spacing: 0.16em;
+  line-height: 1.9;
+  font-weight: 500;
+  color: rgba(243, 232, 214, 0.72);
+}
+
+.mote span {
+  padding-left: 0;
+}
+
+.mote .meio {
+  justify-content: flex-start;
+  color: #f2b08a;
+  font-weight: 600;
+}
+
+.mote .meio::before {
+  display: none;
+}
+
+.mote .meio::after {
+  width: 3.5rem;
+  opacity: 0.6;
+}
+
+/* a próxima prova: painel de vidro sobre a foto da chegada */
+.abertura .painel-foto .contagem {
+  position: absolute;
+  z-index: 1;
+  left: clamp(16px, 2.5vw, 32px);
+  right: clamp(16px, 2.5vw, 32px);
+  bottom: clamp(20px, 5vh, 48px);
+  display: grid;
+  gap: 0.2rem;
+  max-width: 25rem;
+  margin: 0;
+  padding: 1.1rem 1.3rem 1.2rem;
+  border: 1px solid rgba(243, 232, 214, 0.18);
+  border-radius: var(--raio);
+  background: var(--vidro-foto);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  color: var(--creme-foto);
+}
+
+.abertura .painel-foto .contagem p {
+  color: rgba(243, 232, 214, 0.7);
+  font-size: 0.85rem;
+}
+
+.abertura .painel-foto .contagem strong {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  margin: 0 0 0.6rem;
+}
+
+.abertura .painel-foto .contagem .relogio small {
+  color: rgba(243, 232, 214, 0.6);
+}
+
+.abertura .painel-foto .contagem .ver {
+  margin: 0.8rem 0 0;
+  color: #f2b08a;
+}
+
+/* sem a segunda foto, a contagem fica solta logo abaixo */
+.capa > .contagem {
+  margin: 1.5rem auto 0;
+}
+
+/* faixa de números, separados por linhas finas */
+.faixa-numeros {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(2rem, 4vw, 3rem);
+}
+
+.faixa-numeros .num-capa {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  align-items: flex-start;
+  text-align: left;
+  padding: 1.25rem 0 1.25rem 1.25rem;
+  border-left: 1px solid var(--linha);
+}
+
+.faixa-numeros .num-capa:nth-child(odd) {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.faixa-numeros .num-capa:nth-child(n + 3) {
+  border-top: 1px solid var(--linha);
+}
+
+@media (min-width: 900px) {
+  .faixa-numeros {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .faixa-numeros .num-capa,
+  .faixa-numeros .num-capa:nth-child(odd) {
+    padding: 0.25rem 1.5rem;
+    border-left: 1px solid var(--linha);
+    border-top: 0;
+  }
+
+  .faixa-numeros .num-capa:first-child {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .faixa-numeros .num-capa:nth-child(n + 3) {
+    border-top: 0;
+  }
+}
+
+.faixa-numeros .num-capa .valor {
+  margin: 0;
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-stretch: normal;
+  font-size: clamp(2.6rem, 5.6vw, 4.5rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+  color: var(--texto);
+}
+
+.faixa-numeros .num-capa .rotulo {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  align-self: auto;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  border: 0;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--texto-3);
+}
+
+.faixa-numeros .num-capa .info {
+  width: 1.1rem;
+  height: 1.1rem;
+  font: 600 0.65rem/1 var(--sans);
+}
+
+/* cartões com as comparações e os desenhos */
+.perspectiva {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 1000px) {
+  .perspectiva {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+.cartao-perspectiva {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 1.15rem 1.15rem 1rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--painel);
+}
+
+.cartao-perspectiva .comparacao {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--texto-2);
+}
+
+.cartao-perspectiva .comparacao b {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 1.9rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--destaque-tx);
+}
+
+.cartao-perspectiva .viz {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1.12;
+  margin-top: auto;
+  border-radius: var(--raio-p);
+  background: var(--painel-2);
+  overflow: hidden;
+}
+
+/* o muro tem a legenda embaixo: a caixa cresce com ela */
+.cartao-perspectiva #viz-atividades {
+  aspect-ratio: auto;
+  min-height: 11rem;
+  padding: 1.25rem 0.25rem 0.9rem;
+}
+
+.cartao-perspectiva .mapa-montanha {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+}
+
+.legenda-muro {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  padding: 0 0.5rem;
+}
+
+/* ---------------------------------------------------------------- seções */
+.secao {
+  padding-top: clamp(5rem, 11vw, 8.5rem);
+}
+
+.secao-cabeca {
+  margin-bottom: clamp(1.75rem, 4vw, 3rem);
+}
+
+.secao-cabeca.com-acoes {
+  align-items: flex-end;
+}
+
+/* abas em pílula; a escolhida fica cheia de cor */
+.abas {
+  gap: 0.4rem;
+}
+
+.abas button {
+  padding: 0.5rem 1.05rem;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-color: var(--linha-forte);
+}
+
+.abas button[aria-pressed="true"] {
+  background: var(--destaque);
+  border-color: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+/* painel: a base de quase todos os blocos de dados */
+.grade-recordes > div,
+.resumo-periodo,
+.cartao-grafico,
+.equipamento,
+.calendario-painel {
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--painel);
+}
+
+/* ----------------------------------------------------------------- sobre */
+.sobre {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 960px) {
+  .sobre {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+    gap: clamp(3rem, 8vw, 8rem);
+    align-items: start;
+  }
+
+  .sobre .secao-cabeca {
+    position: sticky;
+    top: 110px;
+  }
+}
+
+.sobre .secao-cabeca {
+  text-align: left;
+}
+
+.sobre h2 {
+  color: var(--texto);
+  text-transform: none;
+  font-size: clamp(3.2rem, 8vw, 6.5rem);
+}
+
+.texto-sobre {
+  max-width: 40rem;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.75;
+}
+
+.texto-sobre p:first-child {
+  font-family: var(--serifa);
+  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+  line-height: 1.2;
+  color: var(--texto);
+}
+
+.texto-sobre p.chave {
+  margin: 2.5rem 0 1.75rem;
+  padding: 1.6rem 1.6rem 1.7rem;
+  border-radius: var(--raio);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-stretch: normal;
+  font-size: clamp(2rem, 4.2vw, 3rem);
+  line-height: 1.02;
+}
+
+.texto-sobre p.chave em {
+  font-style: normal;
+}
+
+.assinatura strong {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-stretch: normal;
+  font-size: 1.7rem;
+}
+
+.assinatura span {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  letter-spacing: 0;
+}
+
+/* -------------------------------------------------------------- recordes */
+.grade-recordes {
+  gap: 14px;
+}
+
+.grade-recordes > div {
+  padding: 1.35rem 1.35rem 0.75rem;
+  min-width: 0;
+}
+
+.bloco-titulo {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-size: 1.7rem;
+  margin-bottom: 1rem;
+}
+
+.resultados th {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.resultados tbody tr:nth-child(even) {
+  background: transparent;
+}
+
+.resultados tbody tr.clicavel:hover {
+  background: var(--painel-2);
+}
+
+.lista-provas li:last-child {
+  border-bottom: 0;
+}
+
+/* conquistas em cartões; o primeiro, cheio de cor */
+.conquistas {
+  gap: 10px;
+  margin-top: 14px;
+  border: 0;
+}
+
+.conquista {
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--painel);
+  padding: 1.25rem 1.25rem 1.35rem;
+}
+
+.conquista strong {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-stretch: normal;
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.conquista .titulo {
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+.conquista:first-child {
+  background: var(--destaque);
+  border-color: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+.conquista:first-child .titulo,
+.conquista:first-child .titulo a,
+.conquista:first-child p {
+  color: inherit;
+}
+
+.conquista:first-child p {
+  opacity: 0.85;
+}
+
+/* -------------------------------------------------------------- recentes */
+.resumo-periodo {
+  padding: 1.35rem;
+  align-self: start;
+}
+
+.resumo-periodo dl {
+  gap: 8px;
+}
+
+.resumo-periodo dl > div {
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--raio-p);
+  background: var(--painel-2);
+}
+
+.lista-treinos a {
+  border-radius: var(--raio-p);
+}
+
+.lista-treinos a:hover {
+  background: var(--painel);
+}
+
+/* ------------------------------------------------- destaques: mosaico de rotas */
+.mosaico-rotas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 720px) {
+  .mosaico-rotas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .mosaico-rotas {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+.mosaico-rotas a {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0.85rem 0.95rem 1rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--painel);
+  text-decoration: none;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.mosaico-rotas a:hover {
+  border-color: var(--destaque);
+  transform: translateY(-2px);
+}
+
+.mosaico-rotas .desenho {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  margin: 0 -0.1rem 0.85rem;
+  border-radius: var(--raio-p);
+  background: var(--painel-2);
+}
+
+.mosaico-rotas .desenho svg {
+  width: 82%;
+  height: 82%;
+  overflow: visible;
+}
+
+.mosaico-rotas .desenho path {
+  fill: none;
+  stroke: var(--destaque-tx);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.mosaico-rotas .sem-rota {
+  font-size: 0.85rem;
+  color: var(--texto-3);
+}
+
+.mosaico-rotas .posicao {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.35rem;
+  font-family: var(--serifa);
+  font-size: 1.35rem;
+  color: var(--texto-2);
+}
+
+.mosaico-rotas .nome {
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--texto);
+}
+
+.mosaico-rotas .quando {
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--texto-3);
+}
+
+.mosaico-rotas .medidas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.7rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--texto-2);
+}
+
+.mosaico-rotas .medidas b {
+  width: 100%;
+  font-size: 1.45rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--texto);
+}
+
+/* --------------------------------------------------------------- números */
+.grade-graficos {
+  gap: 12px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.cartao-grafico {
+  padding: 1.35rem 1.35rem 1.1rem;
+}
+
+.cartao-grafico h3 {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-size: 1.55rem;
+}
+
+/* constância e clima: os fatos viram mini-blocos */
+.fatos {
+  gap: 10px;
+}
+
+.fatos > div {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-p);
+  background: var(--painel);
+}
+
+.fatos dd {
+  font-size: 2rem;
+}
+
+/* ---------------------------------------------------------------- lugares */
+/* o mapa de borda a borda, com o painel de cidades flutuando por cima */
+.grade-lugares {
+  position: relative;
+  display: block;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
+.grade-lugares .mapa {
+  height: clamp(460px, 78vh, 760px);
+  border: 0;
+  border-radius: 0;
+}
+
+#painel-lugares {
+  position: relative;
+  margin: -4rem 16px 0;
+  padding: 1.35rem;
+  border: 1px solid var(--vidro-borda);
+  border-radius: var(--raio);
+  background: var(--vidro);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  z-index: 500;
+}
+
+@media (min-width: 960px) {
+  #painel-lugares {
+    position: absolute;
+    top: 24px;
+    right: max(24px, calc(50vw - 600px + 32px));
+    bottom: 24px;
+    width: min(400px, 34vw);
+    margin: 0;
+    overflow-y: auto;
+  }
+}
+
+.lista-lugares button {
+  border-radius: var(--raio-p);
+}
+
+/* ------------------------------------------------------------ equipamento */
+.equipamento {
+  padding: 1.35rem 1.35rem 0.9rem;
+}
+
+.equipamento .linha-h + .linha-h .trilho i {
+  background: var(--linha-forte) !important;
+}
+
+/* ------------------------------------------------------------- rodapé */
+/* o nome ocupa a largura da página, sem passar dela */
+.fim-pagina {
+  container-type: inline-size;
+}
+
+.marca-rodape {
+  width: 100%;
+  margin: 0 0 clamp(2.5rem, 6vw, 4rem) !important;
+  font-family: var(--serifa);
+  font-size: 6.6cqi;
+  line-height: 0.9;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--texto) 14%, transparent);
+}
+
+.powered {
+  font-family: var(--sans);
+  letter-spacing: 0.08em;
+}
+
+/* --------------------------------------------- páginas do treino e do plano */
+.treino-cabeca h1,
+.plano-cabeca h1 {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-stretch: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 0.98;
+}
+
+.treino-medidas dd,
+.metas dd {
+  font-size: clamp(1.7rem, 3.4vw, 2.3rem);
+}
+
+.semana > button {
+  border-radius: var(--raio-p);
+}

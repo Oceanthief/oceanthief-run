@@ -19,6 +19,7 @@
   "fotos": [
     {
       "arquivo": "assets/img/corrida-dia.jpg",
+      "grande": "assets/img/corrida-dia-grande.jpg",
       "descricao": {
         "pt": "Victor numa meia maratona, fotografado do alto: regata verde, número 3697 no peito, passando ao lado de um muro vermelho com grafite amarelo.",
         "en": "Victor in a half marathon, shot from above: green tank top, bib number 3697, running past a red wall with yellow graffiti.",
@@ -28,6 +29,7 @@
     },
     {
       "arquivo": "assets/img/corrida-noite.jpg",
+      "grande": "assets/img/corrida-noite-grande.jpg",
       "descricao": {
         "pt": "Victor cruzando a chegada de uma corrida noturna e conferindo o relógio, com o cronômetro da prova marcando 0:30:33.",
         "en": "Victor crossing the finish line of a night race and checking the watch, with the race clock at 0:30:33.",
