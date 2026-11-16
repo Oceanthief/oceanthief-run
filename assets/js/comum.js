@@ -396,57 +396,122 @@ export function iniciarDicas() {
 }
 
 // ------------------------------------------------------- cabeçalho comum
-const ICONE_SOL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
-const ICONE_LUA = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`;
+const ICONE_AJUSTES = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>`;
+const ICONE_MENU = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>`;
+const NOMES_IDIOMA = { pt: "Português", en: "English", es: "Español" };
 
+// O cabeçalho: os links das seções e um só botão de preferências (idioma, km/mi e tema).
+// Em telas estreitas, os links viram um botão "Menu".
 export function montarTopo({ nome, links = [] }) {
   const topo = $(".topo");
+  const opcoes = (grupo, itens, atual) =>
+    `<div class="alternador" role="group" aria-label="${esc(grupo)}">${itens
+      .map(([valor, rotulo, extra = ""]) => `<button type="button" data-valor="${valor}" aria-pressed="${valor === atual}"${extra}>${esc(rotulo)}</button>`)
+      .join("")}</div>`;
   topo.innerHTML = `
     <div class="recipiente">
       <a class="marca" href="./">${esc(nome)}</a>
-      <nav class="menu" aria-label="${esc(t("Seções"))}">${links.map(([href, txt]) => `<a href="${href}">${esc(txt)}</a>`).join("")}</nav>
+      <nav class="menu" id="menu-secoes" aria-label="${esc(t("Seções"))}">${links.map(([href, txt]) => `<a href="${href}">${esc(txt)}</a>`).join("")}</nav>
       <div class="ajustes">
-        <div class="alternador idiomas" role="group" aria-label="${esc(t("Idioma"))}">
-          ${Object.keys(IDIOMAS).map((l) => `<button type="button" data-lang="${l}" lang="${IDIOMAS[l]}" aria-pressed="${l === idioma}" title="${NOMES_IDIOMA[l]}">${l.toUpperCase()}</button>`).join("")}
+        ${links.length ? `<button type="button" class="botao-topo botao-menu" aria-expanded="false" aria-controls="menu-secoes">${ICONE_MENU}<span>${t("Menu")}</span></button>` : ""}
+        <div class="preferencias">
+          <button type="button" class="botao-topo" id="botao-pref" aria-expanded="false" aria-controls="painel-pref" title="${esc(t("Preferências"))}">${ICONE_AJUSTES}<span><span class="so-leitor">${esc(t("Preferências"))}: </span>${idioma.toUpperCase()}</span></button>
+          <div class="painel-pref" id="painel-pref" hidden>
+            <p>${t("Idioma")}</p>
+            <div data-grupo="idioma">${opcoes(t("Idioma"), Object.keys(IDIOMAS).map((l) => [l, NOMES_IDIOMA[l], ` lang="${IDIOMAS[l]}"`]), idioma)}</div>
+            <p>${t("Distância")}</p>
+            <div data-grupo="unidade">${opcoes(t("Unidade de distância"), [["km", "km"], ["mi", t("milhas")]], unidade)}</div>
+            <p>${t("Tema")}</p>
+            <div data-grupo="tema">${opcoes(t("Tema"), [["escuro", t("Escuro")], ["claro", t("Claro")]], temaAtual())}</div>
+          </div>
         </div>
-        <div class="alternador" role="group" aria-label="${esc(t("Unidade de distância"))}">
-          <button type="button" data-u="km" aria-pressed="${unidade === "km"}">km</button>
-          <button type="button" data-u="mi" aria-pressed="${unidade === "mi"}">mi</button>
-        </div>
-        <button type="button" class="botao-icone" id="botao-tema"></button>
       </div>
     </div>`;
+
   // na página com foto de abertura, o cabeçalho fica transparente até a página rolar
   const marcar = () => topo.classList.toggle("rolou", window.scrollY > 24);
   window.addEventListener("scroll", marcar, { passive: true });
   marcar();
-  const botaoTema = $("#botao-tema", topo);
-  const pintar = () => {
-    const claro = temaAtual() === "claro";
-    botaoTema.innerHTML = claro ? ICONE_LUA : ICONE_SOL;
-    botaoTema.setAttribute("aria-label", claro ? t("Usar tema escuro") : t("Usar tema claro"));
-    botaoTema.title = botaoTema.getAttribute("aria-label");
+
+  const botaoPref = $("#botao-pref", topo);
+  const painel = $("#painel-pref", topo);
+  const botaoMenu = $(".botao-menu", topo);
+  const fecharTudo = (excecao) => {
+    if (excecao !== "pref") {
+      painel.hidden = true;
+      botaoPref.setAttribute("aria-expanded", "false");
+    }
+    if (excecao !== "menu" && botaoMenu) {
+      topo.classList.remove("menu-aberto");
+      botaoMenu.setAttribute("aria-expanded", "false");
+    }
   };
-  pintar();
-  botaoTema.onclick = () => {
-    alternarTema();
-    pintar();
+  botaoPref.onclick = (ev) => {
+    ev.stopPropagation();
+    const abrir = painel.hidden;
+    fecharTudo("pref");
+    painel.hidden = !abrir;
+    botaoPref.setAttribute("aria-expanded", String(abrir));
   };
-  $$("[data-u]", topo).forEach((b) => {
+  if (botaoMenu) {
+    botaoMenu.onclick = (ev) => {
+      ev.stopPropagation();
+      const abrir = !topo.classList.contains("menu-aberto");
+      fecharTudo("menu");
+      topo.classList.toggle("menu-aberto", abrir);
+      botaoMenu.setAttribute("aria-expanded", String(abrir));
+    };
+  }
+  $("#menu-secoes", topo).onclick = (ev) => {
+    if (ev.target.closest("a")) fecharTudo();
+  };
+  painel.onclick = (ev) => ev.stopPropagation();
+  document.addEventListener("click", () => fecharTudo());
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") fecharTudo();
+  });
+
+  const marcarEscolha = (grupo, b) => $$(`[data-grupo="${grupo}"] button`, topo).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  $$('[data-grupo="idioma"] button', topo).forEach((b) => (b.onclick = () => trocarIdioma(b.dataset.valor)));
+  $$('[data-grupo="unidade"] button', topo).forEach((b) => {
     b.onclick = () => {
-      $$("[data-u]", topo).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-      setUnidade(b.dataset.u);
+      marcarEscolha("unidade", b);
+      setUnidade(b.dataset.valor);
     };
   });
-  $$("[data-lang]", topo).forEach((b) => {
-    b.onclick = () => trocarIdioma(b.dataset.lang);
+  $$('[data-grupo="tema"] button', topo).forEach((b) => {
+    b.onclick = () => {
+      marcarEscolha("tema", b);
+      if (temaAtual() !== b.dataset.valor) alternarTema();
+    };
   });
 }
 
-const NOMES_IDIOMA = { pt: "Português", en: "English", es: "Español" };
 
 // a marca do Strava (Simple Icons, domínio público)
 const LOGO_STRAVA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>`;
+
+// contador de visitas sem cookies (GoatCounter); só liga com "goatcounter" no perfil.json
+function contarVisitas(codigo) {
+  if (!/^[a-z0-9-]+$/.test(codigo || "") || /^(localhost|127\.)/.test(location.hostname)) return;
+  const base = `https://${codigo}.goatcounter.com`;
+  const s = document.createElement("script");
+  s.async = true;
+  s.src = "https://gc.zgo.at/count.js";
+  s.dataset.goatcounter = `${base}/count`;
+  document.head.append(s);
+  fetch(`${base}/counter/TOTAL.json`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      const n = Number(String(d?.count ?? "").replace(/\D/g, ""));
+      const el = $("#visitas");
+      if (el && n) {
+        el.textContent = plural(n, "{n} visita", "{n} visitas");
+        el.hidden = false;
+      }
+    })
+    .catch(() => {});
+}
 
 export function montarRodape(site, perfil) {
   const gerado = site?.gerado_em ? new Date(site.gerado_em) : null;
@@ -459,11 +524,13 @@ export function montarRodape(site, perfil) {
       <p class="powered">${LOGO_STRAVA}<span>Powered by Strava</span></p>
       ${feitoPor ? `<p class="feito-por">Made by: ${esc(feitoPor)}</p>` : ""}
       <a class="seguir-strava" href="${esc(stravaUrl)}" target="_blank" rel="noopener">${LOGO_STRAVA}<span>Follow me on</span><b>Strava</b></a>
+      ${perfil?.goatcounter ? `<p class="visitas" id="visitas" hidden></p>` : ""}
       <div class="creditos">
         <p>${gerado ? esc(t("Dados atualizados em {data}, às {hora}. O site se atualiza sozinho a cada treino registrado no Strava.", { data: dataLonga(gerado), hora: hora(gerado) })) : ""}</p>
         <p>${t("Mapas ©")} <a href="https://www.openstreetmap.org/copyright">${t("colaboradores do OpenStreetMap")}</a>. ${t("Clima:")} <a href="https://open-meteo.com">Open-Meteo</a>.${links.instagram ? ` <a href="${esc(links.instagram)}">Instagram</a>.` : ""}</p>
       </div>
     </div>`;
+  contarVisitas(perfil?.goatcounter);
 }
 
 // relógio da próxima prova

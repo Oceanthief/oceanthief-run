@@ -1,7 +1,7 @@
 import {
   $, aoMudarTema, aoMudarUnidade, buscarJSON, corGrupo, dataLonga, decodificarRota, diaSemana, dist, duracao, elev, esc,
   grupoDe, hora, iniciarDicas, linkTreino, montarRodape, montarTopo, nomeCondicao, nomeSite, nomeTipo, nomeTopo, num, num1, pace,
-  NOMES_ESFORCO, relogio, ritmo, prepararAtividades, rotuloDist, nomePais, plural, t,
+  NOMES_ESFORCO, relogio, ritmo, prepararAtividades, rotuloDist, nomePais, plural, t, getUnidade, aoRedimensionar,
 } from "./comum.js";
 import { barrasH } from "./graficos.js";
 
@@ -36,6 +36,7 @@ async function iniciar() {
   document.title = `${T.n}: ${nomeSite(S, P)}`;
   desenhar();
   aoMudarUnidade(desenhar);
+  aoRedimensionar(() => T.serie && desenharSerie());
 }
 
 function desenhar() {
@@ -75,6 +76,7 @@ function desenhar() {
         ${T.esforcos?.length ? `<h3 class="bloco-titulo" style="margin-top:2rem">${t("Melhores trechos")}</h3><div id="esforcos"></div>` : ""}
       </div>
     </div>
+    <section class="serie-treino" id="serie-treino"></section>
     <nav class="navegacao-treinos" aria-label="${esc(t("Outros treinos"))}">
       ${ant ? `<a href="${linkTreino(ant.id)}"><small>${t("Treino anterior")}</small>${esc(ant.n)}</a>` : "<span></span>"}
       ${prox ? `<a href="${linkTreino(prox.id)}" style="text-align:right"><small>${t("Próximo treino")}</small>${esc(prox.n)}</a>` : "<span></span>"}
@@ -99,6 +101,7 @@ function desenhar() {
         <td class="num"><span class="tempo" style="font-size:1.25rem">${relogio(e.t)}</span></td><td class="num secundario">${pace(e.dist, e.t)}</td></tr>`)
       .join("")}</tbody></table>`;
   }
+  desenharSerie();
   if (T.rota) desenharMapa();
 }
 
@@ -118,4 +121,155 @@ function desenharMapa() {
   mapa.fitBounds(linha.getBounds(), { padding: [24, 24] });
   mapa.on("focus", () => mapa.scrollWheelZoom.enable());
   aoMudarTema(() => linha.setStyle({ color: cor() }));
+}
+
+// Altimetria, ritmo e FC ao longo do treino: três faixas empilhadas com o mesmo eixo de distância
+// (em vez de dois eixos no mesmo gráfico). Passar o mouse mostra os valores naquele ponto.
+function desenharSerie() {
+  const el = $("#serie-treino");
+  const s = T.serie;
+  if (!el) return;
+  if (!s?.d?.length) return el.remove();
+  const g = grupoDe(T.t);
+  const mi = getUnidade() === "mi";
+  const xs = s.d;
+  const total = xs.at(-1) || 1;
+  // média móvel curta: tira o serrilhado do GPS sem apagar as mudanças de ritmo
+  const suavizar = (lista, r = 2) =>
+    lista.map((v, i) => {
+      if (v == null || v <= 0) return v;
+      const janela = lista.slice(Math.max(0, i - r), i + r + 1).filter((n) => n > 0);
+      return janela.reduce((a, b) => a + b, 0) / janela.length;
+    });
+  const faixas = [];
+  // "minimo" é a menor faixa de valores da escala: num treino plano, 10 m de subida não viram montanha
+  if (s.alt?.some((v) => v != null)) {
+    const conv = (v) => (mi ? v * 3.28084 : v);
+    faixas.push({ titulo: t("Altimetria"), valores: s.alt.map((v) => (v == null ? null : conv(v))), fmt: (v) => `${num(v)} ${mi ? t("pés") : "m"}`, eixo: (v) => num(v), area: true, classe: "alt", minimo: mi ? 120 : 40 });
+  }
+  if (s.v?.some((v) => v > 0)) {
+    const vel = suavizar(s.v);
+    if (g === "pedal") {
+      faixas.push({ titulo: t("Velocidade"), valores: vel.map((v) => (v > 0.5 ? (mi ? v * 2.23694 : v * 3.6) : null)), fmt: (v) => `${num1(v)} ${mi ? "mph" : "km/h"}`, eixo: (v) => num(v), classe: "ritmo", minimo: 8 });
+    } else {
+      const base = mi ? 1609.344 : 1000;
+      // parado (menos de 0,8 m/s) não vira ritmo: o gráfico fica com um vão ali
+      faixas.push({ titulo: t("Ritmo"), valores: vel.map((v) => (v > 0.8 ? base / v : null)), fmt: (v) => `${relogio(v)} /${rotuloDist()}`, eixo: (v) => relogio(v), inverter: true, classe: "ritmo", minimo: 60 });
+    }
+  }
+  if (s.hr?.some((v) => v > 0)) {
+    faixas.push({ titulo: t("Frequência cardíaca"), valores: s.hr.map((v) => (v > 0 ? v : null)), fmt: (v) => `${num(v)} bpm`, eixo: (v) => num(v), classe: "fc", minimo: 30 });
+  }
+  if (!faixas.length) return el.remove();
+
+  const largura = Math.max(300, el.clientWidth || 800);
+  const alto = 118;
+  const m = { l: 48, r: 8, t: 24, b: 6 }; // em cima, uma linha só para o nome da faixa
+  const w = largura - m.l - m.r;
+  const h = alto - m.t - m.b;
+  const x = (d) => m.l + (d / total) * w;
+  const quantil = (lista, q) => {
+    const v = lista.filter((n) => n != null).sort((a, b) => a - b);
+    return v[Math.floor(q * (v.length - 1))];
+  };
+
+  const svgs = faixas.map((f) => {
+    // no ritmo, os 3% mais extremos ficam de fora da escala (paradas e arrancadas)
+    let lo = quantil(f.valores, f.inverter ? 0.03 : 0);
+    let hi = quantil(f.valores, f.inverter ? 0.97 : 1);
+    const falta = (f.minimo || 1e-6) - (hi - lo);
+    if (falta > 0) {
+      lo -= falta / 2;
+      hi += falta / 2;
+    }
+    const folga = (hi - lo) * 0.08;
+    lo -= folga;
+    hi += folga;
+    f.y = (v) => {
+      const p = (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo);
+      return m.t + (f.inverter ? p : 1 - p) * h; // ritmo: mais rápido em cima
+    };
+    let d = "";
+    let aberto = false;
+    f.valores.forEach((v, j) => {
+      if (v == null) { aberto = false; return; }
+      d += `${aberto ? "L" : "M"}${x(xs[j]).toFixed(1)} ${f.y(v).toFixed(1)}`;
+      aberto = true;
+    });
+    const area = f.area && d ? `<path class="area" d="${d}L${x(xs.at(-1)).toFixed(1)} ${m.t + h}L${x(xs[0]).toFixed(1)} ${m.t + h}Z"/>` : "";
+    const [cima, baixo] = f.inverter ? [lo, hi] : [hi, lo];
+    return `<div class="serie-faixa ${f.classe}">
+      <span class="serie-titulo">${esc(f.titulo)}</span>
+      <svg width="${largura}" height="${alto}" viewBox="0 0 ${largura} ${alto}" aria-hidden="true">
+        <line class="grade" x1="${m.l}" x2="${largura - m.r}" y1="${m.t}" y2="${m.t}"/>
+        <line class="grade" x1="${m.l}" x2="${largura - m.r}" y1="${m.t + h}" y2="${m.t + h}"/>
+        <text x="${m.l - 6}" y="${m.t + 4}" text-anchor="end">${esc(f.eixo(cima))}</text>
+        <text x="${m.l - 6}" y="${m.t + h}" text-anchor="end">${esc(f.eixo(baixo))}</text>
+        ${area}<path class="linha" d="${d}"/>
+        <line class="cursor" x1="0" x2="0" y1="${m.t}" y2="${m.t + h}" visibility="hidden"/>
+        <circle class="ponto-cursor" r="3.5" visibility="hidden"/>
+      </svg>
+    </div>`;
+  });
+
+  // marcas de distância embaixo (1, 2, 5 ou 10 km/mi, conforme o tamanho)
+  const totalU = total / (mi ? 1609.344 : 1000);
+  const passo = [1, 2, 5, 10, 20, 50].find((p) => totalU / p <= 8) || 100;
+  let marcas = "";
+  for (let k = 0; k <= totalU + 1e-9; k += passo) {
+    const px = x(k * (mi ? 1609.344 : 1000));
+    marcas += `<text x="${px.toFixed(1)}" y="12" text-anchor="middle">${num(k)}</text>`;
+  }
+
+  el.innerHTML = `<h3 class="bloco-titulo">${t("Ao longo do treino")}</h3>
+    <div class="serie-graficos" role="img" aria-label="${esc(t("Altimetria, ritmo e frequência cardíaca ao longo do treino"))}">
+      ${svgs.join("")}
+      <svg class="serie-eixo" width="${largura}" height="18" viewBox="0 0 ${largura} 18" aria-hidden="true">${marcas}<text x="${m.l - 6}" y="12" text-anchor="end">${rotuloDist()}</text></svg>
+      <div class="dica serie-dica" hidden></div>
+    </div>`;
+
+  const caixa = $(".serie-graficos", el);
+  const dica = $(".serie-dica", el);
+  const cursores = faixas.map((f, i) => {
+    const faixa = caixa.children[i];
+    return { f, linha: $(".cursor", faixa), ponto: $(".ponto-cursor", faixa) };
+  });
+  const mostrar = (ev) => {
+    const r = caixa.getBoundingClientRect();
+    const px = ev.clientX - r.left;
+    if (px < m.l || px > largura - m.r) return esconder();
+    const alvo = ((px - m.l) / w) * total;
+    let j = 0;
+    while (j < xs.length - 1 && Math.abs(xs[j + 1] - alvo) <= Math.abs(xs[j] - alvo)) j++;
+    const cx = x(xs[j]);
+    const linhas = [dist(xs[j], 1)];
+    for (const { f, linha, ponto } of cursores) {
+      linha.setAttribute("x1", cx);
+      linha.setAttribute("x2", cx);
+      linha.setAttribute("visibility", "visible");
+      const v = f.valores[j];
+      if (v == null) ponto.setAttribute("visibility", "hidden");
+      else {
+        ponto.setAttribute("cx", cx);
+        ponto.setAttribute("cy", f.y(v));
+        ponto.setAttribute("visibility", "visible");
+      }
+      linhas.push(`${f.titulo}: ${v == null ? "–" : f.fmt(v)}`);
+    }
+    dica.textContent = linhas.join("\n");
+    dica.hidden = false;
+    dica.classList.add("visivel");
+    const lado = cx > largura * 0.6 ? cx - dica.offsetWidth - 14 : cx + 14;
+    dica.style.left = `${Math.max(0, lado)}px`;
+    dica.style.top = "8px";
+  };
+  const esconder = () => {
+    dica.hidden = true;
+    for (const { linha, ponto } of cursores) {
+      linha.setAttribute("visibility", "hidden");
+      ponto.setAttribute("visibility", "hidden");
+    }
+  };
+  caixa.addEventListener("pointermove", mostrar);
+  caixa.addEventListener("pointerleave", esconder);
 }

@@ -66,6 +66,9 @@ async function iniciar() {
   }
 
   ROTAS = new Map((await buscarJSON("data/rotas.json", true)) || []);
+  // no começo da semana, enquanto não houver treino do esporte principal, abre na semana passada
+  const principal = grupoPrincipal();
+  if (!A.some((a) => a.data >= inicioSemana(new Date()) && a.grupo === principal)) estado.periodo = "passada";
   abertura();
   sobre();
   alvos();
@@ -161,7 +164,7 @@ function abertura() {
   const temContagem = PLANO?.prova?.data && new Date(PLANO.prova.data) > new Date();
   // a versão grande da foto ("grande" no perfil.json) só é baixada em telas largas
   const imagem = (f, tamanhos) =>
-    `<img src="${esc(f.arquivo)}"${f.grande ? ` srcset="${esc(f.arquivo)} 1000w, ${esc(f.grande)} 1920w" sizes="${tamanhos}"` : ""} alt="${esc(tr(f.descricao) || t("Foto de {nome}", { nome: nomeSite(S, P) }))}" decoding="async">`;
+    `<img src="${esc(f.arquivo)}"${f.grande ? ` srcset="${esc(f.arquivo)} 1000w, ${esc(f.grande)} 1920w" sizes="${tamanhos}"` : ""} alt="${esc(tr(f.descricao) || t("Foto de {nome}", { nome: nomeSite(S, P) }))}" decoding="async"${tamanhos.includes("60vw") ? ' fetchpriority="high"' : ""}>`;
   const contagem = temContagem
     ? `<a class="contagem" href="plano.html"><p>${t("Próxima prova")}</p><strong>${esc(PLANO.prova.nome)}</strong><div class="relogio" id="relogio-prova"></div><span class="ver">${t("Ver o plano de treino")}</span></a>`
     : "";
@@ -184,14 +187,34 @@ function abertura() {
 
   const { metros } = totais();
   const ref = montanhaRef();
-  muro($("#viz-atividades"), { atividades: A, corDe: corGrupo, nomeDe: nomeGrupo });
-  globoVoltas($("#viz-distancia"), {
-    voltas: metros / 1000 / VOLTA_TERRA_KM,
-    rotulo: t("Globo com o pedaço da volta na Terra já percorrido: {feito} de {total} km", { feito: dist(metros, 0), total: num(VOLTA_TERRA_KM) }),
+  // os desenhos (e as bibliotecas do globo e do mapa) só carregam quando chegam perto da tela
+  quandoVisivel($("#viz-atividades"), (el) => muro(el, { atividades: A, corDe: corGrupo, nomeDe: nomeGrupo }));
+  quandoVisivel($("#viz-distancia"), (el) =>
+    globoVoltas(el, {
+      voltas: metros / 1000 / VOLTA_TERRA_KM,
+      rotulo: t("Globo com o pedaço da volta na Terra já percorrido: {feito} de {total} km", { feito: dist(metros, 0), total: num(VOLTA_TERRA_KM) }),
+    }),
+  );
+  quandoVisivel($("#viz-horas"), (el) => globoOrbita(el, { rotulo: t("Globo com a órbita da Estação Espacial Internacional") }));
+  quandoVisivel($("#viz-subida"), (el) => {
+    mapaMontanha = montanha(el, { ...ref, rotulo: t("Mapa de relevo do {nome}, com {m} m de altitude", { nome: tr(ref.nome), m: num(ref.altura_m) }) });
   });
-  globoOrbita($("#viz-horas"), { rotulo: t("Globo com a órbita da Estação Espacial Internacional") });
-  mapaMontanha = montanha($("#viz-subida"), { ...ref, rotulo: t("Mapa de relevo do {nome}, com {m} m de altitude", { nome: tr(ref.nome), m: num(ref.altura_m) }) });
   if (temContagem) contagemRegressiva($("#relogio-prova"), new Date(PLANO.prova.data));
+}
+
+function quandoVisivel(el, fazer) {
+  if (!el) return;
+  if (!("IntersectionObserver" in window)) return fazer(el);
+  const obs = new IntersectionObserver(
+    (itens) => {
+      if (itens.some((i) => i.isIntersecting)) {
+        obs.disconnect();
+        fazer(el);
+      }
+    },
+    { rootMargin: "300px" },
+  );
+  obs.observe(el);
 }
 
 function totais() {
@@ -286,6 +309,24 @@ function sobre() {
   const paragrafos = (tr(P.sobre) || []).filter(Boolean);
   if (!paragrafos.length) return $("#sobre").remove();
   $("#texto-sobre").innerHTML = paragrafos.map(paragrafo).join("") + assinatura();
+  $("#sobre .secao-cabeca")?.insertAdjacentHTML("beforeend", ficha());
+}
+
+// uma ficha curta: desde quando, onde treina, os melhores tempos e as provas
+function ficha() {
+  const itens = [];
+  const primeira = A[0]?.data;
+  if (primeira) itens.push([t("No Strava desde"), `${MESES_CURTOS[primeira.getMonth()]} ${primeira.getFullYear()}`]);
+  if (S.casa?.cidade) itens.push([t("Treina em"), S.casa.cidade]);
+  const recs = recordesComProvas();
+  for (const nome of ["5K", "10K", "Half-Marathon", "Marathon"]) {
+    const r = recs.find((x) => x.nome === nome && x.top?.length);
+    if (r) itens.push([t("Melhor {d}", { d: (NOMES_ESFORCO[nome] || nome).toLowerCase() }), relogio(r.top[0].t)]);
+  }
+  const provas = A.filter((a) => a.prova).length;
+  if (provas) itens.push([t("Provas corridas"), num(provas)]);
+  for (const extra of P.ficha || []) if (extra?.rotulo && extra?.valor) itens.push([tr(extra.rotulo), tr(extra.valor)]);
+  return `<dl class="ficha">${itens.map(([dt, dd]) => `<div><dt>${esc(dt)}</dt><dd>${esc(dd)}</dd></div>`).join("")}</dl>`;
 }
 
 // ----------------------------------------------------------- provas alvo
@@ -364,8 +405,36 @@ function alvos() {
 }
 
 // --------------------------------------------------------------- recordes
+// Numa prova de meia ou maratona, o GPS costuma medir um pouco menos que a distância oficial,
+// e aí o Strava não registra o "melhor esforço". Aqui o tempo da prova também conta.
+const DISTANCIAS_OFICIAIS = { "Half-Marathon": [21097.5, 20800, 21400], Marathon: [42195, 41700, 42800] };
+
+function recordesComProvas() {
+  const lista = (S.recordes || []).map((r) => ({ ...r, top: [...(r.top || [])], por_ano: { ...(r.por_ano || {}) } }));
+  for (const [nome, [oficial, minimo, maximo]] of Object.entries(DISTANCIAS_OFICIAIS)) {
+    const provas = A.filter((a) => a.prova && a.grupo === "corrida" && a.m >= minimo && a.m <= maximo);
+    if (!provas.length) continue;
+    let r = lista.find((x) => x.nome === nome);
+    if (!r) lista.push((r = { nome, dist: oficial, top: [], por_ano: {} }));
+    for (const a of provas) {
+      const tempo = a.e || a.s;
+      const mesmo = r.top.find((x) => x.id === a.id);
+      if (mesmo) {
+        mesmo.oficial = true;
+        continue;
+      }
+      r.top.push({ t: tempo, id: a.id, d: a.dia, n: a.n, oficial: true });
+      const ano = String(a.ano);
+      if (!r.por_ano[ano] || tempo < r.por_ano[ano]) r.por_ano[ano] = tempo;
+    }
+    r.top.sort((x, y) => x.t - y.t);
+    r.por_ano = Object.fromEntries(Object.entries(r.por_ano).sort());
+  }
+  return lista.sort((x, y) => x.dist - y.dist);
+}
+
 function recordes() {
-  const lista = (S.recordes || []).filter((r) => ESFORCOS_PRINCIPAIS.includes(r.nome) && r.top?.length);
+  const lista = recordesComProvas().filter((r) => ESFORCOS_PRINCIPAIS.includes(r.nome) && r.top?.length);
   const corridas = A.filter((a) => a.grupo === "corrida").length;
   const corpo = $("#tabela-recordes");
   if (!lista.length) {
@@ -381,12 +450,12 @@ function recordes() {
             <td><b>${esc(NOMES_ESFORCO[r.nome] || r.nome)}</b></td>
             <td class="num"><span class="tempo">${relogio(m.t)}</span></td>
             <td class="num">${pace(r.dist, m.t)}</td>
-            <td><a href="${linkTreino(m.id)}">${esc(m.n)}</a><div class="secundario">${dataLonga(new Date(`${m.d}T12:00`))}</div></td>
+            <td><a href="${linkTreino(m.id)}">${esc(m.n)}</a>${m.oficial ? `<span class="selo-pr" style="background:var(--vermelho);color:var(--sobre-destaque)">${t("prova")}</span>` : ""}<div class="secundario">${dataLonga(new Date(`${m.d}T12:00`))}</div></td>
             <td class="so-largo" data-dica="${esc(Object.entries(r.por_ano).map(([a, t]) => `${a}: ${relogio(t)}`).join("\n"))}">${miniLinha(anos)}</td>
           </tr>`;
         })
         .join("")}</tbody></table></div>
-      <p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.75rem 0 0">${t("Melhores trechos dentro de qualquer corrida, medidos pelo Strava.")}${S.detalhados < corridas ? ` ${t("Ainda faltam detalhes de algumas corridas antigas: eles chegam aos poucos a cada sincronização.")}` : ""}</p>`;
+      <p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.75rem 0 0">${t("Melhores trechos dentro de qualquer corrida, medidos pelo Strava.")} ${t("Na meia maratona e na maratona, o tempo das provas também conta, mesmo quando o GPS marcou um pouco menos.")}${S.detalhados < corridas ? ` ${t("Ainda faltam detalhes de algumas corridas antigas: eles chegam aos poucos a cada sincronização.")}` : ""}</p>`;
     corpo.querySelector("tbody").onclick = (ev) => {
       const tr = ev.target.closest("tr[data-id]");
       if (tr && !ev.target.closest("a")) location.href = linkTreino(tr.dataset.id);
@@ -731,7 +800,56 @@ function autoLimites(valores) {
 }
 
 // ------------------------------------------------------------- constância
+// o ano até agora: quanto já foi, comparado com o mesmo ponto do ano passado,
+// a projeção para 31 de dezembro e a meta (ou, sem meta, o total do ano passado)
+function anoEmCurso() {
+  const el = $("#ano-curso");
+  if (!el) return;
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const L = A.filter((a) => a.grupo === PRINCIPAL);
+  const doAno = (y, ate) => soma(L.filter((a) => a.ano === y && (!ate || a.data <= ate)), (a) => a.m);
+  const feito = doAno(ano);
+  if (!feito) return (el.hidden = true);
+  const inicioAno = new Date(ano, 0, 1);
+  const fimAno = new Date(ano + 1, 0, 1);
+  const fracao = Math.min(1, (hoje - inicioAno) / (fimAno - inicioAno));
+  const projecao = fracao > 0.02 ? feito / fracao : null;
+  const mesmaData = new Date(ano - 1, hoje.getMonth(), hoje.getDate(), 23, 59);
+  const anterior = doAno(ano - 1, mesmaData);
+  const totalAnterior = doAno(ano - 1);
+  const metaKm = Number(P.meta_anual_km?.[ano] ?? P.meta_anual_km?.[String(ano)] ?? (typeof P.meta_anual_km === "number" ? P.meta_anual_km : 0));
+  const alvo = metaKm ? metaKm * 1000 : totalAnterior;
+  const rotuloAlvo = metaKm
+    ? t("Meta: {v}", { v: dist(alvo, 0) })
+    : totalAnterior
+      ? t("Total de {ano}: {v}", { ano: ano - 1, v: dist(alvo, 0) })
+      : "";
+  const pct = alvo ? Math.min(100, (feito / alvo) * 100) : 0;
+  const esperado = alvo ? Math.min(100, fracao * 100) : null;
+  const variacao = anterior ? (feito / anterior - 1) * 100 : null;
+  const grupo = GRUPOS[PRINCIPAL].nome.toLowerCase();
+  el.hidden = false;
+  el.innerHTML = `
+    <div class="ano-topo">
+      <h3>${t("{ano} até agora", { ano })}</h3>
+      <p class="ano-total"><b>${esc(dist(feito, 0))}</b> ${esc(t("de {grupo}", { grupo }))}</p>
+    </div>
+    ${alvo ? `<div class="barra-ano" role="img" aria-label="${esc(`${num(pct)}% — ${rotuloAlvo}`)}">
+      <i class="feito" style="width:${pct.toFixed(1)}%"></i>
+      <i class="esperado" style="left:${esperado.toFixed(1)}%" data-dica="${esc(t("Onde a meta pede estar hoje: {v}", { v: dist(alvo * fracao, 0) }))}"></i>
+    </div>
+    <p class="ano-alvo"><span>${num(pct)}%</span><span>${esc(rotuloAlvo)}</span></p>` : ""}
+    <ul class="ano-fatos">
+      ${projecao ? `<li>${esc(t("No ritmo atual, {ano} fecha com {v}.", { ano, v: dist(projecao, 0) }))}</li>` : ""}
+      ${variacao != null ? `<li>${esc(variacao >= 0
+        ? t("{p}% a mais que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior, 0) })
+        : t("{p}% a menos que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior, 0) }))}</li>` : ""}
+    </ul>`;
+}
+
 function constancia() {
+  anoEmCurso();
   const anos = [...new Set(A.map((a) => a.ano))].sort((x, y) => y - x);
   abas($("#abas-constancia"), [{ valor: "12m", rotulo: t("Últimos 12 meses") }, ...anos.map((a) => ({ valor: String(a), rotulo: String(a) }))], estado.ano, (v) => { estado.ano = v; constancia(); });
   const hoje = new Date();
@@ -843,11 +961,21 @@ function clima() {
 function equipamento() {
   const lista = (S.equipamento || []).filter((g) => g.m > 0).sort((x, y) => (x.aposentado - y.aposentado) || y.m - x.m);
   if (!lista.length) return $("#equipamento")?.remove();
-  barrasH($("#lista-equipamento"), lista.map((g) => ({
-    rotulo: g.nome, extra: `${g.tipo === "bike" ? t("bike") : t("tênis")}${g.aposentado ? t(", aposentado") : g.principal ? t(", o principal") : ""}`,
-    valor: g.m, texto: dist(g.m, 0), dica: t("{treinos} registrados", { treinos: nTreinos(g.usos) }),
-    cor: g.aposentado ? "var(--linha-forte)" : g.tipo === "bike" ? "var(--c-pedal)" : "var(--destaque)",
-  })));
+  // tênis de corrida costumam durar de 600 a 800 km; o limite pode mudar em perfil.json
+  const vida = (Number(P.vida_tenis_km) || 800) * 1000;
+  const maior = Math.max(...lista.map((g) => g.m));
+  barrasH($("#lista-equipamento"), lista.map((g) => {
+    const gasto = g.tipo !== "bike" && !g.aposentado && g.m >= vida;
+    return {
+      rotulo: g.nome,
+      extra: `${g.tipo === "bike" ? t("bike") : t("tênis")}${g.aposentado ? t(", aposentado") : g.principal ? t(", o principal") : ""}${gasto ? t(", passou de {v}", { v: dist(vida, 0) }) : ""}`,
+      valor: g.m, texto: dist(g.m, 0),
+      dica: `${t("{treinos} registrados", { treinos: nTreinos(g.usos) })}${g.tipo !== "bike" ? `\n${t("Tênis de corrida costumam durar de 600 a 800 km.")}` : ""}`,
+      cor: g.aposentado ? "var(--linha-forte)" : g.tipo === "bike" ? "var(--c-pedal)" : gasto ? "var(--vermelho)" : "var(--destaque)",
+      marca: g.tipo !== "bike" && maior > vida ? (vida / maior) * 100 : null,
+      classe: gasto ? "gasto" : "",
+    };
+  }));
 }
 
 // ---------------------------------------------------------------- lugares

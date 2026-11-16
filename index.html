@@ -4,12 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The Oceanthief Run</title>
-  <meta name="description" content="Meus treinos do Strava em números: recordes, constância, mapas e o plano para a próxima prova.">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="The Oceanthief Run">
-  <meta property="og:description" content="Meus treinos do Strava em números.">
+  <meta name="description" content="Treinos, recordes e a estrada até a maratona de Porto Alegre, direto do Strava.">
   <meta name="theme-color" content="#190c07">
+  <meta property="og:site_name" content="The Oceanthief Run">
+  <meta property="og:title" content="The Oceanthief Run">
+  <meta property="og:description" content="Treinos, recordes e a estrada até a maratona de Porto Alegre, direto do Strava.">
+  <meta property="og:image" content="https://oceanthief.github.io/oceanthief-run/assets/img/compartilhar.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Oceanthief Run: Victor correndo uma meia maratona">
+  <meta property="og:url" content="https://oceanthief.github.io/oceanthief-run/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="manifest" href="assets/site.webmanifest">
+  <link rel="apple-touch-icon" href="assets/img/icone-180.png">
   <link rel="icon" href="assets/img/icone.svg" type="image/svg+xml">
+  <link rel="preload" as="image" href="assets/img/corrida-dia.jpg" imagesrcset="assets/img/corrida-dia.jpg 1000w, assets/img/corrida-dia-grande.jpg 1920w" imagesizes="(min-width: 900px) 60vw, 100vw" fetchpriority="high">
   <script>
     try {
       var t = localStorage.getItem("strava-site:tema");
@@ -77,6 +86,7 @@
 
       <section class="secao" id="constancia">
         <div class="secao-cabeca com-acoes"><div class="abas" id="abas-constancia"></div></div>
+        <div class="ano-curso" id="ano-curso" hidden></div>
         <div class="calendario" id="calendario"></div>
         <div class="escala" aria-hidden="true"><span data-t>menos</span> <i class="n0"></i><i class="n1"></i><i class="n2"></i><i class="n3"></i><i class="n4"></i> <span data-t>mais</span></div>
         <dl class="fatos" id="fatos-constancia"></dl>

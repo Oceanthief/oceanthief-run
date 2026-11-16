@@ -1527,6 +1527,8 @@ table.resultados {
 }
 
 .leaflet-container {
+  /* as camadas do mapa ficam dentro dele e não passam por cima do cabeçalho */
+  isolation: isolate;
   font-family: inherit !important;
   background: var(--fundo-2) !important;
 }

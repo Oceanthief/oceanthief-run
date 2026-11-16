@@ -70,9 +70,9 @@ export function barrasH(el, dados, { max } = {}) {
   const maior = max ?? Math.max(...dados.map((d) => d.valor), 1);
   el.innerHTML = `<div class="barras-h">${dados
     .map(
-      (d) => `<div class="linha-h"${d.dica ? ` data-dica="${esc(d.dica)}"` : ""}>
+      (d) => `<div class="linha-h${d.classe ? ` ${d.classe}` : ""}"${d.dica ? ` data-dica="${esc(d.dica)}"` : ""}>
         <span class="rotulo">${esc(d.rotulo)}${d.extra ? `<span class="aposentado">${esc(d.extra)}</span>` : ""}</span>
-        <span class="trilho"><i style="width:${Math.max(0.5, (d.valor / maior) * 100)}%;${d.cor ? `background:${d.cor}` : ""}"></i></span>
+        <span class="trilho"><i style="width:${Math.max(0.5, (d.valor / maior) * 100)}%;${d.cor ? `background:${d.cor}` : ""}"></i>${d.marca != null ? `<b class="marca-trilho" style="left:${d.marca.toFixed(1)}%"></b>` : ""}</span>
         <span class="valor">${esc(d.texto ?? num(d.valor))}</span>
       </div>`
     )

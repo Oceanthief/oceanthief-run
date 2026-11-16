@@ -38,7 +38,7 @@ jobs:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
           STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
-        run: python scripts/sync_strava.py --max-detalhes 90
+        run: python scripts/sync_strava.py --max-detalhes 90 --max-series 90
 
       - name: Guardar os dados no repositório
         run: |

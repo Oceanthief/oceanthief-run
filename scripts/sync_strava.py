@@ -3,6 +3,7 @@
     python scripts/sync_strava.py                    # sincroniza e gera o site
     python scripts/sync_strava.py --max-detalhes 900 # primeira vez: baixa mais detalhes
     python scripts/sync_strava.py --so-gerar         # só refaz os arquivos a partir do cache
+    python scripts/sync_strava.py --max-series 1000  # baixa as séries (altimetria, ritmo, FC) que faltam
 
 Precisa de STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET e STRAVA_REFRESH_TOKEN, no
 arquivo .env (criado pelo strava_auth.py) ou em variáveis de ambiente (GitHub).
@@ -30,6 +31,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 CACHE = RAIZ / "data" / "cache"        # vai para o git
 LOCAL = RAIZ / "data" / "local"        # fica só no seu PC
+SERIES = CACHE / "series"               # altimetria, ritmo e FC de cada treino (vai para o git)
 SAIDA = RAIZ / "data"
 CONFIG = RAIZ / "config" / "perfil.json"
 API = "https://www.strava.com/api/v3"
@@ -309,6 +311,40 @@ def enxugar_detalhe(d: dict) -> dict:
     }
 
 
+PONTOS_SERIE = 160
+
+
+def enxugar_serie(s: dict) -> dict:
+    """Reduz as séries do Strava a uns 160 pontos: distância (m), altitude (m), velocidade (m/s) e FC.
+
+    Sem coordenadas: o gráfico não precisa delas e assim nada revela onde o treino foi."""
+    distancia = (s.get("distance") or {}).get("data") or []
+    n = len(distancia)
+    if n < 10:
+        return {}
+    passo = max(1.0, n / PONTOS_SERIE)
+    indices = sorted({min(n - 1, round(i * passo)) for i in range(int(n / passo) + 1)})
+
+    def tirar(chave: str, casas: int):
+        dados = (s.get(chave) or {}).get("data")
+        if not dados or len(dados) != n:
+            return None
+        # a média de cada janela evita que um pico isolado vire o ponto do gráfico
+        saida, ini = [], 0
+        for i in indices:
+            janela = [v for v in dados[ini : i + 1] if v is not None] or [dados[i]]
+            saida.append(round(sum(janela) / len(janela), casas) if janela[0] is not None else None)
+            ini = i + 1
+        return saida
+
+    return {
+        "d": [round(distancia[i]) for i in indices],
+        "alt": tirar("altitude", 1),
+        "v": tirar("velocity_smooth", 2),
+        "hr": tirar("heartrate", 0),
+    }
+
+
 def enxugar_atleta(a: dict) -> dict:
     def equipamento(lista):
         return [
@@ -331,7 +367,7 @@ def enxugar_atleta(a: dict) -> dict:
     }
 
 
-def sincronizar_strava(env: dict, max_detalhes: int, esperar: bool) -> None:
+def sincronizar_strava(env: dict, max_detalhes: int, esperar: bool, max_series: int = 60) -> None:
     api = Strava(env, esperar)
     api.autenticar()
 
@@ -383,7 +419,38 @@ def sincronizar_strava(env: dict, max_detalhes: int, esperar: bool) -> None:
         restantes = len(faltando) - feitos
         if restantes:
             log(f"  faltam {restantes} treinos sem detalhe (vão sendo baixados aos poucos).")
+    baixar_series(api, todas, max_series)
     log(f"Strava: {api.chamadas} chamadas nesta rodada.")
+
+
+def baixar_series(api: "Strava", todas: list[dict], maximo: int) -> None:
+    """Altimetria, ritmo e FC ao longo de cada treino, para os gráficos da página do treino."""
+    SERIES.mkdir(parents=True, exist_ok=True)
+    feitas = {p.stem for p in SERIES.glob("*.json")}
+    faltando = [
+        a for a in sorted(todas, key=lambda x: x["start_date"], reverse=True)
+        if str(a["id"]) not in feitas and (a.get("distance") or 0) > 0 and not a.get("manual")
+        and (a.get("sport_type") or a.get("type")) in COM_DETALHE
+    ]
+    if not faltando or maximo <= 0:
+        return
+    alvo = min(len(faltando), maximo)
+    log(f"Baixando as séries de {alvo} de {len(faltando)} treinos...")
+    feitos = 0
+    try:
+        for a in faltando[:alvo]:
+            s = api.get(f"/activities/{a['id']}/streams", keys="distance,altitude,velocity_smooth,heartrate", key_by_type="true")
+            # {} também é gravado: marca que o treino não tem série e não pede de novo
+            gravar_json(SERIES / f"{a['id']}.json", enxugar_serie(s) if isinstance(s, dict) else {}, compacto=True)
+            feitos += 1
+            if feitos % 50 == 0:
+                log(f"  {feitos}/{alvo}")
+    except LimiteDiario as motivo:
+        log(f"  parei nas séries: {motivo}. O resto vem na próxima sincronização.")
+    except (urllib.error.URLError, TimeoutError, OSError) as erro:
+        log(f"  parei nas séries por um erro ({erro}). O resto vem na próxima sincronização.")
+    if len(faltando) - feitos:
+        log(f"  faltam {len(faltando) - feitos} treinos sem série.")
 
 
 # ---------------------------------------------------------- clima e cidades
@@ -614,6 +681,7 @@ def gerar_site() -> None:
             "rota": codificar(pontos) if len(pontos) >= 2 else "",
             "parciais": det.get("parciais") or [],
             "esforcos": [{k: e[k] for k in ("nome", "dist", "t", "pr")} for e in det.get("esforcos") or []],
+            "serie": ler_json(SERIES / f"{aid}.json", {}) or None,
             "clima": cl,
             "lugar": lugares[lugar_idx] if lugar_idx is not None else None,
         }
@@ -670,6 +738,7 @@ def gerar_site() -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--max-detalhes", type=int, default=80, help="quantos treinos detalhar nesta rodada")
+    parser.add_argument("--max-series", type=int, default=60, help="quantas séries (altimetria, ritmo, FC) baixar nesta rodada")
     parser.add_argument("--so-gerar", action="store_true", help="não fala com o Strava; só refaz os arquivos")
     parser.add_argument("--sem-esperar", action="store_true", help="não espera a janela de 15 min do Strava")
     args = parser.parse_args()
@@ -689,7 +758,7 @@ def main() -> int:
             for arquivo in ("site.json", "rotas.json"):
                 (SAIDA / arquivo).unlink(missing_ok=True)
         esperar = not args.sem_esperar and not os.environ.get("CI")
-        sincronizar_strava(env, args.max_detalhes, esperar)
+        sincronizar_strava(env, args.max_detalhes, esperar, args.max_series)
         atividades = ler_json(LOCAL / "atividades.json", [])
         sincronizar_lugares(atividades)
         sincronizar_clima(atividades)
