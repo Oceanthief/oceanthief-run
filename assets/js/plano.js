@@ -18,7 +18,7 @@ async function iniciar() {
     return;
   }
   const temSemanas = PL?.semanas?.length > 0;
-  montarTopo({ nome: nomeTopo(S, P), links: temSemanas ? [["./", t("Início")], ["#volume", t("Volume")], ["#semanas", t("Semana a semana")]] : [["./", t("Início")]] });
+  montarTopo({ nome: nomeTopo(S, P), secoes: temSemanas ? [["#volume", t("Volume")], ["#semanas", t("Semana a semana")]] : [], pagina: "plano", plano: temSemanas });
   montarRodape(S, P);
   if (PL?.rascunho) {
     $("#plano").innerHTML = `<a class="voltar" href="./">${t("Voltar para o início")}</a><section class="secao" style="padding-top:2rem">

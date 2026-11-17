@@ -156,6 +156,33 @@ export function quandoRelativo(d) {
   return d.getFullYear() === hoje.getFullYear() ? dataCurta(d) : dataLonga(d);
 }
 
+// ----------------------------------------------------- provas sem data e nomes
+export const semAcento = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const fmtMesAno = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric" });
+
+// prova ainda sem data: "previsao" pode ser um mês ("2027-07"), um semestre ("2027-S2") ou só o ano ("2027")
+export function periodoPrevisto(prev) {
+  const texto = String(prev || "").trim();
+  let m = /^(\d{4})-(\d{2})$/.exec(texto);
+  if (m) {
+    const ini = new Date(+m[1], +m[2] - 1, 1);
+    const nome = fmtMesAno.format(ini);
+    return { ini, fim: new Date(+m[1], +m[2], 1), texto: nome.charAt(0).toLocaleUpperCase(LOCALE) + nome.slice(1), mes: true };
+  }
+  m = /^(\d{4})-S([12])$/i.exec(texto);
+  if (m) {
+    const primeiro = m[2] === "1";
+    return {
+      ini: new Date(+m[1], primeiro ? 0 : 6, 1),
+      fim: new Date(+m[1], primeiro ? 6 : 12, 1),
+      texto: primeiro ? t("1º semestre de {ano}", { ano: m[1] }) : t("2º semestre de {ano}", { ano: m[1] }),
+    };
+  }
+  m = /^(\d{4})$/.exec(texto);
+  if (m) return { ini: new Date(+m[1], 0, 1), fim: new Date(+m[1] + 1, 0, 1), texto: m[1] };
+  return null;
+}
+
 // --------------------------------------------------------------- números
 // "always": em espanhol, 3658 também vira 3.658, como 21.245
 const nf0 = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0, useGrouping: "always" });
@@ -410,9 +437,17 @@ const ICONE_AJUSTES = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const ICONE_MENU = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>`;
 const NOMES_IDIOMA = { pt: "Português", en: "English", es: "Español" };
 
-// O cabeçalho: os links das seções e um só botão de preferências (idioma, km/mi e tema).
-// Em telas estreitas, os links viram um botão "Menu".
-export function montarTopo({ nome, links = [] }) {
+// O cabeçalho: as páginas do site, um botão "Seções" (na página que tem seções) e um só botão de
+// preferências (idioma, km/mi e tema). Em telas estreitas, páginas e seções ficam no botão "Menu".
+// O Plano só entra na lista quando o plano está publicado.
+export function montarTopo({ nome, secoes = [], pagina = "", plano = false }) {
+  const paginas = [
+    ["./", t("Início"), "inicio"],
+    ["provas.html", t("Provas"), "provas"],
+    ["evolucao.html", t("Evolução"), "evolucao"],
+    ...(plano ? [["plano.html", t("Plano"), "plano"]] : []),
+  ];
+  const linkPagina = ([href, txt, id]) => `<a href="${href}"${id === pagina ? ' aria-current="page"' : ""}>${esc(txt)}</a>`;
   const topo = $(".topo");
   const opcoes = (grupo, itens, atual) =>
     `<div class="alternador" role="group" aria-label="${esc(grupo)}">${itens
@@ -421,9 +456,9 @@ export function montarTopo({ nome, links = [] }) {
   topo.innerHTML = `
     <div class="recipiente">
       <a class="marca" href="./">${esc(nome)}</a>
-      <nav class="menu" id="menu-secoes" aria-label="${esc(t("Seções"))}">${links.map(([href, txt]) => `<a href="${href}">${esc(txt)}</a>`).join("")}</nav>
+      <nav class="paginas" aria-label="${esc(t("Páginas"))}">${paginas.map(linkPagina).join("")}</nav>
       <div class="ajustes">
-        ${links.length ? `<button type="button" class="botao-topo botao-menu" aria-expanded="false" aria-controls="menu-secoes">${ICONE_MENU}<span>${t("Menu")}</span></button>` : ""}
+        <button type="button" class="botao-topo botao-menu${secoes.length ? "" : " so-estreito"}" aria-expanded="false" aria-controls="menu-secoes">${ICONE_MENU}<span class="rot-largo">${t("Seções")}</span><span class="rot-estreito">${t("Menu")}</span></button>
         <div class="preferencias">
           <button type="button" class="botao-topo" id="botao-pref" aria-expanded="false" aria-controls="painel-pref" title="${esc(t("Preferências"))}">${ICONE_AJUSTES}<span><span class="so-leitor">${esc(t("Preferências"))}: </span>${idioma.toUpperCase()}</span></button>
           <div class="painel-pref" id="painel-pref" hidden>
@@ -436,6 +471,10 @@ export function montarTopo({ nome, links = [] }) {
           </div>
         </div>
       </div>
+      <nav class="menu" id="menu-secoes" aria-label="${esc(t("Menu"))}">
+        <div class="menu-paginas">${paginas.map(linkPagina).join("")}</div>
+        ${secoes.length ? `<p class="menu-rotulo">${t("Nesta página")}</p><div class="menu-lista">${secoes.map(([href, txt]) => `<a href="${href}">${esc(txt)}</a>`).join("")}</div>` : ""}
+      </nav>
     </div>`;
 
   // na página com foto de abertura, o cabeçalho fica transparente até a página rolar

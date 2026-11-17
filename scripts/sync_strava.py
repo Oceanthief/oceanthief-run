@@ -654,6 +654,59 @@ def tipo(a: dict) -> str:
     return a.get("sport_type") or a.get("type") or "Workout"
 
 
+def montar_evolucao(atividades: list[dict], por_distancia: dict, zonas_fc: list[dict]) -> dict:
+    """Os dados da página Evolução.
+
+    esforcos: para cada distância, o melhor trecho de cada corrida ([data, segundos, id]), em ordem de data.
+    meses: o resumo de cada mês de corrida. A frequência cardíaca e a cadência são médias ponderadas
+    pelo tempo; "mpb" é a distância por batimento (metros andados a cada batida do coração), que sobe
+    quando o mesmo esforço rende mais. "leve_m"/"leve_s" somam as corridas com a FC média na zona 2.
+    """
+    esforcos = {}
+    for (nome, _dist), lista in por_distancia.items():
+        esforcos.setdefault(nome, []).extend([e["d"], e["t"], e["id"]] for e in lista)
+    for nome in esforcos:
+        esforcos[nome].sort()
+
+    z2 = zonas_fc[1] if len(zonas_fc) > 1 else None
+    meses: dict[str, dict] = {}
+    for a in atividades:
+        m, s = a.get("distance") or 0, a.get("moving_time") or 0
+        if tipo(a) not in CORRIDA or m < 500 or s < 60:
+            continue
+        g = meses.setdefault(a["start_date_local"][:7], {"n": 0, "m": 0.0, "s": 0, "hr_s": 0, "hr_x": 0.0, "batidas": 0.0, "m_hr": 0.0, "cad_s": 0, "cad_x": 0.0, "leve_m": 0.0, "leve_s": 0})
+        g["n"] += 1
+        g["m"] += m
+        g["s"] += s
+        fc = a.get("average_heartrate")
+        if fc:
+            g["hr_s"] += s
+            g["hr_x"] += fc * s
+            g["batidas"] += fc * s / 60
+            g["m_hr"] += m
+            if z2 and z2["min"] <= fc < (z2["max"] if z2["max"] > 0 else 999):
+                g["leve_m"] += m
+                g["leve_s"] += s
+        cad = a.get("average_cadence")
+        if cad:
+            g["cad_s"] += s
+            g["cad_x"] += cad * 2 * s  # o Strava manda os passos de uma perna só
+    lista = []
+    for mes, g in sorted(meses.items()):
+        lista.append({
+            "mes": mes,
+            "n": g["n"],
+            "m": round(g["m"]),
+            "s": g["s"],
+            "hr": round(g["hr_x"] / g["hr_s"]) if g["hr_s"] else None,
+            "mpb": round(g["m_hr"] / g["batidas"], 3) if g["batidas"] else None,
+            "cad": round(g["cad_x"] / g["cad_s"]) if g["cad_s"] else None,
+            "leve_m": round(g["leve_m"]),
+            "leve_s": g["leve_s"],
+        })
+    return {"esforcos": esforcos, "meses": lista}
+
+
 def gerar_site() -> None:
     perfil = ler_json(CONFIG, {})
     priv = perfil.get("privacidade") or {}
@@ -813,6 +866,8 @@ def gerar_site() -> None:
             por_ano.setdefault(e["d"][:4], e["t"])
         recordes.append({"nome": nome, "dist": dist, "top": lista[:5], "por_ano": dict(sorted(por_ano.items()))})
 
+    evolucao = montar_evolucao(atividades, por_distancia, zonas.get("fc") or [])
+
     uso_equip = Counter()
     for a in atividades:
         if a.get("gear_id"):
@@ -836,6 +891,7 @@ def gerar_site() -> None:
     }
     gravar_json(SAIDA / "site.json", site, compacto=True)
     gravar_json(SAIDA / "rotas.json", rotas, compacto=True)
+    gravar_json(SAIDA / "evolucao.json", evolucao, compacto=True)
     log(f"Site gerado: {len(compactas)} atividades, {len(rotas)} rotas, {len(lugares)} cidades, {len(recordes)} distâncias com recorde.")
 
 

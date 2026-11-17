@@ -3,7 +3,7 @@ import {
   dist, distValor, duracao, elev, esc, GRUPOS, hora, iniciarDicas, inicioSemana, linkTreino, MESES_CURTOS,
   montarRodape, montarTopo, nomeSite, nomeTopo, nomeTipo, num, num1, pace, paceSeg, quandoRelativo, reduzirMovimento, relogio,
   ritmo, rotuloDist, getUnidade, buscarJSON, diaSemana, NOMES_ESFORCO, CONDICOES, contagemRegressiva,
-  DIAS_CURTOS, DIAS_LONGOS, LOCALE, nomePais, plural, t, tr, trechosRota,
+  DIAS_CURTOS, DIAS_LONGOS, LOCALE, nomePais, periodoPrevisto, plural, semAcento, t, tr, trechosRota,
 } from "./comum.js";
 import { barras, barrasH, calendario, dispersao, miniLinha, rosca } from "./graficos.js";
 import { globoOrbita, globoVoltas, montanha, muro } from "./capa.js";
@@ -11,7 +11,7 @@ import { globoOrbita, globoVoltas, montanha, muro } from "./capa.js";
 let S, P, PLANO, A, PRINCIPAL;
 let ROTAS = new Map();
 const nTreinos = (n) => plural(n, "{n} treino", "{n} treinos");
-const estado = { periodo: "semana", recentesMostrar: 8, destaque: "longos", grupoNumeros: null, ano: "12m", regiao: "todos", viagensTodas: false, provasTodas: false };
+const estado = { periodo: "semana", recentesMostrar: 8, destaque: "longos", grupoNumeros: null, ano: "12m", regiao: "todos", viagensTodas: false };
 
 const TITULOS = {
   sobre: t("Sobre"),
@@ -48,8 +48,7 @@ async function iniciar() {
 
   const links = [["#sobre", t("Sobre")], ...(P.provas_alvo?.length ? [["#alvos", t("Alvos")]] : []), ["#recordes", t("Recordes")], ["#recentes", t("Recentes")], ["#destaques", t("Destaques")],
     ["#numeros", t("Números")], ["#constancia", t("Constância")], ["#clima", t("Clima")], ["#lugares", t("Lugares")], ["#equipamento", t("Equipamento")]];
-  if (PLANO?.semanas?.length) links.push(["plano.html", t("Plano")]);
-  montarTopo({ nome: nomeTopo(S, P), links: links.filter(([h]) => !h.startsWith("#") || document.querySelector(h)) });
+  montarTopo({ nome: nomeTopo(S, P), secoes: links.filter(([h]) => document.querySelector(h)), pagina: "inicio", plano: PLANO?.semanas?.length > 0 });
   montarRodape(S, P);
 
   for (const [id, padrao] of Object.entries(TITULOS)) {
@@ -338,32 +337,6 @@ function ficha() {
 // ----------------------------------------------------------- provas alvo
 // o calendário da temporada; a prova A é a principal (a do plano)
 const nomePrioridade = (p) => ({ A: t("prioridade|Principal"), B: t("prioridade|Secundária"), C: t("prioridade|Treino") })[p] || p;
-const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-const fmtMesAno = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric" });
-
-// prova ainda sem data: "previsao" pode ser um mês ("2027-07"), um semestre ("2027-S2") ou só o ano ("2027")
-function periodoPrevisto(prev) {
-  const texto = String(prev || "").trim();
-  let m = /^(\d{4})-(\d{2})$/.exec(texto);
-  if (m) {
-    const ini = new Date(+m[1], +m[2] - 1, 1);
-    const nome = fmtMesAno.format(ini);
-    return { ini, fim: new Date(+m[1], +m[2], 1), texto: nome.charAt(0).toLocaleUpperCase(LOCALE) + nome.slice(1), mes: true };
-  }
-  m = /^(\d{4})-S([12])$/i.exec(texto);
-  if (m) {
-    const primeiro = m[2] === "1";
-    return {
-      ini: new Date(+m[1], primeiro ? 0 : 6, 1),
-      fim: new Date(+m[1], primeiro ? 6 : 12, 1),
-      texto: primeiro ? t("1º semestre de {ano}", { ano: m[1] }) : t("2º semestre de {ano}", { ano: m[1] }),
-    };
-  }
-  m = /^(\d{4})$/.exec(texto);
-  if (m) return { ini: new Date(+m[1], 0, 1), fim: new Date(+m[1] + 1, 0, 1), texto: m[1] };
-  return null;
-}
-
 // as edições anteriores, pelos treinos marcados como prova cujo nome bate com "busca"
 function edicoes(p) {
   if (!p.busca) return [];
@@ -531,7 +504,8 @@ function recordes() {
           </tr>`;
         })
         .join("")}</tbody></table></div>
-      <p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.75rem 0 0">${t("Melhores trechos dentro de qualquer corrida, medidos pelo Strava.")} ${t("Na meia maratona e na maratona, o tempo das provas também conta, mesmo quando o GPS marcou um pouco menos.")}${S.detalhados < corridas ? ` ${t("Ainda faltam detalhes de algumas corridas antigas: eles chegam aos poucos a cada sincronização.")}` : ""}</p>`;
+      <p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.75rem 0 0">${t("Melhores trechos dentro de qualquer corrida, medidos pelo Strava.")} ${t("Na meia maratona e na maratona, o tempo das provas também conta, mesmo quando o GPS marcou um pouco menos.")}${S.detalhados < corridas ? ` ${t("Ainda faltam detalhes de algumas corridas antigas: eles chegam aos poucos a cada sincronização.")}` : ""}</p>
+      <a class="mais" href="evolucao.html">${t("Ver a evolução das marcas")}</a>`;
     corpo.querySelector("tbody").onclick = (ev) => {
       const tr = ev.target.closest("tr[data-id]");
       if (tr && !ev.target.closest("a")) location.href = linkTreino(tr.dataset.id);
@@ -546,17 +520,15 @@ function recordes() {
     nome: a.n, data: a.data, distancia: dist(a.m), tempo: relogio(a.e || a.s), strava_id: a.id,
   }));
   const provas = [...manuais, ...auto].sort((x, y) => y.data - x.data);
-  const visiveis = estado.provasTodas ? provas : provas.slice(0, 7);
+  const visiveis = provas.slice(0, 7);
   $("#provas").innerHTML = provas.length
     ? `<ul class="lista-provas">${visiveis
         .map((p) => `<li>
           <span class="nome">${p.strava_id ? `<a href="${linkTreino(p.strava_id)}">${esc(p.nome)}</a>` : esc(p.nome)}</span>
           <span class="info">${dataLonga(p.data)}${p.distancia ? `, ${esc(p.distancia)}` : ""}${p.nota ? `. ${esc(p.nota)}` : ""}</span>
           <span class="tempo">${esc(p.tempo || "")}</span></li>`)
-        .join("")}</ul>${provas.length > 7 ? `<button class="mais" id="provas-todas" type="button">${estado.provasTodas ? t("Mostrar menos") : t("Mostrar as {n} provas", { n: num(provas.length) })}</button>` : ""}`
+        .join("")}</ul><a class="mais" href="provas.html">${t("Ver todas as provas, ano a ano")}</a>`
     : `<p class="vazio">${t("Marque suas provas no Strava (tipo de corrida: prova) ou liste-as em config/perfil.json.")}</p>`;
-  const botao = $("#provas-todas");
-  if (botao) botao.onclick = () => { estado.provasTodas = !estado.provasTodas; recordes(); };
 
   conquistas();
 }

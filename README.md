@@ -2,18 +2,22 @@
 
 Site pessoal com os treinos do Strava: recordes, treinos recentes, gráficos, calendário de constância, clima, mapa das rotas, equipamento e o plano para a próxima prova. Atualiza sozinho a cada treino registrado (com o aviso do Strava ligado) e, de qualquer forma, três vezes por dia.
 
-São três páginas:
+São cinco páginas:
 
 - `index.html`: a página principal;
+- `provas.html`: todas as provas, ano a ano, com as próximas no topo e a comparação com a edição anterior da mesma prova;
+- `evolucao.html`: a evolução das marcas (cada recorde novo, por distância), a previsão para a prova principal, ritmo, frequência cardíaca, distância por batimento e cadência mês a mês, e o resumo de cada ano;
 - `atividade.html?id=...`: cada treino, com mapa, altimetria, ritmo e frequência cardíaca ao longo do percurso, parciais e melhores trechos;
 - `plano.html`: o plano de treino, com contagem regressiva e o que já foi corrido.
+
+O cabeçalho mostra as páginas; as seções da página principal ficam no botão "Seções" (no celular, tudo fica no botão "Menu"). O Plano só aparece com o plano publicado.
 
 Tudo é HTML, CSS e JavaScript puros, sem `npm` e sem etapa de build. Os dados vêm de um script em Python que usa só a biblioteca padrão.
 
 ## Como funciona
 
 ```
-Strava ──► scripts/sync_strava.py ──► data/site.json, data/rotas.json, data/atividades/*.json ──► páginas
+Strava ──► scripts/sync_strava.py ──► data/site.json, data/rotas.json, data/evolucao.json, data/atividades/*.json ──► páginas
               (GitHub Actions, 3x por dia)
 ```
 
@@ -21,7 +25,7 @@ Strava ──► scripts/sync_strava.py ──► data/site.json, data/rotas.jso
 |---|---|---|
 | `config/perfil.json` | seus textos: frase, sobre, provas, conquistas, privacidade | sim |
 | `config/plano.json` | o plano de treino | sim |
-| `data/site.json`, `data/rotas.json`, `data/atividades/` | o que o site lê (gerado) | sim |
+| `data/site.json`, `data/rotas.json`, `data/evolucao.json`, `data/atividades/` | o que o site lê (gerado) | sim |
 | `data/cache/` | detalhes, séries (altimetria, ritmo e FC), clima e cidades já baixados, sem coordenadas exatas | sim |
 | `data/local/` | lista completa com as rotas sem corte | **não** |
 | `.env` | suas chaves do Strava | **não** |
@@ -97,7 +101,7 @@ Para conferir ou desligar: `python scripts/strava_webhook.py ver` e `python scri
 | `sobre` | o texto de apresentação, um parágrafo por item. `*assim*` fica em destaque; um parágrafo inteiro entre asteriscos vira a frase grande |
 | `assinatura` | nome e cidade que fecham o texto "sobre"; vazio usa o nome do Strava e a cidade onde você mais treina |
 | `provas_alvo` | o calendário da temporada (seção "Provas alvo"): `nome`, `data`, `cidade`, `distancia_km`, `prioridade` (`A` principal, `B` secundária, `C` treino), `meta`, `link`, `nota` e `plano: true` na prova que tem o plano de treino. Sem data marcada, use `previsao`: um mês (`"2027-07"`), um semestre (`"2027-S2"`) ou só o ano (`"2027"`). `busca` é um pedaço do nome que a prova costuma ter no Strava (por exemplo `"fogueira"`): o cartão mostra os seus tempos nas edições anteriores e, sem `distancia_km`, a distância da última. Depois da data (ou do período previsto), o tempo vem sozinho do treino do Strava |
-| `provas` | provas com tempo oficial; as marcadas como "Prova" no Strava entram sozinhas. Nos recordes de meia maratona e maratona, o tempo da prova vale mesmo quando o GPS marcou um pouco menos que a distância oficial |
+| `provas` | provas que não estão no Strava (ou com o tempo oficial), cada uma com `nome`, `data` (`"2025-07-19"`), `tempo` (`"1:42:10"`), `distancia_km` e, se quiser, `strava_id` e `nota`. As marcadas como "Prova" no Strava entram sozinhas, na página Provas e na página principal. Nos recordes de meia maratona e maratona, o tempo da prova vale mesmo quando o GPS marcou um pouco menos que a distância oficial |
 | `nao_sao_provas` | ids de treinos marcados como "Prova" no Strava que não devem aparecer como prova (o id é o número no fim do link do treino) |
 | `conquistas` | conquistas que os números não mostram (pódio, recorde de clube...) |
 | `meta_anual_km` | a meta de quilômetros do ano no esporte principal: um número (`2000`) ou um por ano (`{"2026": 1800, "2027": 2200}`). Vazio, a comparação usa o total do ano anterior |

@@ -89,9 +89,43 @@ h3 {
   color: var(--texto);
 }
 
-.menu a {
-  font-size: 0.9rem;
+/* as páginas do site, sempre à vista nas telas largas; a atual fica sublinhada */
+.paginas {
+  display: flex;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+  margin-left: 0.75rem;
+}
+
+.paginas a {
+  position: relative;
+  padding: 0.4rem 0.55rem;
+  border-radius: 6px;
+  color: var(--texto-2);
+  font-size: 0.92rem;
   font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.paginas a:hover {
+  color: var(--texto);
+}
+
+.paginas a[aria-current="page"] {
+  color: var(--texto);
+}
+
+.paginas a[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  right: 0.55rem;
+  bottom: 0.05rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--destaque);
 }
 
 /* na página inicial, o cabeçalho fica por cima da foto até a página rolar */
@@ -107,12 +141,8 @@ h3 {
 }
 
 .com-capa .topo:not(.rolou) .marca,
-.com-capa .topo:not(.rolou) .menu a {
+.com-capa .topo:not(.rolou) .paginas a {
   color: var(--creme-foto);
-}
-
-.com-capa .topo:not(.rolou) .menu a:hover {
-  background: rgba(243, 232, 214, 0.12);
 }
 
 .com-capa .topo:not(.rolou) .botao-topo {
@@ -126,9 +156,6 @@ h3 {
   position: relative;
 }
 
-.menu {
-  justify-content: flex-start;
-}
 
 .botao-topo {
   display: inline-flex;
@@ -153,9 +180,6 @@ h3 {
   border-color: var(--linha-forte);
 }
 
-.botao-menu {
-  display: none;
-}
 
 .preferencias {
   position: relative;
@@ -200,44 +224,90 @@ h3 {
   font-size: 0.85rem;
 }
 
-/* telas estreitas: os links abrem pelo botão Menu, numa grade embaixo do cabeçalho */
-@media (max-width: 1099px) {
-  .botao-menu {
-    display: inline-flex;
-  }
+/* o painel do botão Seções (ou Menu): abre embaixo do cabeçalho, do lado direito */
+.menu {
+  display: none;
+}
 
-  .menu {
+.topo.menu-aberto .menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 16px;
+  z-index: 60;
+  display: block;
+  width: min(28rem, calc(100vw - 32px));
+  margin: 0;
+  padding: 0.75rem;
+  overflow: visible;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--fundo-2);
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.6);
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.menu-paginas,
+.menu-lista {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.topo .menu a {
+  padding: 0.6rem 0.65rem;
+  border-radius: 8px;
+  color: var(--texto-2);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.topo .menu a:hover,
+.topo .menu a[aria-current="page"] {
+  background: var(--painel);
+  color: var(--texto);
+}
+
+.menu-rotulo {
+  margin: 0.5rem 0.65rem 0.25rem;
+  font-size: 0.78rem;
+  color: var(--texto-3);
+}
+
+/* telas largas: as páginas já estão na linha do topo; o botão só mostra as seções */
+@media (min-width: 720px) {
+  .menu-paginas,
+  .rot-estreito,
+  .botao-menu.so-estreito {
     display: none;
   }
 
-  .topo.menu-aberto .menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 2px;
-    margin: 0;
-    padding: 0.75rem 16px 1rem;
-    overflow: visible;
-    background: var(--fundo);
-    border-bottom: 1px solid var(--linha);
-    mask-image: none;
-    -webkit-mask-image: none;
-  }
-
-  .topo.menu-aberto .menu a {
-    padding: 0.7rem 0.5rem;
-    font-size: 0.95rem;
-    color: var(--texto-2) !important;
+  .menu-paginas + .menu-rotulo {
+    margin-top: 0.15rem;
   }
 }
 
+/* telas estreitas: páginas e seções ficam no botão Menu */
 @media (max-width: 719px) {
+  .paginas,
+  .rot-largo {
+    display: none;
+  }
+
   .topo .recipiente {
     flex-wrap: nowrap;
     padding-top: 0;
+  }
+
+  .topo.menu-aberto .menu {
+    left: 16px;
+    width: auto;
+  }
+
+  .menu-paginas + .menu-rotulo {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--linha);
   }
 }
 
@@ -1778,4 +1848,473 @@ body {
   z-index: 5;
   white-space: pre-line;
   pointer-events: none;
+}
+
+/* os links "Ver todas as provas" e "Ver a evolução" com cara de botão */
+a.mais {
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* ======================================================= páginas Provas e Evolução */
+.pagina-cabeca {
+  padding-top: clamp(2.5rem, 7vw, 5rem);
+}
+
+.pagina-cabeca h1 {
+  margin: 0;
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-size: clamp(3.4rem, 10vw, 7rem);
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+}
+
+.faixa-pagina {
+  padding: clamp(1.75rem, 4vw, 2.75rem) 0 0;
+}
+
+.faixa-pagina .num-capa .valor {
+  font-size: clamp(2rem, 4.6vw, 3.4rem);
+}
+
+.faixa-numeros .num-capa .variacao {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--destaque-tx);
+}
+
+.secao-pagina {
+  padding-top: clamp(3.5rem, 8vw, 6rem);
+}
+
+.nota-pagina {
+  max-width: 70ch;
+  margin: 1.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--texto-3);
+}
+
+/* ------------------------------------------------- Provas: um bloco por ano */
+.ano-provas {
+  margin-top: clamp(2.75rem, 6vw, 4.5rem);
+}
+
+.ano-provas-cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--linha-forte);
+}
+
+.ano-provas-cabeca h2 {
+  margin: 0;
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-size: clamp(2.8rem, 7vw, 4.6rem);
+  line-height: 1;
+}
+
+.ano-provas-cabeca p {
+  margin: 0;
+  color: var(--texto-3);
+}
+
+.provas-ano thead th {
+  padding-top: 0.75rem;
+}
+
+.provas-ano .pa-data {
+  white-space: nowrap;
+  color: var(--texto-2);
+}
+
+.provas-ano .pa-nome a {
+  font-weight: 600;
+}
+
+.provas-ano .pa-nome .secundario {
+  margin-top: 0.15rem;
+}
+
+.pa-edicao {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--texto-3);
+}
+
+.pa-edicao.melhor {
+  color: var(--destaque-tx);
+}
+
+/* colunas iguais em todos os anos, para os números ficarem alinhados de um ano para o outro */
+@media (min-width: 600px) {
+  table.provas-ano {
+    table-layout: fixed;
+  }
+
+  .provas-ano th:nth-child(1) { width: 11rem; }
+  .provas-ano th:nth-child(3) { width: 7rem; }
+  .provas-ano th:nth-child(4) { width: 8.5rem; }
+  .provas-ano th:nth-child(5) { width: 7rem; }
+  .provas-ano th:nth-child(6) { width: 6.5rem; }
+}
+
+.selo-recorde,
+.selo-prio-mini {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 650;
+  vertical-align: 0.15em;
+  color: var(--destaque-tx);
+}
+
+.selo-prio-mini.prio-A {
+  border-color: var(--vermelho);
+  background: var(--vermelho);
+  color: var(--sobre-destaque);
+}
+
+.provas-ano tr.proxima .pa-nome a {
+  font-weight: 500;
+}
+
+.pa-meta {
+  font-weight: 600;
+  color: var(--texto-2);
+}
+
+@media (max-width: 599px) {
+  table.resultados.provas-ano,
+  .provas-ano tbody {
+    display: block;
+  }
+
+  .provas-ano thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .provas-ano tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 0.9rem;
+    row-gap: 0.2rem;
+    padding: 0.85rem 0.6rem;
+    border-bottom: 1px solid var(--linha);
+  }
+
+  .provas-ano td {
+    padding: 0;
+    border: 0;
+  }
+
+  .provas-ano .pa-nome {
+    grid-column: 1 / -1;
+    order: -1;
+    margin-bottom: 0.2rem;
+  }
+
+  .provas-ano .pa-data,
+  .provas-ano .pa-dist {
+    font-size: 0.85rem;
+    text-align: left;
+    color: var(--texto-3);
+  }
+
+  .provas-ano .pa-data { order: 1; }
+  .provas-ano .pa-tempo { order: 2; }
+  .provas-ano .pa-dist { order: 3; }
+  .provas-ano .pa-pace { order: 4; font-size: 0.85rem; }
+
+  .provas-ano .pa-fc {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------- Evolução: recordes no tempo */
+.grafico .pt {
+  fill: var(--texto-3);
+  fill-opacity: 0.5;
+}
+
+.grafico .pt.oficial {
+  fill: var(--vermelho);
+  fill-opacity: 1;
+}
+
+.grafico .alvo-toque {
+  fill: transparent;
+}
+
+.grafico .linha-recorde {
+  fill: none;
+  stroke: var(--destaque-tx);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.grafico .pt-recorde,
+.grafico .pt-mes {
+  fill: var(--destaque-tx);
+  stroke: var(--painel);
+  stroke-width: 2;
+}
+
+.grafico text.rotulo-recorde {
+  fill: var(--texto);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.grafico .marca-mes {
+  stroke: var(--linha-forte);
+}
+
+.grafico .linha-mes {
+  fill: none;
+  stroke: var(--destaque-tx);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+/* ritmo × FC: as corridas mais antigas em cinza, as recentes em laranja, cada grupo com a sua tendência */
+.grafico .pt-disp {
+  stroke: var(--painel);
+  stroke-width: 1;
+}
+
+.grafico .pt-disp.antes {
+  fill: var(--texto-3);
+  fill-opacity: 0.75;
+}
+
+.grafico .pt-disp.depois {
+  fill: var(--destaque-tx);
+}
+
+.grafico .tendencia {
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.grafico .tendencia.antes {
+  stroke: var(--texto-2);
+  stroke-dasharray: 6 5;
+}
+
+.grafico .tendencia.depois {
+  stroke: var(--destaque-tx);
+}
+
+.legenda-evolucao .leg-ponto.antes {
+  background: var(--texto-3);
+}
+
+.legenda-evolucao .leg-ponto.depois {
+  background: var(--destaque-tx);
+}
+
+.legenda-evolucao {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  margin-top: 0.6rem;
+  font-size: 0.8125rem;
+  color: var(--texto-2);
+}
+
+.legenda-evolucao i {
+  display: inline-block;
+  margin-right: 0.45rem;
+  vertical-align: 0.15em;
+}
+
+.legenda-evolucao .leg-linha {
+  width: 16px;
+  height: 2px;
+  background: var(--destaque-tx);
+}
+
+.legenda-evolucao .leg-ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--texto-3) 50%, transparent);
+  vertical-align: 0;
+}
+
+.legenda-evolucao .leg-ponto.oficial {
+  background: var(--vermelho);
+}
+
+.degraus {
+  margin-top: 1.75rem;
+}
+
+.lista-degraus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista-degraus a {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 7.5rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-p);
+  background: var(--painel);
+  color: inherit;
+  text-decoration: none;
+}
+
+.lista-degraus a:hover {
+  border-color: var(--destaque);
+}
+
+.lista-degraus .quando {
+  font-size: 0.75rem;
+  color: var(--texto-3);
+}
+
+.lista-degraus b {
+  font-size: 1.15rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.lista-degraus .ganho {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--destaque-tx);
+}
+
+/* ------------------------------------------------- Evolução: previsão */
+.previsoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 12px;
+}
+
+.cartao-previsao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1.2rem 1.3rem 1.3rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--painel);
+}
+
+.cartao-previsao p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--texto-3);
+}
+
+.cartao-previsao strong {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-size: clamp(2.2rem, 4vw, 2.8rem);
+  line-height: 1.05;
+}
+
+.cartao-previsao a,
+.cartao-previsao span {
+  font-size: 0.85rem;
+  color: var(--texto-2);
+}
+
+.cartao-previsao .comparacao {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  font-weight: 600;
+}
+
+.cartao-previsao .comparacao.dentro {
+  color: var(--destaque-tx);
+}
+
+.cartao-previsao.meta {
+  border-color: var(--vermelho);
+  background: var(--vermelho);
+  color: var(--sobre-destaque);
+}
+
+.cartao-previsao.meta p,
+.cartao-previsao.meta span {
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* ------------------------------------------------- Evolução: mês a mês */
+.grade-evolucao {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 900px) {
+  .grade-evolucao {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cartao-mes.largo {
+    grid-column: 1 / -1;
+  }
+}
+
+.cartao-mes-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.3rem 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.cartao-mes-topo p {
+  margin: 0;
+}
+
+.cartao-mes-topo b {
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+
+.cartao-mes-topo span {
+  margin-left: 0.55rem;
+  font-size: 0.8rem;
+  color: var(--texto-3);
+}
+
+.cartao-mes-topo span.melhorou {
+  color: var(--destaque-tx);
+  font-weight: 600;
+}
+
+.cartao-mes h3.com-dica {
+  text-decoration: underline dotted var(--texto-3);
+  text-underline-offset: 0.25em;
+  cursor: help;
+}
+
+
+.ano-a-ano td a {
+  text-decoration: none;
 }

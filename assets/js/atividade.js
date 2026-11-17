@@ -7,19 +7,19 @@ import { barrasH } from "./graficos.js";
 
 iniciarDicas();
 const id = new URLSearchParams(location.search).get("id");
-let S, P, T, vizinhos;
+let S, P, T, vizinhos, PLANO;
 
 iniciar();
 
 async function iniciar() {
   try {
-    [S, P] = await Promise.all([buscarJSON("data/site.json"), buscarJSON("config/perfil.json", true)]);
+    [S, P, PLANO] = await Promise.all([buscarJSON("data/site.json"), buscarJSON("config/perfil.json", true), buscarJSON("config/plano.json", true)]);
   } catch (erro) {
     $("#treino").innerHTML = `<p class="vazio">${esc(erro.message)}</p>`;
     return;
   }
   P ||= {};
-  montarTopo({ nome: nomeTopo(S, P), links: [["./#recentes", t("Recentes")], ["./#destaques", t("Destaques")], ["./#numeros", t("Números")], ["./#lugares", t("Lugares")]] });
+  montarTopo({ nome: nomeTopo(S, P), plano: !!(PLANO?.semanas?.length && !PLANO.rascunho) });
   montarRodape(S, P);
 
   const lista = prepararAtividades(S.atividades);
