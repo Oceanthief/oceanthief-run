@@ -1201,20 +1201,26 @@ table.resultados {
   line-height: 1.1;
 }
 
+/* A legenda fica ao lado da rosca quando sobram pelo menos 210 px; senão, desce para baixo dela. */
 .rosca-area {
-  display: grid;
-  grid-template-columns: 170px minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1.25rem;
   align-items: center;
 }
 
-@media (max-width: 420px) {
-  .rosca-area {
-    grid-template-columns: 1fr;
-  }
+.rosca-area > :first-child {
+  flex: 0 0 170px;
+}
 
-  .rosca-area svg {
-    max-width: 200px;
+.rosca-area > .legenda {
+  flex: 1 1 210px;
+}
+
+@media (max-width: 420px) {
+  .rosca-area > :first-child {
+    flex-basis: 200px;
   }
 }
 
@@ -1227,10 +1233,11 @@ table.resultados {
   font-size: 0.875rem;
 }
 
-/* o nome nunca se parte no meio ("Caminha-da"); se faltar espaço, quem quebra é o número */
+/* Como uma tabela: o valor fica sempre numa linha só, alinhado à direita; o nome usa o resto
+   e, se faltar espaço, quebra entre palavras ("Força e outros / treinos"), nunca no meio de uma. */
 .legenda li {
   display: grid;
-  grid-template-columns: 10px auto minmax(0, 1fr);
+  grid-template-columns: 10px minmax(min-content, 1fr) max-content;
   gap: 0.6rem;
   align-items: center;
 }
@@ -1244,6 +1251,7 @@ table.resultados {
 .legenda span:last-child {
   color: var(--texto-2);
   text-align: right;
+  white-space: nowrap;
 }
 
 /* gráficos */

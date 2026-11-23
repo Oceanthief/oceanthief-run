@@ -145,6 +145,11 @@ export function rosca(el, { fatias, tamanho = 170, centro = ["", ""], rotulo = "
   corpo += `<text x="${r}" y="${r + 2}" text-anchor="middle" style="font-stretch:62%;font-weight:800;font-size:${tamanho * 0.17}px;fill:var(--texto)">${esc(centro[0])}</text>`;
   corpo += `<text x="${r}" y="${r + tamanho * 0.13}" text-anchor="middle" style="font-size:11px;fill:var(--texto-3)">${esc(centro[1])}</text>`;
   el.innerHTML = svg(tamanho, tamanho, corpo, rotulo);
+  // o número do meio não pode passar do buraco da rosca ("239 h 16" no ano inteiro)
+  const meio = el.querySelector("text");
+  const largura = meio?.getComputedTextLength?.() || 0;
+  const cabe = ri * 2 * 0.84;
+  if (largura > cabe) meio.style.fontSize = `${((tamanho * 0.17 * cabe) / largura).toFixed(1)}px`;
 }
 
 /** Calendário de dias. valores: Map("AAAA-MM-DD" → {nivel 0-4, dica}) */
