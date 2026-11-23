@@ -411,8 +411,8 @@ def parciais_desencontradas(det: dict, a: dict) -> bool:
 def parciais_coerentes(parciais: list, movimento: int) -> list:
     """Usa, nas parciais, o tempo cuja soma fica mais perto do tempo em movimento do treino.
 
-    Numa caminhada de 15:36/km, o Strava tirou 4 minutos da última parcial e ela aparecia a 9:36/km.
-    Com o tempo total da parcial, as parciais somam o mesmo que o treino."""
+    Numa caminhada de 24:12 (15:36/km), o Strava tirou 4 minutos do 1º km e as parciais somavam 20:16.
+    Com o tempo total de cada parcial, elas somam o mesmo que o treino."""
     saida = [{k: v for k, v in p.items() if k != "se"} for p in parciais]
     if not movimento or not parciais or not all(p.get("se") for p in parciais):
         return saida
