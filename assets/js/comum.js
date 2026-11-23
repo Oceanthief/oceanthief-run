@@ -208,19 +208,30 @@ const MILHA = 1609.344;
 export const rotuloDist = () => (unidade === "mi" ? "mi" : "km");
 export const distValor = (m) => (unidade === "mi" ? m / MILHA : m / 1000);
 
+// Somas e totais: as casas decimais acompanham o tamanho do número (1,55 km, 32,5 km, 1.050 km),
+// para nunca arredondar uma caminhada de 1,55 km para "2 km".
+function casasDist(v) {
+  const a = Math.abs(v);
+  return a >= 99.95 ? 0 : a >= 9.995 ? 1 : 2;
+}
+
 export function dist(m, casas) {
   const v = distValor(m);
-  const c = casas ?? (v >= 100 ? 0 : 1);
-  return `${num(v, c)} ${rotuloDist()}`;
+  return `${num(v, casas ?? casasDist(v))} ${rotuloDist()}`;
 }
+
+// Um treino sozinho: sempre duas casas, o mesmo número que aparece no Strava e na página do treino.
+export const distTreino = (m) => dist(m, 2);
 
 export function elev(m) {
   return unidade === "mi" ? `${num(m * 3.28084)} ${t("pés")}` : `${num(m)} m`;
 }
 
 export function duracao(s) {
-  const h = Math.floor(s / 3600);
-  const m = Math.round((s % 3600) / 60);
+  // arredonda o total antes de separar: 1 h 59 min 40 s vira "2 h", não "1 h 60"
+  const total = Math.round(s / 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
   if (h === 0) return `${m} min`;
   return m ? `${h} h ${String(m).padStart(2, "0")}` : `${h} h`;
 }

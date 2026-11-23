@@ -1,6 +1,6 @@
 // Página Evolução: como as marcas, o ritmo e o coração mudaram desde o começo.
 import {
-  $, abas, aoMudarUnidade, aoRedimensionar, buscarJSON, carregarTudo, dataCurta, dataLonga, dist, esc,
+  $, abas, aoMudarUnidade, aoRedimensionar, buscarJSON, carregarTudo, dataCurta, dataLonga, dist, distTreino, esc,
   iniciarDicas, linkTreino, MESES_CURTOS, montarRodape, montarTopo, NOMES_ESFORCO, nomeSite, nomeTopo, num, pace, paceSeg,
   getUnidade, relogio, rotuloDist, t, tr,
 } from "./comum.js";
@@ -448,7 +448,7 @@ function desenharDispersao() {
     for (const a of g.lista) {
       const cx = x(a.hr).toFixed(1);
       const cy = y(paceSeg(a.m, a.s)).toFixed(1);
-      corpo += `<a href="${linkTreino(a.id)}"><circle class="pt-disp ${g.classe}" cx="${cx}" cy="${cy}" r="4" data-dica="${esc(`${dataLonga(a.data)}\n${a.n}\n${pace(a.m, a.s)}, ${num(a.hr)} bpm, ${dist(a.m)}`)}"/></a>`;
+      corpo += `<a href="${linkTreino(a.id)}"><circle class="pt-disp ${g.classe}" cx="${cx}" cy="${cy}" r="4" data-dica="${esc(`${dataLonga(a.data)}\n${a.n}\n${pace(a.m, a.s)}, ${num(a.hr)} bpm, ${distTreino(a.m)}`)}"/></a>`;
     }
   }
   for (const g of grupos) {
@@ -477,10 +477,10 @@ function anoAno() {
     return `<tr>
       <td><b>${ano}</b></td>
       <td class="num">${num(doAno.length)}</td>
-      <td class="num">${esc(dist(m, 0))}</td>
+      <td class="num">${esc(dist(m))}</td>
       <td class="num">${esc(pace(m, s))}</td>
       <td class="num">${fc ? `${num(fc)} bpm` : "–"}</td>
-      <td class="num">${longa ? `<a href="${linkTreino(longa.id)}">${esc(dist(longa.m))}</a>` : "–"}</td>
+      <td class="num">${longa ? `<a href="${linkTreino(longa.id)}">${esc(distTreino(longa.m))}</a>` : "–"}</td>
       <td class="num">${melhor("5K")}</td>
       <td class="num">${melhor("10K")}</td>
       <td class="num">${melhor("Half-Marathon")}</td>

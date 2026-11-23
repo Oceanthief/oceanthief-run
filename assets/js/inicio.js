@@ -1,6 +1,6 @@
 import {
   $, $$, abas, aoMudarTema, aoMudarUnidade, aoRedimensionar, carregarTudo, chaveDia, corGrupo, dataCurta, dataLonga,
-  dist, distValor, duracao, elev, esc, GRUPOS, hora, iniciarDicas, inicioSemana, linkTreino, MESES_CURTOS,
+  dist, distTreino, distValor, duracao, elev, esc, GRUPOS, hora, iniciarDicas, inicioSemana, linkTreino, MESES_CURTOS,
   montarRodape, montarTopo, nomeSite, nomeTopo, nomeTipo, num, num1, pace, paceSeg, quandoRelativo, reduzirMovimento, relogio,
   ritmo, rotuloDist, getUnidade, buscarJSON, diaSemana, NOMES_ESFORCO, CONDICOES, contagemRegressiva,
   DIAS_CURTOS, DIAS_LONGOS, LOCALE, nomePais, periodoPrevisto, plural, semAcento, t, tr, trechosRota,
@@ -517,7 +517,7 @@ function recordes() {
   const idsManuais = new Set(manuais.map((p) => String(p.strava_id)));
   const diasManuais = new Set((P.provas || []).map((p) => p.data));
   const auto = A.filter((a) => a.prova && !idsManuais.has(String(a.id)) && !diasManuais.has(a.dia)).map((a) => ({
-    nome: a.n, data: a.data, distancia: dist(a.m), tempo: relogio(a.e || a.s), strava_id: a.id,
+    nome: a.n, data: a.data, distancia: dist(a.m, 1), tempo: relogio(a.e || a.s), strava_id: a.id,
   }));
   const provas = [...manuais, ...auto].sort((x, y) => y.data - x.data);
   const visiveis = provas.slice(0, 7);
@@ -537,7 +537,7 @@ function conquistas() {
   const corridas = A.filter((a) => a.grupo === PRINCIPAL);
   const itens = [];
   const longo = corridas.reduce((x, a) => (a.m > (x?.m || 0) ? a : x), null);
-  if (longo) itens.push([dist(longo.m), t("Treino mais longo"), t("{nome}, em {data}.", { nome: longo.n, data: dataLonga(longo.data) }), longo.id]);
+  if (longo) itens.push([distTreino(longo.m), t("Treino mais longo"), t("{nome}, em {data}.", { nome: longo.n, data: dataLonga(longo.data) }), longo.id]);
 
   const porSemana = new Map();
   const porMes = new Map();
@@ -548,11 +548,11 @@ function conquistas() {
     porMes.set(m, (porMes.get(m) || 0) + a.m);
   }
   const [semana, mS] = [...porSemana].sort((x, y) => y[1] - x[1])[0] || [];
-  if (semana) itens.push([dist(mS, 0), t("Semana mais forte"), t("Começou em {data}.", { data: dataLonga(new Date(`${semana}T12:00`)) })]);
+  if (semana) itens.push([dist(mS), t("Semana mais forte"), t("Começou em {data}.", { data: dataLonga(new Date(`${semana}T12:00`)) })]);
   const [mes, mM] = [...porMes].sort((x, y) => y[1] - x[1])[0] || [];
   if (mes) {
     const [ano, mi] = mes.split("-").map(Number);
-    itens.push([dist(mM, 0), t("Mês mais forte"), t("{mes} de {ano}.", { mes: MESES_CURTOS[mi], ano })]);
+    itens.push([dist(mM), t("Mês mais forte"), t("{mes} de {ano}.", { mes: MESES_CURTOS[mi], ano })]);
   }
   if (PRINCIPAL === "corrida") {
     const maratonas = corridas.filter((a) => a.m >= 42000).length;
@@ -610,16 +610,34 @@ function recentes() {
     rotulo: GRUPOS[g].nome, valor: s, cor: corGrupo(g), dica: `${GRUPOS[g].nome}\n${duracao(s)}`,
   }));
   $("#resumo-recentes").innerHTML = `
-    <dl><div><dt>${t("Treinos")}</dt><dd>${num(lista.length)}</dd></div><div><dt>${t("Distância")}</dt><dd>${dist(soma(lista, (a) => a.m), 0)}</dd></div><div><dt>${t("Tempo")}</dt><dd>${duracao(tempo)}</dd></div></dl>
+    <dl><div><dt>${t("Treinos")}</dt><dd>${num(lista.length)}</dd></div><div><dt>${t("Distância")}</dt><dd>${unidadesMenores(dist(soma(lista, (a) => a.m)))}</dd></div><div><dt>${t("Tempo")}</dt><dd>${unidadesMenores(duracao(tempo))}</dd></div></dl>
     <h3 class="bloco-titulo" style="font-size:1rem">${t("Tempo por esporte")}</h3>
     <div class="rosca-area"><div id="rosca-recentes"></div><ul class="legenda">${fatias
       .map((f) => `<li><i style="background:${f.cor}"></i><span>${esc(f.rotulo)}</span><span>${duracao(f.valor)}, ${num((f.valor / tempo) * 100)}%</span></li>`)
       .join("") || `<li style="grid-template-columns:1fr;color:var(--texto-3)">${t("Sem treinos no período.")}</li>`}</ul></div>`;
   rosca($("#rosca-recentes"), { fatias, centro: [duracao(tempo), t("no total")], rotulo: t("Tempo por esporte no período") });
+  caberNumeros($$("#resumo-recentes dd"));
+}
+
+// "48,7 km" vira 48,7 grande e km pequeno; "19 h 38", 19 e 38 grandes, h pequeno
+function unidadesMenores(texto) {
+  return esc(texto).replace(/\p{L}+/gu, (u) => `<small>${u}</small>`);
+}
+
+// Os números das caixas ficam todos do mesmo tamanho: o maior que deixa cada um caber numa linha só.
+function caberNumeros(dds) {
+  if (!dds.length) return;
+  dds.forEach((d) => (d.style.fontSize = ""));
+  if (dds.some((d) => !d.clientWidth)) return;
+  const escala = Math.min(1, ...dds.map((d) => d.clientWidth / d.scrollWidth));
+  if (escala >= 1) return;
+  const base = parseFloat(getComputedStyle(dds[0]).fontSize);
+  const tamanho = `${Math.max(16, Math.floor(base * escala))}px`;
+  dds.forEach((d) => (d.style.fontSize = tamanho));
 }
 
 function itemTreino(a) {
-  const medida = a.m ? dist(a.m) : duracao(a.s);
+  const medida = a.m ? distTreino(a.m) : duracao(a.s);
   const complemento = a.m ? `${duracao(a.s)}, ${ritmo(a)}` : nomeTipo(a.t);
   return `<li><a href="${linkTreino(a.id)}">
     <span class="cor" style="background:${corGrupo(a.grupo)}"></span>
@@ -659,7 +677,7 @@ function destaques() {
             <span class="posicao">${i + 1}</span>
             <span class="nome">${esc(a.n)}</span>
             <span class="quando">${dataLonga(a.data)}${cidade}</span>
-            <span class="medidas"><b>${esc(dist(a.m))}</b><span>${relogio(a.s)}</span><span>${esc(cat.valor(a))}</span></span>
+            <span class="medidas"><b>${esc(distTreino(a.m))}</b><span>${relogio(a.s)}</span><span>${esc(cat.valor(a))}</span></span>
           </a></li>`;
         })
         .join("")}</ol>`
@@ -869,9 +887,9 @@ function anoEmCurso() {
   const metaKm = Number(P.meta_anual_km?.[ano] ?? P.meta_anual_km?.[String(ano)] ?? (typeof P.meta_anual_km === "number" ? P.meta_anual_km : 0));
   const alvo = metaKm ? metaKm * 1000 : totalAnterior;
   const rotuloAlvo = metaKm
-    ? t("Meta: {v}", { v: dist(alvo, 0) })
+    ? t("Meta: {v}", { v: dist(alvo) })
     : totalAnterior
-      ? t("Total de {ano}: {v}", { ano: ano - 1, v: dist(alvo, 0) })
+      ? t("Total de {ano}: {v}", { ano: ano - 1, v: dist(alvo) })
       : "";
   const pctReal = alvo ? (feito / alvo) * 100 : 0;
   const pct = Math.min(100, pctReal);
@@ -895,20 +913,20 @@ function anoEmCurso() {
   el.innerHTML = `
     <div class="ano-topo">
       <h3>${t("{ano} até agora", { ano })}</h3>
-      <p class="ano-total"><b>${esc(dist(feito, 0))}</b> ${esc(t("de {grupo}", { grupo }))}</p>
+      <p class="ano-total"><b>${esc(dist(feito))}</b> ${esc(t("de {grupo}", { grupo }))}</p>
     </div>
     ${alvo ? `<div class="barra-ano" role="img" aria-label="${esc(`${num(pct)}% — ${rotuloAlvo}`)}">
       <i class="feito" style="width:${pct.toFixed(1)}%"></i>
-      <i class="esperado" style="left:${esperado.toFixed(1)}%" data-dica="${esc(t("Onde a meta pede estar hoje: {v}", { v: dist(alvo * fracao, 0) }))}"></i>
+      <i class="esperado" style="left:${esperado.toFixed(1)}%" data-dica="${esc(t("Onde a meta pede estar hoje: {v}", { v: dist(alvo * fracao) }))}"></i>
     </div>
     <p class="ano-alvo"><span>${num(Math.floor(pctReal))}%</span><span>${esc(rotuloAlvo)}</span></p>` : ""}
     <ul class="ano-fatos">
       ${batida ? `<li class="meta-batida">${esc(t("Meta batida em {data}.", { data: dataLonga(batida) }))}</li>` : ""}
-      ${metaKm && !batida ? `<li>${esc(t("Faltam {v} para a meta.", { v: dist(alvo - feito, 0) }))}${semanasRestantes >= 1 && alvo - feito > alvo * 0.05 ? ` ${esc(t("Dá {v} por semana até o fim do ano.", { v: dist((alvo - feito) / semanasRestantes, 1) }))}` : ""}</li>` : ""}
-      ${projecao ? `<li>${esc(t("No ritmo atual, {ano} fecha com {v}.", { ano, v: dist(projecao, 0) }))}</li>` : ""}
+      ${metaKm && !batida ? `<li>${esc(t("Faltam {v} para a meta.", { v: dist(alvo - feito) }))}${semanasRestantes >= 1 && alvo - feito > alvo * 0.05 ? ` ${esc(t("Dá {v} por semana até o fim do ano.", { v: dist((alvo - feito) / semanasRestantes, 1) }))}` : ""}</li>` : ""}
+      ${projecao ? `<li>${esc(t("No ritmo atual, {ano} fecha com {v}.", { ano, v: dist(projecao) }))}</li>` : ""}
       ${variacao != null ? `<li>${esc(variacao >= 0
-        ? t("{p}% a mais que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior, 0) })
-        : t("{p}% a menos que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior, 0) }))}</li>` : ""}
+        ? t("{p}% a mais que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior) })
+        : t("{p}% a menos que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior) }))}</li>` : ""}
     </ul>`;
 }
 
@@ -960,7 +978,7 @@ function constancia() {
     <div><dt>${t("Dias com treino")}</dt><dd>${num(porDia.size)}<small>${t("de {n}", { n: num(totalDias) })}</small></dd></div>
     <div><dt>${t("Dias de descanso")}</dt><dd>${num(((totalDias - porDia.size) / totalDias) * 100)}%</dd></div>
     <div><dt>${t("Maior sequência")}</dt><dd>${num(seq.maior)}<small>${t("dias seguidos")}</small></dd></div>
-    <div><dt>${t("Semana mais forte")}</dt><dd>${esc(dist(melhorSemana, 0))}<small>${esc(t("de {grupo}", { grupo: GRUPOS[PRINCIPAL].nome.toLowerCase() }))}</small></dd></div>`;
+    <div><dt>${t("Semana mais forte")}</dt><dd>${esc(dist(melhorSemana))}<small>${esc(t("de {grupo}", { grupo: GRUPOS[PRINCIPAL].nome.toLowerCase() }))}</small></dd></div>`;
 
   // volume mensal
   const meses = [];
@@ -1031,7 +1049,7 @@ function equipamento() {
   barrasH($("#lista-equipamento"), lista.map((g) => ({
     rotulo: g.nome,
     extra: `${g.tipo === "bike" ? t("bike") : t("tênis")}${g.aposentado ? t(", aposentado") : g.principal ? t(", o principal") : ""}`,
-    valor: g.m, texto: dist(g.m, 0),
+    valor: g.m, texto: dist(g.m),
     dica: t("{treinos} registrados", { treinos: nTreinos(g.usos) }),
     cor: g.aposentado
       ? "var(--linha-forte)"
@@ -1116,7 +1134,7 @@ function painelLugares() {
       <span class="cidade">${esc(l.cidade)}</span>
       <span class="regiao">${esc([l.estado !== l.cidade ? l.estado : "", l.pais].filter(Boolean).join(", "))}</span>
       <span class="periodo">${periodo}</span>
-      <span class="conta"><b>${nTreinos(l.n)}</b>${dist(l.m, 0)}</span>
+      <span class="conta"><b>${nTreinos(l.n)}</b>${dist(l.m)}</span>
     </button></li>`;
   };
   viagens.innerHTML = fora.length
@@ -1229,5 +1247,5 @@ async function criarMapa(el) {
 }
 
 function popupTreino(a) {
-  return `<strong>${esc(a.n)}</strong><br>${dataLonga(a.data)}, ${hora(a.data)}<br>${esc(t("{d} em {t}", { d: dist(a.m), t: relogio(a.s) }))}${a.m ? `, ${esc(ritmo(a))}` : ""}<br><a href="${linkTreino(a.id)}">${t("Abrir o treino")}</a>`;
+  return `<strong>${esc(a.n)}</strong><br>${dataLonga(a.data)}, ${hora(a.data)}<br>${esc(t("{d} em {t}", { d: distTreino(a.m), t: relogio(a.s) }))}${a.m ? `, ${esc(ritmo(a))}` : ""}<br><a href="${linkTreino(a.id)}">${t("Abrir o treino")}</a>`;
 }

@@ -381,6 +381,7 @@ def enxugar_detalhe(d: dict) -> dict:
         {
             "m": round(s.get("distance") or 0),
             "s": s.get("moving_time"),
+            "se": s.get("elapsed_time"),
             "el": round(s.get("elevation_difference") or 0, 1),
             "v": round(s.get("average_speed") or 0, 3),
             "hr": round(s["average_heartrate"]) if s.get("average_heartrate") else None,
@@ -393,6 +394,35 @@ def enxugar_detalhe(d: dict) -> dict:
         "calorias": round(d["calories"]) if d.get("calories") else None,
         "aparelho": d.get("device_name"),
     }
+
+
+def parciais_desencontradas(det: dict, a: dict) -> bool:
+    """Parciais guardadas sem o tempo total ("se") e cuja soma não bate com o tempo em movimento.
+
+    Acontece em caminhadas lentas: o Strava conta trechos andando como parados e tira esse tempo
+    da parcial. Esses treinos são baixados de novo, para guardar também o tempo total."""
+    p = det.get("parciais") or []
+    mov = a.get("moving_time") or 0
+    if len(p) < 2 or not mov or all("se" in x for x in p):
+        return False
+    return abs(sum(x.get("s") or 0 for x in p) - mov) > 0.03 * mov
+
+
+def parciais_coerentes(parciais: list, movimento: int) -> list:
+    """Usa, nas parciais, o tempo cuja soma fica mais perto do tempo em movimento do treino.
+
+    Numa caminhada de 15:36/km, o Strava tirou 4 minutos da última parcial e ela aparecia a 9:36/km.
+    Com o tempo total da parcial, as parciais somam o mesmo que o treino."""
+    saida = [{k: v for k, v in p.items() if k != "se"} for p in parciais]
+    if not movimento or not parciais or not all(p.get("se") for p in parciais):
+        return saida
+    soma_mov = sum(p.get("s") or 0 for p in parciais)
+    soma_total = sum(p["se"] for p in parciais)
+    if abs(soma_total - movimento) < abs(soma_mov - movimento):
+        for p, q in zip(parciais, saida):
+            q["s"] = p["se"]
+            q["v"] = round(p["m"] / p["se"], 3)
+    return saida
 
 
 PONTOS_SERIE = 160
@@ -481,6 +511,9 @@ def sincronizar_strava(env: dict, max_detalhes: int, esperar: bool, max_series: 
     ]
     # corridas primeiro: são elas que têm os melhores esforços (recordes)
     faltando.sort(key=lambda a: (a.get("sport_type") or a.get("type")) not in CORRIDA)
+    # por último, os que já têm detalhes mas com parciais que não fecham com o tempo do treino
+    # (o detalhe antigo continua valendo até o novo chegar)
+    faltando += [a for a in todas if str(a["id"]) in detalhes and parciais_desencontradas(detalhes[str(a["id"])], a)]
     if faltando:
         alvo = min(len(faltando), max_detalhes)
         log(f"Baixando detalhes de {alvo} de {len(faltando)} treinos que ainda não têm...")
@@ -836,7 +869,7 @@ def gerar_site() -> None:
             "rota": " ".join(codificar(tr) for tr in trechos),
             # tinha GPS, mas a rota toda ficou dentro do que é escondido
             "oculta": 1 if a.get("polyline") and not trechos else None,
-            "parciais": det.get("parciais") or [],
+            "parciais": parciais_coerentes(det.get("parciais") or [], a.get("moving_time")),
             "esforcos": [{k: e[k] for k in ("nome", "dist", "t", "pr")} for e in det.get("esforcos") or []],
             "serie": ler_json(SERIES / f"{aid}.json", {}) or None,
             "clima": cl,

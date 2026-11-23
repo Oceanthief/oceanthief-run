@@ -51,7 +51,7 @@ function desenhar() {
   if (T.el) medidas.push([t("Subida"), elev(T.el)]);
   if (T.hr) medidas.push([t("FC média"), `${T.hr} bpm`]);
   if (T.hrx) medidas.push([t("FC máxima"), `${T.hrx} bpm`]);
-  if (T.cad) medidas.push([t("Cadência"), g === "corrida" ? `${num(T.cad * 2)} ${t("ppm")}` : `${num(T.cad)} rpm`]);
+  if (T.cad) medidas.push([t("Cadência"), g === "corrida" || g === "caminhada" ? `${num(T.cad * 2)} ${t("ppm")}` : `${num(T.cad)} rpm`]);
   if (T.w) medidas.push([t("Potência média"), `${num(T.w)} W`]);
   if (T.cal) medidas.push([t("Calorias"), num(T.cal)]);
   if (T.e && T.e - T.s > 60) medidas.push([t("Tempo total"), relogio(T.e)]);

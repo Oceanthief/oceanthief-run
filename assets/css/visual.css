@@ -1132,6 +1132,18 @@ h3 {
   background: var(--painel-2);
 }
 
+/* o número nunca quebra em duas linhas ("24 / min"); se não couber, inicio.js diminui os três juntos */
+.resumo-periodo dd {
+  white-space: nowrap;
+}
+
+.resumo-periodo dd small {
+  font-size: 0.55em;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--texto-2);
+}
+
 .lista-treinos a {
   border-radius: var(--raio-p);
 }

@@ -164,7 +164,7 @@ function desenhar() {
 
   const faixa = [
     [t("Provas"), num(feitas.length)],
-    [t("Distância em provas"), dist(km, 0)],
+    [t("Distância em provas"), dist(km)],
     [t("Tempo em provas"), `${num(Math.floor(horas / 3600))} h ${String(Math.round((horas % 3600) / 60)).padStart(2, "0")}`],
     [t("Primeira prova"), primeira ? `${MESES_CURTOS[primeira.data.getMonth()]} ${primeira.data.getFullYear()}` : "–"],
   ];
@@ -183,7 +183,7 @@ function desenhar() {
       const kmAno = doAno.reduce((s, p) => s + (p.m || 0), 0);
       return `<section class="ano-provas" aria-labelledby="ano-${ano}">
         <header class="ano-provas-cabeca"><h2 id="ano-${ano}">${ano}</h2>
-          <p>${esc(plural(doAno.length, "{n} prova", "{n} provas"))}${kmAno ? `, ${esc(dist(kmAno, 0))}` : ""}</p></header>
+          <p>${esc(plural(doAno.length, "{n} prova", "{n} provas"))}${kmAno ? `, ${esc(dist(kmAno))}` : ""}</p></header>
         ${tabela(doAno.map(linhaFeita))}
       </section>`;
     })

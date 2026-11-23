@@ -1227,9 +1227,10 @@ table.resultados {
   font-size: 0.875rem;
 }
 
+/* o nome nunca se parte no meio ("Caminha-da"); se faltar espaço, quem quebra é o número */
 .legenda li {
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr) auto;
+  grid-template-columns: 10px auto minmax(0, 1fr);
   gap: 0.6rem;
   align-items: center;
 }
@@ -1242,6 +1243,7 @@ table.resultados {
 
 .legenda span:last-child {
   color: var(--texto-2);
+  text-align: right;
 }
 
 /* gráficos */

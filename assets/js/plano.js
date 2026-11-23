@@ -1,5 +1,5 @@
 import {
-  $, $$, aoMudarUnidade, aoRedimensionar, carregarTudo, contagemRegressiva, dataCurta, dataLonga, diaSemana, dist, distValor,
+  $, $$, aoMudarUnidade, aoRedimensionar, carregarTudo, contagemRegressiva, dataCurta, dataLonga, diaSemana, dist, distTreino, distValor,
   DIAS_CURTOS, esc, hora, iniciarDicas, linkTreino, MESES_CURTOS, montarRodape, montarTopo, nomeSite, nomeTopo, num, relogio, rotuloDist,
   getUnidade, plural, t, tx,
 } from "./comum.js";
@@ -86,7 +86,7 @@ function desenhar() {
         ${prova.meta ? `<div><dt>${t("Meta")}</dt><dd>${esc(tx(prova.meta))}</dd></div>` : ""}
         ${prova.meta_pace ? `<div><dt>${t("Ritmo alvo")}</dt><dd>${esc(paceAlvo(prova.meta_pace))}</dd></div>` : ""}
         <div><dt>${atual ? t("Semana atual") : futura ? t("Começa em") : t("Situação")}</dt><dd>${atual ? t("{a} de {b}", { a: atual.n, b: semanas.length }) : futura && semanas[0].ini > new Date() ? plural(Math.ceil((semanas[0].ini - new Date()) / 864e5), "{n} dia", "{n} dias") : t("Concluído")}</dd></div>
-        <div><dt>${t("Corrido no plano")}</dt><dd>${esc(dist(feito, 0))}</dd></div>
+        <div><dt>${t("Corrido no plano")}</dt><dd>${esc(dist(feito))}</dd></div>
       </dl>
     </section>
 
@@ -133,14 +133,14 @@ function itemSemana(s) {
       <span class="km">${w.km ? esc(dist(w.km * 1000, w.km % 1 ? 1 : 0)) : ""}</span></li>`;
   });
   const feitas = s.feitas.length
-    ? t("No Strava nesta semana: {lista}.", { lista: s.feitas.map((a) => `<a href="${linkTreino(a.id)}">${esc(a.n)}</a> (${esc(dist(a.m))})`).join(", ") })
+    ? t("No Strava nesta semana: {lista}.", { lista: s.feitas.map((a) => `<a href="${linkTreino(a.id)}">${esc(a.n)}</a> (${esc(distTreino(a.m))})`).join(", ") })
     : s.passou || s.atual ? t("Nenhuma corrida registrada no Strava nesta semana.") : "";
   return `<li class="semana${s.atual ? " atual" : ""}${aberta ? " aberta" : ""}" data-n="${s.n}" style="--cor-fase:var(--fase-${esc(s.fase)})">
     <button type="button" aria-expanded="${aberta}" aria-controls="corpo-${s.n}">
       <span class="num-semana">${s.n}</span>
       <span class="datas">${intervalo(s.ini)}${s.atual ? t(", esta semana") : ""}<span class="foco">${esc(tx(s.foco) || "")}</span></span>
       <span class="fase">${esc(tx(fases[s.fase] || s.fase))}</span>
-      <span class="volume"><b>${esc(dist((s.km || 0) * 1000, 0))}</b>${s.passou || s.atual ? esc(t("feito: {d}", { d: dist(s.feito, 0) })) : t("planejado")}</span>
+      <span class="volume"><b>${esc(dist((s.km || 0) * 1000, 0))}</b>${s.passou || s.atual ? esc(t("feito: {d}", { d: dist(s.feito) })) : t("planejado")}</span>
     </button>
     <div class="semana-corpo" id="corpo-${s.n}"${aberta ? "" : " hidden"}>
       <ul class="treinos-semana">${treinos.join("")}</ul>
@@ -172,7 +172,7 @@ function grafico() {
     const x = m.l + i * banda + (banda - bw) / 2;
     const cor = `var(--fase-${s.fase})`;
     const v = valores[i];
-    const dica = `${t("Semana {n}, {datas}", { n: s.n, datas: intervalo(s.ini) })}\n${t("Planejado: {d}", { d: dist((s.km || 0) * 1000, 0) })}${s.passou || s.atual ? `\n${t("Feito: {d}", { d: dist(s.feito, 0) })}` : ""}`;
+    const dica = `${t("Semana {n}, {datas}", { n: s.n, datas: intervalo(s.ini) })}\n${t("Planejado: {d}", { d: dist((s.km || 0) * 1000, 0) })}${s.passou || s.atual ? `\n${t("Feito: {d}", { d: dist(s.feito) })}` : ""}`;
     corpo += `<g data-n="${s.n}" data-dica="${esc(dica)}" style="cursor:pointer"><rect x="${m.l + i * banda}" y="${m.t}" width="${banda}" height="${h}" fill="transparent"/>`;
     corpo += `<rect x="${x}" y="${y(v.plan)}" width="${bw}" height="${y(0) - y(v.plan)}" rx="2" style="fill:color-mix(in srgb, ${cor} 30%, var(--fundo))${s.atual ? ";stroke:var(--texto);stroke-width:1.5" : ""}"/>`;
     if (v.feito > 0) corpo += `<rect x="${x + bw * 0.2}" y="${y(v.feito)}" width="${bw * 0.6}" height="${y(0) - y(v.feito)}" rx="1.5" style="fill:${cor}"/>`;
