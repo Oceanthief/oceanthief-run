@@ -58,6 +58,8 @@ Strava ──► scripts/sync_strava.py ──► data/site.json, data/rotas.jso
 3. Em **Settings → Pages**, escolha **Source: GitHub Actions**.
 4. Em **Actions → Atualizar com o Strava**, clique em **Run workflow**. Depois disso ele roda sozinho às 6h, 13h e 21h.
 
+A cada rodada, o robô guarda os dados novos na `main` com um commit. Antes de mexer no site, faça `git pull`. Se você publicar código enquanto ele roda, ou se dois avisos do Strava chegarem juntos, não tem problema: o robô sempre começa da ponta da `main`. Se a `main` mudar no meio da rodada, ele junta o que chegou e tenta guardar de novo, até 5 vezes. Num conflito dentro de `data/`, valem os dados que ele acabou de gerar. Se a publicação no Pages falhar por um problema do GitHub, ele tenta mais uma vez depois de 20 s.
+
 **Domínio próprio:** crie um arquivo `CNAME` na raiz com o domínio (por exemplo `meusite.com.br`), configure o DNS como o GitHub explica em Settings → Pages e marque "Enforce HTTPS". Depois troque o endereço antigo nas etiquetas `og:image` e `og:url` do começo das três páginas, para a prévia de link usar o domínio novo.
 
 ## Atualizar a cada treino
