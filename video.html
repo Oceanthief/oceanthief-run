@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vídeo: cada quilômetro, um ponto</title>
+  <meta name="robots" content="noindex">
+  <!-- Fica fora do site publicado (o workflow só copia as páginas que ele lista).
+       Abra no navegador para ver o vídeo tocando; scripts/gravar_video.mjs grava o MP4. -->
+  <link rel="icon" href="assets/img/icone.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Forum&family=Manrope:wght@300..800&display=swap">
+  <link rel="stylesheet" href="assets/css/site.css">
+  <link rel="stylesheet" href="assets/css/visual.css">
+  <style>
+    /* O quadro tem o tamanho exato do vídeo, em pixels de CSS: 432 × 540 (4:5), 432 × 768 (9:16)
+       ou 432 × 432 (1:1). A gravação multiplica por 2,5: 1080 × 1350, 1080 × 1920 ou 1080 × 1080. */
+    html, body { margin: 0; overflow: hidden; background: var(--fundo); }
+    .v-quadro {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: var(--v-largura, 432px);
+      height: var(--v-altura, 540px);
+      padding: 18px 18px 14px;
+      box-sizing: border-box;
+      background: var(--fundo);
+    }
+    .v-topo {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      font-family: var(--serifa);
+      font-size: 17px;
+      color: var(--texto-2);
+    }
+    .v-legenda {
+      flex: none;
+      height: var(--v-legenda, 136px);
+      will-change: opacity, transform;
+    }
+    .v-titulo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 6px;
+      font-size: 14px;
+      font-weight: 650;
+      color: var(--texto-2);
+    }
+    .v-titulo .numero {
+      display: inline-grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--destaque);
+      color: var(--sobre-destaque);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .v-titulo .numero:empty { display: none; }
+    .v-numero {
+      margin: 0 0 6px;
+      font-family: var(--serifa);
+      font-size: 44px;
+      line-height: 1;
+      color: var(--texto);
+      font-variant-numeric: tabular-nums;
+    }
+    .v-texto {
+      margin: 0;
+      max-width: 30em;
+      font-size: 14.5px;
+      line-height: 1.38;
+      color: var(--texto-2);
+    }
+    /* abertura e fim: o título no lugar do número */
+    .v-legenda.v-capa .v-numero { font-size: 38px; line-height: 1.05; }
+    .v-url { display: inline-block; margin-top: 4px; color: var(--texto); font-weight: 650; white-space: nowrap; }
+    .v-tela { flex: 1 1 0; min-height: 0; will-change: opacity; }
+    .v-tela .historia,
+    .v-tela .historia-figura {
+      display: block;
+      position: static;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+    }
+    .v-tela .historia-barra,
+    .v-tela .historia-capitulos,
+    .v-tela .pontos-tabela { display: none; }
+    .v-tela .pontos-tela { height: 100%; }
+  </style>
+</head>
+<body>
+  <div class="v-quadro">
+    <header class="v-topo"><span>The Oceanthief Run</span><span class="v-ano"></span></header>
+    <div class="v-legenda">
+      <p class="v-titulo"><span class="numero"></span><span class="nome"></span></p>
+      <p class="v-numero"></p>
+      <p class="v-texto"></p>
+    </div>
+    <div class="v-tela" id="pontos"></div>
+  </div>
+  <script type="module" src="assets/js/video.js"></script>
+</body>
+</html>

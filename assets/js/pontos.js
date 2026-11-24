@@ -123,10 +123,11 @@ function metaDoAno(perfil, ano) {
   return Number(m?.[ano] ?? (typeof m === "number" ? m : 0)) || 0;
 }
 
-export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }) {
+// `video: true` (video.html): sem rolagem; quem chama troca de capítulo pelo que a função devolve.
+export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao, video = false }) {
   if (!el || !pontos?.mapa || !Object.keys(pontos.anos || {}).length) {
     if (el) el.hidden = true;
-    return;
+    return null;
   }
   const corridas = [...atividades].sort((a, b) => a.data - b.data);
   const porId = new Map(corridas.map((a) => [a.id, a]));
@@ -399,7 +400,7 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
     const H = Math.round(tela.clientHeight);
     if (!W || !H) return false;
     const largo = W >= 560;
-    const dpr = Math.min(2, devicePixelRatio || 1);
+    const dpr = Math.min(video ? 3 : 2, devicePixelRatio || 1);
     canvas.width = W * dpr;
     canvas.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -452,7 +453,7 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
     });
 
     // margens dos gráficos (semanas, horários, ritmo)
-    const g = { l: largo ? 46 : 36, r: largo ? 18 : 10, t: largo ? 40 : 34, b: 26 };
+    const g = { l: largo ? 46 : video ? 44 : 36, r: largo ? 18 : 10, t: largo ? 40 : 34, b: 26 };
     const area = { x: g.l, y: g.t, w: W - g.l - g.r, h: H - g.t - g.b };
     L.area = area;
 
@@ -675,8 +676,10 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
   }
 
   // ---------------------------------------------------------------- desenho
+  // no vídeo, as letras do desenho crescem um pouco: ele é visto pequeno, na tela do celular
+  const fonte = (peso, tam) => `${peso} ${tam * (video ? 1.12 : 1)}px ${cores.fonte}`;
   function texto(str, x, y, { cor = cores.fraco, peso = 500, tam = 11, alinhar = "left", base = "middle" } = {}) {
-    ctx.font = `${peso} ${tam}px ${cores.fonte}`;
+    ctx.font = fonte(peso, tam);
     ctx.fillStyle = cor;
     ctx.textAlign = alinhar;
     ctx.textBaseline = base;
@@ -694,13 +697,13 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
   }
   // texto por cima dos pontos, com um fundo para não se perder no meio deles
   function rotuloComFundo(str, x, y, { cor = cores.texto, alinhar = "right" } = {}) {
-    ctx.font = `700 11px ${cores.fonte}`;
+    ctx.font = fonte(700, 11);
     const larg = ctx.measureText(str).width;
     const x0 = alinhar === "right" ? x - larg : alinhar === "center" ? x - larg / 2 : x;
     const al = ctx.globalAlpha;
     ctx.globalAlpha = al * 0.85;
     ctx.fillStyle = cores.fundo;
-    ctx.fillRect(x0 - 4, y - 8, larg + 8, 16);
+    ctx.fillRect(x0 - 4, y - 9, larg + 8, 18);
     ctx.globalAlpha = al;
     texto(str, x, y, { cor, peso: 700, alinhar });
   }
@@ -727,7 +730,12 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
     }
     if (camadas.montes > 0.01) {
       ctx.globalAlpha = camadas.montes;
-      for (const r of L.rotulosLado) texto(r.texto, r.x, r.y, { cor: cores.texto2, peso: 600, tam: 12, alinhar: "center", base: "alphabetic" });
+      for (const r of L.rotulosLado) {
+        // o nome do monte não pode passar da borda do desenho
+        ctx.font = fonte(600, 12);
+        const meia = ctx.measureText(r.texto).width / 2;
+        texto(r.texto, limitar(r.x, meia + 2, L.W - meia - 2), r.y, { cor: cores.texto2, peso: 600, tam: 12, alinhar: "center", base: "alphabetic" });
+      }
     }
     for (const p of M.pontos) desenharPonto(p);
     for (const q of M.extra) desenharPonto(q);
@@ -848,7 +856,7 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
       ctx.lineTo(x2, y + 5);
       ctx.stroke();
       const rot = t("{n} semanas seguidas", { n: R.maior.n });
-      ctx.font = `700 11px ${cores.fonte}`;
+      ctx.font = fonte(700, 11);
       const larg = ctx.measureText(rot).width;
       const meio = limitar((x1 + x2) / 2, larg / 2 + 2, L.W - larg / 2 - 2);
       texto(rot, meio, y - 9, { cor: cores.texto2, peso: 700, alinhar: "center" });
@@ -950,7 +958,7 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
     for (const r of L.raias) {
       if (r.meta) continue;
       if (r.tempo <= P.meta + 0.5) {
-        texto(t("{t} antes da meta", { t: relogio(P.meta - r.tempo) }), L.maratona.xKm(P.km), r.y + 18, { cor: cores.texto2, peso: 700, alinhar: "right" });
+        texto(t("{t} antes da meta", { t: relogio(P.meta - r.tempo) }), L.maratona.xKm(P.km) - 5, r.y + 18, { cor: cores.texto2, peso: 700, alinhar: "right" });
       } else {
         const x = L.maratona.xKm(r.naMeta);
         ctx.strokeStyle = cores.texto;
@@ -1076,6 +1084,48 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
     return [];
   }
 
+  // A versão curta de cada capítulo, para o vídeo: um número grande e uma frase que cabe na tela do celular.
+  function destaque(nome) {
+    const ano = estado.ano;
+    const n = M.pontos.length;
+    if (nome === "rotas") {
+      return { numero: num(M.comRota.length), texto: t("corridas com GPS em {ano}. O trecho mais repetido está em {r} delas, mas a linha não mostra isso.", { ano, r: num(M.repetido) }) };
+    }
+    if (nome === "montes") return { numero: num(n), texto: t("km, cada um virou um ponto. Quanto maior o monte, mais vezes você passou ali.") };
+    if (nome === "meta") {
+      const P = M.projecao;
+      const fecha = P && P.porSemana > 0 ? ` ${t("No ritmo das últimas 8 semanas, o ano fecha perto de {km} km.", { km: num(Math.round(P.total / 10) * 10) })}` : "";
+      if (M.batida) return { numero: dataCurta(M.batida), texto: t("meta de {meta} km batida.", { meta: num(M.meta) }) + fecha };
+      if (M.meta) return { numero: `${num(Math.floor((n / M.meta) * 100))}%`, texto: t("da meta de {meta} km.", { meta: num(M.meta) }) + fecha };
+      return { numero: num(n), texto: t("km em {ano}, em ordem de data.", { ano }) };
+    }
+    if (nome === "semanas") {
+      const R = M.semanas;
+      const extra = R.acima40 ? ` ${t("{n} semanas passaram de 40 km.", { n: num(R.acima40) })}` : "";
+      if (R.maior.n > 1) return { numero: num(R.maior.n), texto: (R.continua ? t("semanas seguidas correndo, e contando.") : t("semanas seguidas correndo, a maior sequência do ano.")) + extra };
+      return { numero: `${num(R.com)}/${num(R.total)}`, texto: t("semanas com corrida.") + extra };
+    }
+    if (nome === "horas") {
+      const H = M.horas;
+      const p = Math.round(H.cedo * 100);
+      if (p > 0) {
+        return { numero: `${p}%`, texto: H.cedoAntes != null ? t("dos km saíram antes das 7h. Em {antes}, eram {q}%.", { antes: M.ano - 1, q: Math.round(H.cedoAntes * 100) }) : t("dos km saíram antes das 7h.") };
+      }
+      return { numero: rotuloHora(H.pico.hora), texto: t("é o horário que mais rende: {km} km.", { km: num(H.pico.n) }) };
+    }
+    if (nome === "ritmo") {
+      const R = M.ritmo;
+      if (!R.ultimo) return { numero: "", texto: "" };
+      const antes = R.primeiro && R.primeiro !== R.ultimo ? ` ${t("Em {m1}, era {r1}.", { m1: MESES_LONGOS[R.primeiro.mes], r1: relogio(R.primeiro.mediana) })}` : "";
+      return { numero: ritmoTexto(R.ultimo.mediana), texto: t("o km típico de {m2}.", { m2: MESES_LONGOS[R.ultimo.mes] }) + antes };
+    }
+    if (nome === "maratona") {
+      const P = M.previsao;
+      return { numero: relogio(P.melhorAgora), texto: t("a melhor previsão para a {prova}. A meta é {meta}.", { prova: alvo.nome, meta: relogio(P.meta) }) };
+    }
+    return { numero: "", texto: "" };
+  }
+
   // a legenda de cada capítulo fica junto do texto que a explica
   function chave(nome) {
     const bola = (cor, extra = "") => `<i style="background:${cor}${extra}"></i>`;
@@ -1172,7 +1222,7 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
   let pedido = 0;
   addEventListener("scroll", () => {
     if (naDica) mostrarDica(null);
-    if (pedido || !L) return;
+    if (pedido || !L || video) return;
     pedido = requestAnimationFrame(() => {
       pedido = 0;
       const cap = capituloNaLinha();
@@ -1272,10 +1322,10 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
     const nova = `${tela.clientWidth}x${tela.clientHeight}`;
     if (nova === medida || !calcular()) return;
     medida = nova;
-    estado.cap = capituloNaLinha();
+    if (!video) estado.cap = capituloNaLinha();
     irPara(estado.cap, { instantaneo: true });
   };
-  (document.fonts?.ready || Promise.resolve()).then(() => {
+  const pronto = (document.fonts?.ready || Promise.resolve()).then(() => {
     refazer();
     new ResizeObserver(refazer).observe(tela);
     addEventListener("resize", medirLinha);
@@ -1285,4 +1335,15 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao }
     montarCapitulos();
     if (calcular()) irPara(estado.cap, { instantaneo: true });
   });
+
+  // o controle de fora (o vídeo): os capítulos do ano, ir para um deles e a frase curta de cada um
+  return {
+    pronto,
+    capitulos: () => M.caps.slice(),
+    titulo: (nome) => TITULOS[nome](),
+    irPara: (nome, opcoes) => irPara(Math.max(0, M.caps.indexOf(nome)), opcoes),
+    destaque,
+    ano: () => estado.ano,
+    km: () => M.pontos.length,
+  };
 }

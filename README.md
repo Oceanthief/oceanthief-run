@@ -149,6 +149,20 @@ python scripts/checar_traducoes.py
 - Desde 24/11/2026 as rotas saem inteiras, como vêm do Strava, inclusive perto de casa (antes, o site cortava de 400 a 600 m de cada ponta e escondia 1 km em volta da casa). Para voltar a esconder, mude os campos `privacidade` acima e rode `python scripts/sync_strava.py --so-gerar`; a página de cada treino passa a avisar quando a rota foi cortada.
 - As cidades e os pontos do mapa geral são arredondados.
 
+## Vídeo para LinkedIn e Instagram
+
+A história "cada quilômetro, um ponto" também sai em vídeo, com um número grande e uma frase curta por capítulo. Precisa do Google Chrome e do ffmpeg (`winget install Gyan.FFmpeg`). Com os dados atualizados (`git pull`), rode:
+
+```
+node scripts/gravar_video.mjs --formato 45 --roteiro completo --lang pt --saida video.mp4
+```
+
+- `--formato`: `45` (4:5, 1080 × 1350, o feed do LinkedIn e do Instagram), `916` (9:16, 1080 × 1920, Reels e Stories) ou `11` (quadrado);
+- `--roteiro`: `completo` (os 7 capítulos, 45 s) ou `curto` (rotas, quilômetros, meta e previsão, 30 s);
+- `--lang`: `pt`, `en` ou `es`.
+
+Leva uns 2 minutos e não depende da velocidade do computador: a página `video.html` só anda um quadro quando o script pede, então cada quadro sai igual. Para ver o vídeo tocando antes de gravar, abra `video.html?formato=45&roteiro=completo` com o site servido localmente (`python -m http.server`). O tempo de cada capítulo fica no começo de `assets/js/video.js`. `video.html` não vai para o site publicado.
+
 ## Ver com dados de mentira
 
 ```
