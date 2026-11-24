@@ -27,7 +27,11 @@ jobs:
       name: github-pages
       url: ${{ steps.publicar.outputs.page_url || steps.publicar2.outputs.page_url }}
     steps:
+      # Sempre a ponta da main, não o commit que disparou a rodada: uma rodada que ficou na fila
+      # atrás de outra começa já com o que a anterior guardou.
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-python@v5
         with:
@@ -47,10 +51,23 @@ jobs:
           git add data
           if git diff --cached --quiet; then
             echo "Nada novo no Strava."
-          else
-            git commit -m "Atualiza dados do Strava"
-            git push
+            exit 0
           fi
+          git commit -m "Atualiza dados do Strava"
+          # Se chegou algo na main durante a rodada (código novo, ou outra rodada do robô), o push
+          # é recusado. Então traz o que chegou, põe os dados por cima e tenta de novo. Num conflito
+          # dentro de data/, valem os dados que esta rodada acabou de gerar (no rebase, "theirs" é
+          # o commit do robô).
+          for tentativa in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "A main mudou durante a rodada. Juntando e tentando de novo ($tentativa de 5)..."
+            sleep $((tentativa * 3))
+            git pull --rebase -X theirs origin main
+          done
+          echo "Não consegui guardar os dados depois de 5 tentativas."
+          exit 1
 
       - name: Montar a pasta do site
         run: |
