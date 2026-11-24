@@ -2,15 +2,12 @@
 import {
   $, abas, aoMudarUnidade, aoRedimensionar, buscarJSON, carregarTudo, dataCurta, dataLonga, dist, distTreino, esc,
   iniciarDicas, linkTreino, MESES_CURTOS, montarRodape, montarTopo, NOMES_ESFORCO, nomeSite, nomeTopo, num, pace, paceSeg,
-  getUnidade, relogio, rotuloDist, t, tr,
+  getUnidade, relogio, rotuloDist, t,
 } from "./comum.js";
+import { DISTANCIAS, esforcosEm, previsoes, provaAlvo } from "./previsao.js";
 
 let S, P, PL, A, E, CORRIDAS, porId;
 const estado = { distancia: "5K" };
-
-// as distâncias que aparecem; meia e maratona também contam o tempo oficial das provas
-const DISTANCIAS = [["1K", 1000], ["5K", 5000], ["10K", 10000], ["15K", 15000], ["Half-Marathon", 21097.5], ["30K", 30000], ["Marathon", 42195]];
-const OFICIAIS = { "Half-Marathon": [20800, 21400], Marathon: [41700, 42800] };
 
 async function iniciar() {
   try {
@@ -42,26 +39,8 @@ const quantil = (lista, q) => {
   const v = [...lista].sort((a, b) => a - b);
   return v[Math.min(v.length - 1, Math.max(0, Math.round(q * (v.length - 1))))];
 };
-const dataDe = (d) => new Date(`${d}T12:00`);
-
 // todos os esforços numa distância: o melhor trecho de cada corrida, mais o tempo oficial das provas
-function esforcos(nome) {
-  const lista = (E.esforcos?.[nome] || []).map(([d, tempo, id]) => ({ data: dataDe(d), t: tempo, id, a: porId.get(id) }));
-  const faixa = OFICIAIS[nome];
-  if (faixa) {
-    for (const a of CORRIDAS) {
-      if (!a.prova || a.m < faixa[0] || a.m > faixa[1]) continue;
-      const tempo = a.e || a.s;
-      const mesmo = lista.find((x) => x.id === a.id);
-      if (mesmo) {
-        mesmo.oficial = true;
-        mesmo.t = Math.min(mesmo.t, tempo);
-      } else lista.push({ data: a.data, t: tempo, id: a.id, a, oficial: true });
-    }
-  }
-  for (const x of lista) if (x.a?.prova) x.oficial = true;
-  return lista.sort((x, y) => x.data - y.data);
-}
+const esforcos = (nome) => esforcosEm(E, CORRIDAS, porId, nome);
 
 // a sequência de recordes: cada vez que o melhor tempo caiu
 function recordes(lista) {
@@ -215,22 +194,11 @@ function graficoMarcas(el, lista, r) {
 }
 
 // ------------------------------------------------------------- previsão
-// Fórmula de Riegel: tempo2 = tempo1 × (distância2 / distância1) ^ 1,06
+// Fórmula de Riegel (previsao.js), pelo melhor tempo dos últimos 12 meses em cada distância
 function previsao() {
-  const alvo = (P.provas_alvo || []).find((p) => String(p.prioridade || "").toUpperCase() === "A");
-  const distAlvo = alvo?.distancia_km ? alvo.distancia_km * 1000 : 42195;
-  const nomeAlvo = tr(alvo?.nome) || NOMES_ESFORCO.Marathon;
-  const metaTexto = String(tr(alvo?.meta) || "");
-  const mm = /(\d{1,2})\s*[h:]\s*(\d{2})(?:\s*[:m]\s*(\d{2}))?/.exec(metaTexto);
-  const meta = mm ? +mm[1] * 3600 + +mm[2] * 60 + +(mm[3] || 0) : null;
-  const umAno = Date.now() - 365 * 864e5;
+  const { dist: distAlvo, nome: nomeAlvo, meta } = provaAlvo(P);
   const cartoes = [];
-  for (const [nome, d] of DISTANCIAS) {
-    if (d >= distAlvo * 0.9) continue;
-    const recentes = esforcos(nome).filter((x) => x.data.getTime() >= umAno);
-    if (!recentes.length || !["5K", "10K", "Half-Marathon"].includes(nome)) continue;
-    const melhor = recentes.reduce((a, b) => (b.t < a.t ? b : a));
-    const previsto = melhor.t * Math.pow(distAlvo / d, 1.06);
+  for (const { nome, melhor, previsto } of previsoes(E, CORRIDAS, porId, distAlvo)) {
     let comparacao = "";
     if (meta) {
       const dif = Math.round(meta - previsto);

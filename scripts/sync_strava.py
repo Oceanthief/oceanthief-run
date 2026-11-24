@@ -770,16 +770,28 @@ METROS_POR_GRAU_LAT = 110540
 METROS_POR_GRAU_LNG = 111320  # vezes o cosseno da latitude
 
 
-def montar_pontos(atividades: list[dict], trechos_por_id: dict) -> dict:
-    """Os dados da animação "cada quilômetro, um ponto" (página inicial, junto da meta do ano).
+def ritmo_no_km(parciais: list[dict], km_na_corrida: float, media: float) -> int:
+    """Segundos por km da parcial em que cai esse ponto da corrida (km_na_corrida a partir da largada).
+
+    Sem parciais, ou numa sobra curta no fim (menos de 300 m, que dá ritmo torto), vale a média do treino."""
+    i = max(0, math.ceil(km_na_corrida - 1e-9) - 1)
+    if i < len(parciais):
+        p = parciais[i]
+        if (p.get("m") or 0) >= 300 and p.get("s"):
+            return round(p["s"] / (p["m"] / 1000))
+    return round(media)
+
+
+def montar_pontos(atividades: list[dict], trechos_por_id: dict, parciais_por_id: dict) -> dict:
+    """Os dados da animação "cada quilômetro, um ponto".
 
     Cada ano tem um ponto por quilômetro inteiro corrido: o ponto k é da corrida em que a soma do
-    ano passou de k km, e fica no lugar da rota publicada (já sem as pontas e sem as zonas de
-    privacidade) que corresponde a essa parte da corrida. Assim os pontos do ano somam exatamente
-    os km inteiros, e nenhum cai onde a rota é escondida.
+    ano passou de k km, e fica no lugar da rota publicada que corresponde a essa parte da corrida.
+    Assim os pontos do ano somam exatamente os km inteiros, e nenhum cai onde a rota é escondida.
 
     pontos: [i, x, y] no mapa, em metros a partir do canto de cima à esquerda; [i] sem mapa
-    (esteira, lançada à mão ou toda perto de casa); [i, -1] em outra cidade. i aponta para "ids".
+    (esteira, lançada à mão, sem GPS); [i, -1] em outra cidade. i aponta para "ids".
+    ritmo: os segundos por km de cada ponto, na mesma ordem (a parcial daquele km, ou a média do treino).
     """
     corridas = [a for a in atividades if tipo(a) in CORRIDA and (a.get("distance") or 0) > 0]
     por_ano = defaultdict(list)
@@ -789,7 +801,7 @@ def montar_pontos(atividades: list[dict], trechos_por_id: dict) -> dict:
     brutos = {}
     for ano, lista in por_ano.items():
         lista.sort(key=lambda a: a["start_date"])
-        ids, pontos, acumulado = [], [], 0.0
+        ids, pontos, ritmos, acumulado = [], [], [], 0.0
         for a in lista:
             km = a["distance"] / 1000
             inicio, fim = acumulado, acumulado + km
@@ -801,10 +813,13 @@ def montar_pontos(atividades: list[dict], trechos_por_id: dict) -> dict:
             ids.append(a["id"])
             lugares = pontos_ao_longo(trechos_por_id.get(str(a["id"])) or [], [(k - inicio) / km for k in ks])
             pontos.extend((i, p) for p in lugares)
-        brutos[ano] = (ids, pontos)
+            parciais = parciais_por_id.get(str(a["id"])) or []
+            media = (a.get("moving_time") or a.get("elapsed_time") or 0) / km
+            ritmos.extend(ritmo_no_km(parciais, k - inicio, media) for k in ks)
+        brutos[ano] = (ids, pontos, ritmos)
 
     # o mapa: em volta do centro (mediana) de todos os pontos com lugar, de todos os anos
-    com_lugar = [p for _, (_, pts) in brutos.items() for _, p in pts if p]
+    com_lugar = [p for _, (_, pts, _) in brutos.items() for _, p in pts if p]
     mapa = None
     perto = lambda p: False  # noqa: E731
     if com_lugar:
@@ -831,10 +846,11 @@ def montar_pontos(atividades: list[dict], trechos_por_id: dict) -> dict:
         ]
 
     anos = {}
-    for ano, (ids, pontos) in sorted(brutos.items()):
+    for ano, (ids, pontos, ritmos) in sorted(brutos.items()):
         anos[ano] = {
             "ids": ids,
             "pontos": [[i] if not p else [i, *xy(p)] if perto(p) else [i, -1] for i, p in pontos],
+            "ritmo": ritmos,
         }
     return {"mapa": mapa, "anos": anos}
 
@@ -882,6 +898,7 @@ def gerar_site() -> None:
     lugares, indice_lugar = [], {}
     compactas, rotas = [], []
     trechos_corrida = {}  # rotas publicadas das corridas, para os pontos de cada km
+    parciais_corrida = {}  # e as parciais, para o ritmo de cada um desses km
     pasta_ativ = SAIDA / "atividades"
     pasta_ativ.mkdir(parents=True, exist_ok=True)
     ids_validos = set()
@@ -980,6 +997,8 @@ def gerar_site() -> None:
             "lugar": lugares[lugar_idx] if lugar_idx is not None else None,
         }
         gravar_json(pasta_ativ / f"{aid}.json", arquivo, compacto=True)
+        if tipo(a) in CORRIDA:
+            parciais_corrida[aid] = arquivo["parciais"]
 
     for velho in pasta_ativ.glob("*.json"):
         if velho.stem not in ids_validos:
@@ -1029,7 +1048,7 @@ def gerar_site() -> None:
     gravar_json(SAIDA / "site.json", site, compacto=True)
     gravar_json(SAIDA / "rotas.json", rotas, compacto=True)
     gravar_json(SAIDA / "evolucao.json", evolucao, compacto=True)
-    gravar_json(SAIDA / "pontos.json", montar_pontos(atividades, trechos_corrida), compacto=True)
+    gravar_json(SAIDA / "pontos.json", montar_pontos(atividades, trechos_corrida, parciais_corrida), compacto=True)
     log(f"Site gerado: {len(compactas)} atividades, {len(rotas)} rotas, {len(lugares)} cidades, {len(recordes)} distâncias com recorde.")
 
 

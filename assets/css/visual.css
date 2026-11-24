@@ -2333,84 +2333,144 @@ a.mais {
 
 
 /* ------------------------------------------------ cada quilômetro, um ponto
-   À esquerda os passos e o texto; à direita o desenho. No celular, um embaixo do outro. */
-.pontos {
+   Uma história contada com a rolagem: o desenho fica parado (sticky) e os capítulos passam ao lado.
+   No celular, o desenho fica em cima e o texto passa por baixo dele. --historia-topo vem do JS
+   (a altura do cabeçalho). */
+.historia {
   display: grid;
-  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
-  gap: 2.5rem;
-  align-items: start;
+  grid-template-columns: minmax(15rem, 21rem) minmax(0, 1fr);
+  grid-template-areas: "texto figura";
+  gap: 0 3rem;
 }
 
-.pontos-lado {
+.historia-figura {
+  grid-area: figura;
+  position: sticky;
+  top: var(--historia-topo, 76px);
+  align-self: start;
   display: grid;
-  gap: 1.1rem;
-  align-content: start;
+  gap: 0.6rem;
 }
 
-.pontos-passos {
+.historia-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* um botãozinho por capítulo: mostra onde a história está e leva até o capítulo */
+.historia-marcas {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 0.4rem;
+  display: flex;
 }
 
-.pontos-passos button {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  width: 100%;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid var(--linha);
-  border-radius: var(--raio-p);
+.historia-marcas button {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
   background: none;
-  color: var(--texto-2);
-  font: inherit;
-  font-weight: 600;
-  text-align: left;
   cursor: pointer;
 }
 
-.pontos-passos button:hover {
-  border-color: var(--linha-forte);
-  color: var(--texto);
+.historia-marcas button::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1px solid var(--linha-forte);
+  border-radius: 50%;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
 }
 
-.pontos-passos button[aria-pressed="true"] {
+.historia-marcas button:hover::before {
+  border-color: var(--texto-2);
+}
+
+.historia-marcas button[aria-current="step"]::before {
   border-color: var(--destaque);
-  background: var(--painel);
-  color: var(--texto);
+  background: var(--destaque);
+  transform: scale(1.35);
 }
 
-.pontos-passos .numero {
+.pontos-tela {
+  height: clamp(24rem, calc(100svh - var(--historia-topo, 76px) - 4.5rem), 46rem);
+}
+
+.pontos-tela canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+}
+
+.historia-capitulos {
+  grid-area: texto;
+}
+
+/* cada capítulo ocupa quase uma tela: passa um de cada vez */
+.capitulo {
+  min-height: 72svh;
+  padding-top: 1.5rem;
+  opacity: 0.35;
+  transition: opacity 0.35s;
+}
+
+.capitulo:last-child {
+  min-height: 80svh;
+}
+
+.capitulo.ativo {
+  opacity: 1;
+}
+
+.capitulo h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 0.9rem;
+  font-family: var(--serifa);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.capitulo .numero {
   display: inline-grid;
   place-items: center;
   flex: none;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border: 1px solid var(--linha-forte);
   border-radius: 50%;
+  font-family: var(--sans);
   font-size: 0.8125rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  transition: background-color 0.35s, border-color 0.35s, color 0.35s;
 }
 
-.pontos-passos button[aria-pressed="true"] .numero {
+.capitulo.ativo .numero {
   border-color: var(--destaque);
   background: var(--destaque);
   color: var(--sobre-destaque);
 }
 
-/* altura fixa para o texto: trocar de passo não empurra o desenho */
-.pontos-texto {
-  margin: 0;
-  min-height: 9.5em;
+.capitulo p {
+  margin: 0 0 0.85rem;
+  max-width: 34em;
   color: var(--texto-2);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .pontos-chave {
   list-style: none;
-  margin: 0;
+  margin: 1rem 0 0;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
@@ -2428,19 +2488,22 @@ a.mais {
   vertical-align: -0.05em;
 }
 
-.pontos-chave i.vazio {
+.pontos-chave i.anel {
   border: 1px solid var(--linha-forte);
 }
 
-.pontos-repetir {
-  justify-self: start;
-  margin-top: 0;
+/* linhas da legenda: a cheia (mediana) e a tracejada (média, meta) */
+.pontos-chave i.linha,
+.pontos-chave i.traco {
+  width: 1.1rem;
+  height: 0;
+  border-radius: 0;
+  border-top: 2px solid var(--texto);
+  vertical-align: 0.3em;
 }
 
-.pontos-tela canvas {
-  display: block;
-  width: 100%;
-  touch-action: manipulation;
+.pontos-chave i.traco {
+  border-top-style: dashed;
 }
 
 .pontos-tabela {
@@ -2456,42 +2519,77 @@ a.mais {
 
 .pontos-tabela table {
   margin-top: 0.75rem;
-  max-width: 32rem;
+  max-width: 36rem;
 }
 
 @media (max-width: 900px) {
-  .pontos {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
+  /* um bloco só: o desenho gruda no alto e os capítulos rolam por baixo dele */
+  .historia {
+    display: block;
   }
 
-  .pontos-passos {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .historia-figura {
+    z-index: 2;
+    margin: 0 -16px;
+    padding: 0.4rem 16px 0.5rem;
+    background: var(--fundo);
+    border-bottom: 1px solid var(--linha);
   }
 
-  .pontos-passos button {
-    flex-direction: column;
-    gap: 0.3rem;
-    padding: 0.5rem 0.25rem;
+  .pontos-tela {
+    height: clamp(16rem, 50svh, 30rem);
+  }
+
+  /* anos e capítulos numa linha só, para sobrar altura para o desenho */
+  .historia-barra {
+    flex-wrap: nowrap;
+  }
+
+  .historia-barra .abas button {
+    padding: 0.3rem 0.65rem;
     font-size: 0.8125rem;
-    text-align: center;
   }
 
-  /* aqui o texto fica embaixo do desenho: mudar de tamanho não empurra a animação */
-  .pontos-texto {
-    min-height: 0;
+  .historia-marcas button {
+    width: 1.3rem;
   }
 
-  /* no celular, o desenho vem logo depois dos passos e o texto explica embaixo: assim dá para
-     ver a animação e saber em que passo ela está sem rolar a tela */
-  .pontos-lado {
-    display: contents;
+  .historia-capitulos {
+    position: relative;
+    z-index: 1;
   }
 
-  .pontos-anos { order: 1; }
-  .pontos-passos { order: 2; }
-  .pontos-tela { order: 3; }
-  .pontos-texto { order: 4; }
-  .pontos-chave { order: 5; }
-  .pontos-repetir { order: 6; }
+  .capitulo {
+    min-height: 58svh;
+    padding-top: 1.25rem;
+    opacity: 1;
+  }
+
+  .capitulo:last-child {
+    min-height: 45svh;
+  }
+
+  .capitulo h3 {
+    font-size: 1.5rem;
+  }
+
+  .capitulo p {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+}
+
+@media (min-width: 720px) and (max-width: 900px) {
+  .historia-figura {
+    margin: 0 -32px;
+    padding-inline: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .capitulo,
+  .capitulo .numero,
+  .historia-marcas button::before {
+    transition: none;
+  }
 }
