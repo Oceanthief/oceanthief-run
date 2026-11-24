@@ -740,6 +740,105 @@ def montar_evolucao(atividades: list[dict], por_distancia: dict, zonas_fc: list[
     return {"esforcos": esforcos, "meses": lista}
 
 
+def pontos_ao_longo(trechos: list[list[tuple[float, float]]], fracoes: list[float]) -> list:
+    """Os pontos que ficam a cada fração (0 a 1, em ordem crescente) do comprimento total dos trechos.
+
+    Sem trechos, devolve None para cada fração."""
+    segmentos = []
+    for tr in trechos:
+        for a, b in zip(tr, tr[1:]):
+            d = distancia_m(a, b)
+            if d > 0:
+                segmentos.append((a, b, d))
+    total = sum(s[2] for s in segmentos)
+    if not segmentos or total <= 0:
+        return [None] * len(fracoes)
+    saida, i, andado = [], 0, 0.0
+    for f in fracoes:
+        alvo = min(max(f, 0.0), 1.0) * total
+        while i < len(segmentos) - 1 and andado + segmentos[i][2] < alvo:
+            andado += segmentos[i][2]
+            i += 1
+        a, b, d = segmentos[i]
+        t = min(1.0, max(0.0, (alvo - andado) / d))
+        saida.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+    return saida
+
+
+RAIO_DO_MAPA_KM = 25  # pontos mais longe que isso do centro dos treinos contam como "em outra cidade"
+METROS_POR_GRAU_LAT = 110540
+METROS_POR_GRAU_LNG = 111320  # vezes o cosseno da latitude
+
+
+def montar_pontos(atividades: list[dict], trechos_por_id: dict) -> dict:
+    """Os dados da animação "cada quilômetro, um ponto" (página inicial, junto da meta do ano).
+
+    Cada ano tem um ponto por quilômetro inteiro corrido: o ponto k é da corrida em que a soma do
+    ano passou de k km, e fica no lugar da rota publicada (já sem as pontas e sem as zonas de
+    privacidade) que corresponde a essa parte da corrida. Assim os pontos do ano somam exatamente
+    os km inteiros, e nenhum cai onde a rota é escondida.
+
+    pontos: [i, x, y] no mapa, em metros a partir do canto de cima à esquerda; [i] sem mapa
+    (esteira, lançada à mão ou toda perto de casa); [i, -1] em outra cidade. i aponta para "ids".
+    """
+    corridas = [a for a in atividades if tipo(a) in CORRIDA and (a.get("distance") or 0) > 0]
+    por_ano = defaultdict(list)
+    for a in corridas:
+        por_ano[a["start_date_local"][:4]].append(a)
+
+    brutos = {}
+    for ano, lista in por_ano.items():
+        lista.sort(key=lambda a: a["start_date"])
+        ids, pontos, acumulado = [], [], 0.0
+        for a in lista:
+            km = a["distance"] / 1000
+            inicio, fim = acumulado, acumulado + km
+            acumulado = fim
+            ks = range(math.floor(inicio) + 1, math.floor(fim) + 1)
+            if not ks:
+                continue
+            i = len(ids)
+            ids.append(a["id"])
+            lugares = pontos_ao_longo(trechos_por_id.get(str(a["id"])) or [], [(k - inicio) / km for k in ks])
+            pontos.extend((i, p) for p in lugares)
+        brutos[ano] = (ids, pontos)
+
+    # o mapa: em volta do centro (mediana) de todos os pontos com lugar, de todos os anos
+    com_lugar = [p for _, (_, pts) in brutos.items() for _, p in pts if p]
+    mapa = None
+    perto = lambda p: False  # noqa: E731
+    if com_lugar:
+        lats, lngs = sorted(p[0] for p in com_lugar), sorted(p[1] for p in com_lugar)
+        centro = (lats[len(lats) // 2], lngs[len(lngs) // 2])
+        perto = lambda p: distancia_m(centro, p) <= RAIO_DO_MAPA_KM * 1000  # noqa: E731
+        dentro = [p for p in com_lugar if perto(p)]
+        folga = 0.004  # ~400 m em volta
+        lat1, lat2 = min(p[0] for p in dentro) - folga, max(p[0] for p in dentro) + folga
+        lng1, lng2 = min(p[1] for p in dentro) - folga, max(p[1] for p in dentro) + folga
+        cos_lat = math.cos(math.radians((lat1 + lat2) / 2))
+        mapa = {
+            "lat_topo": round(lat2, 5),
+            "lng_esq": round(lng1, 5),
+            "cos_lat": round(cos_lat, 6),
+            "w": round((lng2 - lng1) * cos_lat * METROS_POR_GRAU_LNG),
+            "h": round((lat2 - lat1) * METROS_POR_GRAU_LAT),
+        }
+
+    def xy(p):
+        return [
+            round((p[1] - mapa["lng_esq"]) * mapa["cos_lat"] * METROS_POR_GRAU_LNG),
+            round((mapa["lat_topo"] - p[0]) * METROS_POR_GRAU_LAT),
+        ]
+
+    anos = {}
+    for ano, (ids, pontos) in sorted(brutos.items()):
+        anos[ano] = {
+            "ids": ids,
+            "pontos": [[i] if not p else [i, *xy(p)] if perto(p) else [i, -1] for i, p in pontos],
+        }
+    return {"mapa": mapa, "anos": anos}
+
+
 def gerar_site() -> None:
     perfil = ler_json(CONFIG, {})
     priv = perfil.get("privacidade") or {}
@@ -782,6 +881,7 @@ def gerar_site() -> None:
 
     lugares, indice_lugar = [], {}
     compactas, rotas = [], []
+    trechos_corrida = {}  # rotas publicadas das corridas, para os pontos de cada km
     pasta_ativ = SAIDA / "atividades"
     pasta_ativ.mkdir(parents=True, exist_ok=True)
     ids_validos = set()
@@ -858,6 +958,8 @@ def gerar_site() -> None:
         # vários trechos vão no mesmo texto, separados por espaço (que não existe no formato polyline)
         if trechos:
             rotas.append([a["id"], " ".join(codificar(simplificar(tr, 0.00015)) for tr in trechos)])
+            if tipo(a) in CORRIDA:
+                trechos_corrida[aid] = trechos
 
         arquivo = {
             **c,
@@ -927,6 +1029,7 @@ def gerar_site() -> None:
     gravar_json(SAIDA / "site.json", site, compacto=True)
     gravar_json(SAIDA / "rotas.json", rotas, compacto=True)
     gravar_json(SAIDA / "evolucao.json", evolucao, compacto=True)
+    gravar_json(SAIDA / "pontos.json", montar_pontos(atividades, trechos_corrida), compacto=True)
     log(f"Site gerado: {len(compactas)} atividades, {len(rotas)} rotas, {len(lugares)} cidades, {len(recordes)} distâncias com recorde.")
 
 

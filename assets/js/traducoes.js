@@ -558,6 +558,44 @@ const FRASES = {
     "Start at 6 a.m. on Av. Padre Cacique, 1359, next to Imperadores do Samba. Flat course.",
     "Salida a las 6 en la Av. Padre Cacique, 1359, al lado de Imperadores do Samba. Recorrido plano.",
   ],
+
+  // ------------------------------------------------- cada quilômetro, um ponto
+  "Cada quilômetro, um ponto": ["Every kilometer, a dot", "Cada kilómetro, un punto"],
+  "Rotas": ["Routes", "Rutas"],
+  "O ano": ["The year", "El año"],
+  "Ver de novo": ["Play again", "Ver de nuevo"],
+  "Ver os números mês a mês": ["See the numbers month by month", "Ver los números mes a mes"],
+  "sem mapa: {km} km": ["no map: {km} km", "sin mapa: {km} km"],
+  "outras cidades: {km} km": ["other cities: {km} km", "otras ciudades: {km} km"],
+  "grade|meta": ["goal", "meta"],
+  "{n} corridas com GPS em {ano}, desenhadas uma por cima da outra. O trecho mais repetido aparece em {r} delas, mas no mapa de linhas parece igual a um trecho feito uma vez.": [
+    "{n} runs with GPS in {ano}, drawn on top of one another. The most repeated stretch shows up in {r} of them, but on a line map it looks the same as a stretch run once.",
+    "{n} carreras con GPS en {ano}, dibujadas una encima de otra. El tramo más repetido aparece en {r} de ellas, pero en un mapa de líneas parece igual a un tramo recorrido una sola vez.",
+  ],
+  "Cada ponto é 1 km, juntado perto de onde foi corrido: quanto maior o monte, mais vezes o trecho foi corrido.": [
+    "Each dot is 1 km, gathered near where it was run: the bigger the pile, the more often that stretch was run.",
+    "Cada punto es 1 km, agrupado cerca de donde se corrió: cuanto más grande el montón, más veces se corrió ese tramo.",
+  ],
+  "{n} km não têm mapa: esteira, treino sem GPS ou perto de casa.": [
+    "{n} km have no map: treadmill, runs without GPS or close to home.",
+    "{n} km no tienen mapa: cinta, entrenamientos sin GPS o cerca de casa.",
+  ],
+  "{n} km foram em outras cidades.": ["{n} km were in other cities.", "{n} km fueron en otras ciudades."],
+  "Cada linha tem {n} km.": ["Each row is {n} km.", "Cada fila tiene {n} km."],
+  "Em ordem de data, os {n} km de {ano}.": ["In date order, the {n} km of {ano}.", "En orden de fecha, los {n} km de {ano}."],
+  "Em ordem de data, os pontos enchem a meta de {meta} km, batida em {data}. Já são {extra} km além dela.": [
+    "In date order, the dots fill the {meta} km goal, reached on {data}. That's already {extra} km beyond it.",
+    "En orden de fecha, los puntos llenan el objetivo de {meta} km, alcanzado el {data}. Ya son {extra} km más.",
+  ],
+  "Em ordem de data, os pontos já enchem {p}% da meta de {meta} km. Os círculos vazios são os {faltam} km que faltam.": [
+    "In date order, the dots already fill {p}% of the {meta} km goal. The empty circles are the {faltam} km still to go.",
+    "En orden de fecha, los puntos ya llenan el {p}% del objetivo de {meta} km. Los círculos vacíos son los {faltam} km que faltan.",
+  ],
+  "treino (os meses alternam o tom)": ["training (months alternate shades)", "entrenamiento (los meses alternan el tono)"],
+  "falta para a meta": ["still to go", "falta para el objetivo"],
+  "Mês": ["Month", "Mes"],
+  "Acumulado (km)": ["Running total (km)", "Acumulado (km)"],
+  "{k}º km de {ano}": ["km {k} of {ano}", "km {k} de {ano}"],
 };
 
 const separar = (i) => Object.fromEntries(Object.entries(FRASES).map(([pt, versoes]) => [pt, versoes[i]]));

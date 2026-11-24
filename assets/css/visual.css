@@ -2330,3 +2330,168 @@ a.mais {
 .ano-a-ano td a {
   text-decoration: none;
 }
+
+
+/* ------------------------------------------------ cada quilômetro, um ponto
+   À esquerda os passos e o texto; à direita o desenho. No celular, um embaixo do outro. */
+.pontos {
+  display: grid;
+  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.pontos-lado {
+  display: grid;
+  gap: 1.1rem;
+  align-content: start;
+}
+
+.pontos-passos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.pontos-passos button {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-p);
+  background: none;
+  color: var(--texto-2);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pontos-passos button:hover {
+  border-color: var(--linha-forte);
+  color: var(--texto);
+}
+
+.pontos-passos button[aria-pressed="true"] {
+  border-color: var(--destaque);
+  background: var(--painel);
+  color: var(--texto);
+}
+
+.pontos-passos .numero {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid var(--linha-forte);
+  border-radius: 50%;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pontos-passos button[aria-pressed="true"] .numero {
+  border-color: var(--destaque);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+/* altura fixa para o texto: trocar de passo não empurra o desenho */
+.pontos-texto {
+  margin: 0;
+  min-height: 9.5em;
+  color: var(--texto-2);
+  line-height: 1.6;
+}
+
+.pontos-chave {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  color: var(--texto-3);
+  font-size: 0.8125rem;
+}
+
+.pontos-chave i {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  vertical-align: -0.05em;
+}
+
+.pontos-chave i.vazio {
+  border: 1px solid var(--linha-forte);
+}
+
+.pontos-repetir {
+  justify-self: start;
+  margin-top: 0;
+}
+
+.pontos-tela canvas {
+  display: block;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+.pontos-tabela {
+  margin-top: 1.5rem;
+  color: var(--texto-2);
+}
+
+.pontos-tabela summary {
+  cursor: pointer;
+  color: var(--texto-3);
+  font-size: 0.875rem;
+}
+
+.pontos-tabela table {
+  margin-top: 0.75rem;
+  max-width: 32rem;
+}
+
+@media (max-width: 900px) {
+  .pontos {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .pontos-passos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pontos-passos button {
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8125rem;
+    text-align: center;
+  }
+
+  /* aqui o texto fica embaixo do desenho: mudar de tamanho não empurra a animação */
+  .pontos-texto {
+    min-height: 0;
+  }
+
+  /* no celular, o desenho vem logo depois dos passos e o texto explica embaixo: assim dá para
+     ver a animação e saber em que passo ela está sem rolar a tela */
+  .pontos-lado {
+    display: contents;
+  }
+
+  .pontos-anos { order: 1; }
+  .pontos-passos { order: 2; }
+  .pontos-tela { order: 3; }
+  .pontos-texto { order: 4; }
+  .pontos-chave { order: 5; }
+  .pontos-repetir { order: 6; }
+}

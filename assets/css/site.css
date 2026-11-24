@@ -22,6 +22,11 @@
   --sobre-destaque: #fff6e5;
   --vermelho: #c22b1f;
   --pr: #e1cda8;
+  /* "cada km, um ponto": os meses alternam dois tons; as provas ficam na cor de recorde
+     (conferido no validador de paleta: diferença de 14 ou mais entre todos os pares, com daltonismo) */
+  --ponto-a: #b65127;
+  --ponto-b: #e08a5c;
+  --ponto-prova: #e1cda8;
   --frio: #5188cd;
   --neutro: #8d7a64;
   --c-corrida: #b65127;
@@ -59,6 +64,9 @@
   --sobre-destaque: #fff6e5;
   --vermelho: #c22b1f;
   --pr: #190c07;
+  --ponto-a: #b65127;
+  --ponto-b: #6e2a0f;
+  --ponto-prova: #190c07;
   --frio: #2e64a6;
   --neutro: #85735f;
   --c-corrida: #b65127;
