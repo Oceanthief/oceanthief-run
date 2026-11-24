@@ -561,6 +561,9 @@ const FRASES = {
 
   // ------------------------------------------------- cada quilômetro, um ponto
   "Cada quilômetro, um ponto": ["Every kilometer, a dot", "Cada kilómetro, un punto"],
+  "Cada quilômetro, um ponto: {nome}": ["Every kilometer, a dot: {nome}", "Cada kilómetro, un punto: {nome}"],
+  "O ano em pontos": ["The year in dots", "El año en puntos"],
+  "Ver o ano em pontos": ["See the year in dots", "Ver el año en puntos"],
   "Rotas": ["Routes", "Rutas"],
   "O ano": ["The year", "El año"],
   "Ver os números mês a mês": ["See the numbers month by month", "Ver los números mes a mes"],

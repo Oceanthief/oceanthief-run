@@ -927,7 +927,8 @@ function anoEmCurso() {
       ${variacao != null ? `<li>${esc(variacao >= 0
         ? t("{p}% a mais que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior) })
         : t("{p}% a menos que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior) }))}</li>` : ""}
-    </ul>`;
+    </ul>
+    <a class="mais" href="pontos.html">${t("Ver o ano em pontos")}</a>`;
 }
 
 function constancia() {

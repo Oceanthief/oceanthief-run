@@ -72,9 +72,9 @@ jobs:
       - name: Montar a pasta do site
         run: |
           mkdir _site
-          cp -r index.html atividade.html plano.html provas.html evolucao.html assets config _site/
+          cp -r index.html atividade.html plano.html provas.html evolucao.html pontos.html assets config _site/
           mkdir _site/data
-          cp -r data/site.json data/rotas.json data/evolucao.json data/atividades _site/data/
+          cp -r data/site.json data/rotas.json data/evolucao.json data/pontos.json data/atividades _site/data/
           if [ -f CNAME ]; then cp CNAME _site/; fi
 
       # O GitHub Pages deixa o navegador guardar os arquivos por 10 minutos.

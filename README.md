@@ -2,11 +2,12 @@
 
 Site pessoal com os treinos do Strava: recordes, treinos recentes, gráficos, calendário de constância, clima, mapa das rotas, equipamento e o plano para a próxima prova. Atualiza sozinho a cada treino registrado (com o aviso do Strava ligado) e, de qualquer forma, três vezes por dia.
 
-São cinco páginas:
+São seis páginas:
 
 - `index.html`: a página principal;
 - `provas.html`: todas as provas, ano a ano, com as próximas no topo e a comparação com a edição anterior da mesma prova;
 - `evolucao.html`: a evolução das marcas (cada recorde novo, por distância), a previsão para a prova principal, ritmo, frequência cardíaca, distância por batimento e cadência mês a mês, e o resumo de cada ano;
+- `pontos.html` ("O ano em pontos"): a história "cada quilômetro, um ponto", que anda com a rolagem. Os mesmos pontos, um por km corrido no ano, mudam de lugar em 7 capítulos: rotas, montes perto de onde foram corridos, a meta do ano (com a projeção até 31/12), as semanas (constância), os horários, o ritmo de cada km e, no ano corrente, a previsão para a prova principal numa corrida de 42 pontos contra a meta. A previsão usa a mesma conta da página Evolução (`assets/js/previsao.js`);
 - `atividade.html?id=...`: cada treino, com mapa, altimetria, ritmo e frequência cardíaca ao longo do percurso, parciais e melhores trechos;
 - `plano.html`: o plano de treino, com contagem regressiva e o que já foi corrido.
 
@@ -17,7 +18,7 @@ Tudo é HTML, CSS e JavaScript puros, sem `npm` e sem etapa de build. Os dados v
 ## Como funciona
 
 ```
-Strava ──► scripts/sync_strava.py ──► data/site.json, data/rotas.json, data/evolucao.json, data/atividades/*.json ──► páginas
+Strava ──► scripts/sync_strava.py ──► data/site.json, data/rotas.json, data/evolucao.json, data/pontos.json, data/atividades/*.json ──► páginas
               (GitHub Actions, 3x por dia)
 ```
 
@@ -25,7 +26,7 @@ Strava ──► scripts/sync_strava.py ──► data/site.json, data/rotas.jso
 |---|---|---|
 | `config/perfil.json` | seus textos: frase, sobre, provas, conquistas, privacidade | sim |
 | `config/plano.json` | o plano de treino | sim |
-| `data/site.json`, `data/rotas.json`, `data/evolucao.json`, `data/atividades/` | o que o site lê (gerado) | sim |
+| `data/site.json`, `data/rotas.json`, `data/evolucao.json`, `data/pontos.json`, `data/atividades/` | o que o site lê (gerado). `pontos.json` tem um ponto por km de cada ano, com o lugar na rota e o ritmo daquele km | sim |
 | `data/cache/` | detalhes, séries (altimetria, ritmo e FC), clima e cidades já baixados, sem coordenadas exatas | sim |
 | `data/local/` | lista completa com as rotas sem corte | **não** |
 | `.env` | suas chaves do Strava | **não** |

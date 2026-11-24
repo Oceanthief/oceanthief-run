@@ -456,6 +456,7 @@ export function montarTopo({ nome, secoes = [], pagina = "", plano = false }) {
     ["./", t("Início"), "inicio"],
     ["provas.html", t("Provas"), "provas"],
     ["evolucao.html", t("Evolução"), "evolucao"],
+    ["pontos.html", t("O ano em pontos"), "pontos"],
     ...(plano ? [["plano.html", t("Plano"), "plano"]] : []),
   ];
   const linkPagina = ([href, txt, id]) => `<a href="${href}"${id === pagina ? ' aria-current="page"' : ""}>${esc(txt)}</a>`;
