@@ -68,7 +68,7 @@ function desenhar() {
     <dl class="treino-medidas">${medidas.slice(0, 8).map(([dt, dd]) => `<div><dt>${esc(dt)}</dt><dd>${esc(dd)}</dd></div>`).join("")}</dl>
     <div class="treino-grade">
       <div>
-        ${T.rota ? `<div class="mapa" id="mapa-treino" role="region" aria-label="${esc(t("Mapa da rota"))}"></div><p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.5rem 0 0">${t("O começo, o fim e os trechos perto de casa ficam escondidos, para proteger a privacidade.")}</p>` : `<p class="vazio">${T.oculta ? t("O mapa deste treino fica escondido: ele foi todo perto de casa.") : t("Este treino não tem mapa: foi feito em lugar fechado ou com o GPS desligado.")}</p>`}
+        ${T.rota ? `<div class="mapa" id="mapa-treino" role="region" aria-label="${esc(t("Mapa da rota"))}"></div>${T.cortada ? `<p class="secundario" style="color:var(--texto-3);font-size:.8125rem;margin:.5rem 0 0">${t("Partes desta rota ficam escondidas, para proteger a privacidade.")}</p>` : ""}` : `<p class="vazio">${T.oculta ? t("O mapa deste treino fica escondido, para proteger a privacidade.") : t("Este treino não tem mapa: foi feito em lugar fechado ou com o GPS desligado.")}</p>`}
         <a class="ver-strava" href="https://www.strava.com/activities/${encodeURIComponent(T.id)}">View on Strava</a>
       </div>
       <div>

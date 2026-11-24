@@ -789,19 +789,19 @@ def gerar_site() -> None:
     for a, inicio in zip(atividades, inicios):
         aid = str(a["id"])
         ids_validos.add(aid)
-        # rota publicada: sem as pontas e sem o que passa dentro das zonas de privacidade
-        trechos = (
-            tirar_zonas(
-                cortar_pontas(
-                    decodificar(a["polyline"]),
-                    corte_da_ponta(aid, "inicio", corte, variacao, sal),
-                    corte_da_ponta(aid, "fim", corte, variacao, sal),
-                ),
-                zonas_priv,
+        # rota publicada: sem as pontas e sem o que passa dentro das zonas de privacidade, quando o
+        # perfil.json pede (hoje o corte é 0 e não há zonas: a rota sai inteira, como veio do Strava)
+        pts = (
+            cortar_pontas(
+                decodificar(a["polyline"]),
+                corte_da_ponta(aid, "inicio", corte, variacao, sal),
+                corte_da_ponta(aid, "fim", corte, variacao, sal),
             )
             if a.get("polyline")
             else []
         )
+        trechos = tirar_zonas(pts, zonas_priv) if zonas_priv else ([pts] if len(pts) >= 2 else [])
+        cortada = bool(trechos) and (corte > 0 or sum(len(tr) for tr in trechos) < len(pts))
         ponto_mapa = trechos[0][0] if trechos else (round(inicio[0], 2), round(inicio[1], 2)) if inicio else None
 
         lugar_idx = None
@@ -867,8 +867,10 @@ def gerar_site() -> None:
             "w": round(a["average_watts"]) if a.get("average_watts") else None,
             "cal": det.get("calorias"),
             "rota": " ".join(codificar(tr) for tr in trechos),
+            # parte da rota ficou escondida pela privacidade do perfil.json (a página do treino avisa)
+            "cortada": 1 if cortada else None,
             # tinha GPS, mas a rota toda ficou dentro do que é escondido
-            "oculta": 1 if a.get("polyline") and not trechos else None,
+            "oculta": 1 if a.get("polyline") and not trechos and (corte > 0 or zonas_priv) else None,
             "parciais": parciais_coerentes(det.get("parciais") or [], a.get("moving_time")),
             "esforcos": [{k: e[k] for k in ("nome", "dist", "t", "pr")} for e in det.get("esforcos") or []],
             "serie": ler_json(SERIES / f"{aid}.json", {}) or None,
