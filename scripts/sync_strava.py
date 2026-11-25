@@ -360,6 +360,8 @@ def enxugar_resumo(a: dict) -> dict:
         "max_heartrate", "trainer", "commute", "manual", "visibility", "private", "workout_type",
         "kudos_count", "achievement_count", "pr_count", "athlete_count", "average_cadence",
         "average_watts", "kilojoules", "gear_id", "start_latlng", "end_latlng",
+        # para as figuras de compartilhar: vêm na mesma lista, sem chamada a mais
+        "suffer_score", "max_watts", "weighted_average_watts", "elev_high", "elev_low", "average_temp",
     )
     saida = {c: a.get(c) for c in campos}
     saida["polyline"] = (a.get("map") or {}).get("summary_polyline") or ""
@@ -428,8 +430,12 @@ def parciais_coerentes(parciais: list, movimento: int) -> list:
 PONTOS_SERIE = 160
 
 
+SERIES_CHAVES = "time,distance,altitude,velocity_smooth,heartrate,cadence,watts"
+
+
 def enxugar_serie(s: dict) -> dict:
-    """Reduz as séries do Strava a uns 160 pontos: distância (m), altitude (m), velocidade (m/s) e FC.
+    """Reduz as séries do Strava a uns 160 pontos: distância (m), tempo (s), altitude (m), velocidade (m/s),
+    FC, cadência (passos de uma perna por minuto, como o Strava manda) e potência (W).
 
     Sem coordenadas: o gráfico não precisa delas e assim nada revela onde o treino foi."""
     distancia = (s.get("distance") or {}).get("data") or []
@@ -451,12 +457,18 @@ def enxugar_serie(s: dict) -> dict:
             ini = i + 1
         return saida
 
-    return {
+    tempo = (s.get("time") or {}).get("data") or []
+    saida = {
         "d": [round(distancia[i]) for i in indices],
+        "t": [tempo[i] for i in indices] if len(tempo) == n else None,
         "alt": tirar("altitude", 1),
         "v": tirar("velocity_smooth", 2),
         "hr": tirar("heartrate", 0),
+        "cad": tirar("cadence", 0),
+        "w": tirar("watts", 0),
     }
+    # séries que o relógio não mediu (potência numa caminhada, por exemplo) não ocupam espaço
+    return {k: v for k, v in saida.items() if v is not None}
 
 
 def enxugar_atleta(a: dict) -> dict:
@@ -541,14 +553,24 @@ def sincronizar_strava(env: dict, max_detalhes: int, esperar: bool, max_series: 
 
 
 def baixar_series(api: "Strava", todas: list[dict], maximo: int) -> None:
-    """Altimetria, ritmo e FC ao longo de cada treino, para os gráficos da página do treino."""
+    """Altimetria, ritmo, FC, cadência e potência ao longo de cada treino, para os gráficos da página do
+    treino e as figuras de compartilhar."""
     SERIES.mkdir(parents=True, exist_ok=True)
     feitas = {p.stem for p in SERIES.glob("*.json")}
+    recentes = sorted(todas, key=lambda x: x["start_date"], reverse=True)
     faltando = [
-        a for a in sorted(todas, key=lambda x: x["start_date"], reverse=True)
+        a for a in recentes
         if str(a["id"]) not in feitas and (a.get("distance") or 0) > 0 and not a.get("manual")
         and (a.get("sport_type") or a.get("type")) in COM_DETALHE
     ]
+    # Depois, as séries do formato antigo (sem o tempo, a cadência e a potência) dos treinos feitos com
+    # relógio, que têm esses dados: vão sendo baixadas de novo aos poucos, as mais recentes primeiro.
+    # O formato novo sempre traz "t"; quem não tem cadência fica como está.
+    for a in recentes:
+        if str(a["id"]) in feitas and a.get("average_cadence") and (a.get("sport_type") or a.get("type")) in COM_DETALHE:
+            velha = ler_json(SERIES / f"{a['id']}.json", {})
+            if velha and "t" not in velha:
+                faltando.append(a)
     if not faltando or maximo <= 0:
         return
     alvo = min(len(faltando), maximo)
@@ -556,7 +578,7 @@ def baixar_series(api: "Strava", todas: list[dict], maximo: int) -> None:
     feitos = 0
     try:
         for a in faltando[:alvo]:
-            s = api.get(f"/activities/{a['id']}/streams", keys="distance,altitude,velocity_smooth,heartrate", key_by_type="true")
+            s = api.get(f"/activities/{a['id']}/streams", keys=SERIES_CHAVES, key_by_type="true")
             # {} também é gravado: marca que o treino não tem série e não pede de novo
             gravar_json(SERIES / f"{a['id']}.json", enxugar_serie(s) if isinstance(s, dict) else {}, compacto=True)
             feitos += 1
@@ -567,7 +589,7 @@ def baixar_series(api: "Strava", todas: list[dict], maximo: int) -> None:
     except (urllib.error.URLError, TimeoutError, OSError) as erro:
         log(f"  parei nas séries por um erro ({erro}). O resto vem na próxima sincronização.")
     if len(faltando) - feitos:
-        log(f"  faltam {len(faltando) - feitos} treinos sem série.")
+        log(f"  faltam {len(faltando) - feitos} treinos (série nova ou para completar com cadência e potência).")
 
 
 # ---------------------------------------------------------- clima e cidades
@@ -985,6 +1007,14 @@ def gerar_site() -> None:
             "cad": round(a["average_cadence"], 1) if a.get("average_cadence") else None,
             "w": round(a["average_watts"]) if a.get("average_watts") else None,
             "cal": det.get("calorias"),
+            # para as figuras de compartilhar (vêm na lista do Strava; ficam de fora quando não existem)
+            "re": round(a["suffer_score"]) if a.get("suffer_score") else None,  # esforço relativo
+            "wx": a.get("max_watts"),
+            "wp": a.get("weighted_average_watts"),
+            "kj": round(a["kilojoules"]) if a.get("kilojoules") else None,
+            "altx": round(a["elev_high"]) if a.get("elev_high") is not None else None,
+            "altn": round(a["elev_low"]) if a.get("elev_low") is not None else None,
+            "temp": a.get("average_temp"),
             "rota": " ".join(codificar(tr) for tr in trechos),
             # parte da rota ficou escondida pela privacidade do perfil.json (a página do treino avisa)
             "cortada": 1 if cortada else None,
@@ -996,6 +1026,9 @@ def gerar_site() -> None:
             "clima": cl,
             "lugar": lugares[lugar_idx] if lugar_idx is not None else None,
         }
+        for chave in ("re", "wx", "wp", "kj", "altx", "altn", "temp", "cortada"):
+            if arquivo.get(chave) is None:
+                arquivo.pop(chave, None)
         gravar_json(pasta_ativ / f"{aid}.json", arquivo, compacto=True)
         if tipo(a) in CORRIDA:
             parciais_corrida[aid] = arquivo["parciais"]

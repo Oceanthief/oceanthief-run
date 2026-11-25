@@ -903,10 +903,12 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao, 
   }
 
   // capítulo 6, por cima dos pontos: a mediana de 4 semanas e o ritmo da meta
+  // (no vídeo, sem a meta da maratona: o Victor pediu para ela ficar só na página)
   function desenharLinhasRitmo() {
     const { area } = L;
     const R = M.ritmo;
-    if (R.metaRitmo && R.metaRitmo >= L.ritmo.lo && R.metaRitmo <= L.ritmo.hi) {
+    const comMeta = !video && R.metaRitmo && R.metaRitmo >= L.ritmo.lo && R.metaRitmo <= L.ritmo.hi;
+    if (comMeta) {
       const y = L.ritmo.y(R.metaRitmo);
       linhaH(area.x, area.x + area.w, y, { cor: cores.prova, larg: 1.5, traco: [6, 4] });
     }
@@ -925,7 +927,7 @@ export function montarPontos(el, { atividades, pontos, rotas, perfil, evolucao, 
         ctx.stroke();
       }
     }
-    if (R.metaRitmo && R.metaRitmo >= L.ritmo.lo && R.metaRitmo <= L.ritmo.hi) {
+    if (comMeta) {
       rotuloComFundo(t("meta {r}", { r: relogio(R.metaRitmo) }), area.x + area.w - 2, L.ritmo.y(R.metaRitmo) - 11);
     }
   }

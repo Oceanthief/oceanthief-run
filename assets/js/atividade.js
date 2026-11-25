@@ -4,10 +4,11 @@ import {
   NOMES_ESFORCO, relogio, ritmo, prepararAtividades, rotuloDist, nomePais, plural, t, getUnidade, aoRedimensionar,
 } from "./comum.js";
 import { barrasH } from "./graficos.js";
+import { abrirCompartilhar } from "./compartilhar.js";
 
 iniciarDicas();
 const id = new URLSearchParams(location.search).get("id");
-let S, P, T, vizinhos, PLANO;
+let S, P, T, vizinhos, PLANO, LISTA;
 
 iniciar();
 
@@ -23,6 +24,7 @@ async function iniciar() {
   montarRodape(S, P);
 
   const lista = prepararAtividades(S.atividades);
+  LISTA = lista;
   const i = lista.findIndex((a) => String(a.id) === id);
   T = id && /^\d+$/.test(id) ? await buscarJSON(`data/atividades/${id}.json`, true) : null;
   if (!T || i === -1) {
@@ -64,6 +66,7 @@ function desenhar() {
       <span class="tipo"><i style="background:${corGrupo(g)}"></i>${esc(nomeTipo(T.t))}${T.prova ? `, ${t("prova")}` : ""}${T.pessoas > 1 ? plural(T.pessoas - 1, ", com mais {n} pessoa", ", com mais {n} pessoas") : ""}</span>
       <h1>${esc(T.n)}</h1>
       <p class="quando">${esc(t("{dia}, {data}, às {hora}", { dia: diaSemana(T.data), data: dataLonga(T.data), hora: hora(T.data) }))}${lugar ? esc(t(", em {lugar}", { lugar })) : ""}${clima ? `. ${esc(clima)}` : ""}.</p>
+      ${g === "corrida" || g === "caminhada" ? `<button type="button" class="botao-compartilhar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${t("Compartilhar")}</button>` : ""}
     </header>
     <dl class="treino-medidas">${medidas.slice(0, 8).map(([dt, dd]) => `<div><dt>${esc(dt)}</dt><dd>${esc(dd)}</dd></div>`).join("")}</dl>
     <div class="treino-grade">
@@ -81,6 +84,9 @@ function desenhar() {
       ${ant ? `<a href="${linkTreino(ant.id)}"><small>${t("Treino anterior")}</small>${esc(ant.n)}</a>` : "<span></span>"}
       ${prox ? `<a href="${linkTreino(prox.id)}" style="text-align:right"><small>${t("Próximo treino")}</small>${esc(prox.n)}</a>` : "<span></span>"}
     </nav>`;
+
+  const botaoCompartilhar = $(".botao-compartilhar");
+  if (botaoCompartilhar) botaoCompartilhar.onclick = () => abrirCompartilhar({ T, S, P, atividades: LISTA });
 
   if (T.parciais?.length > 1) {
     const velocidades = T.parciais.map((p) => p.v || 0);

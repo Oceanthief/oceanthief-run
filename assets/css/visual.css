@@ -2593,3 +2593,265 @@ a.mais {
     transition: none;
   }
 }
+
+
+/* ------------------------------------------------ figuras para compartilhar
+   O botão da página do treino abre uma janela (<dialog>) com as figuras em PNG transparente.
+   No celular, a janela ocupa a tela toda. */
+.botao-compartilhar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--destaque);
+  border-radius: 999px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.botao-compartilhar svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--destaque-tx);
+}
+
+.botao-compartilhar:hover {
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+.botao-compartilhar:hover svg {
+  color: inherit;
+}
+
+.compartilhar {
+  width: min(1180px, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--linha-forte);
+  border-radius: 14px;
+  background: var(--fundo);
+  color: var(--texto);
+  overscroll-behavior: contain;
+}
+
+.compartilhar::backdrop {
+  background: rgba(10, 6, 4, 0.72);
+}
+
+.comp-cabeca {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--linha);
+  background: var(--fundo);
+}
+
+.comp-cabeca h2 {
+  font-family: var(--serifa);
+  font-weight: 400;
+  font-size: 1.75rem;
+}
+
+.comp-fechar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--linha-forte);
+  border-radius: 50%;
+  background: none;
+  color: var(--texto);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.comp-corpo {
+  padding: 1.25rem;
+}
+
+.fig-controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--texto-2);
+  font-size: 0.9375rem;
+}
+
+.fig-controles label {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  cursor: pointer;
+}
+
+.fig-cores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.fig-cores button {
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 2px solid var(--linha-forte);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.fig-cores button[aria-pressed="true"] {
+  border-color: var(--texto);
+  box-shadow: 0 0 0 2px var(--fundo) inset;
+}
+
+.fig-fundo {
+  flex-wrap: wrap;
+}
+
+.fig-foto input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+/* "Sua foto" com cara de botão do grupo */
+.fig-foto span {
+  display: inline-block;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--linha-forte);
+  border-radius: 999px;
+  color: var(--texto-2);
+  font-weight: 600;
+}
+
+.fig-foto input:focus-visible + span {
+  outline: 2px solid var(--destaque);
+  outline-offset: 2px;
+}
+
+.fig-nota {
+  max-width: 60ch;
+  margin: 0 0 1.5rem;
+  color: var(--texto-3);
+  font-size: 0.875rem;
+}
+
+.fig-galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 1.5rem;
+}
+
+.fig-cartao {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+}
+
+.fig-previa {
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
+  overflow: hidden;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+}
+
+.fig-previa img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fig-carregando {
+  color: #9a9a9a;
+  font-size: 0.875rem;
+}
+
+/* os fundos da prévia: o PNG continua transparente */
+.fundo-xadrez .fig-previa {
+  background-color: #2a2a2a;
+  background-image: conic-gradient(#3a3a3a 25%, #2a2a2a 0 50%, #3a3a3a 0 75%, #2a2a2a 0);
+  background-size: 28px 28px;
+}
+
+.fundo-escuro .fig-previa {
+  background: #121212;
+}
+
+.fundo-claro .fig-previa {
+  background: #cfcac2;
+}
+
+.fundo-foto .fig-previa {
+  background-color: #121212;
+}
+
+.fig-rodape {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.fig-rodape h3 {
+  font-size: 1rem;
+}
+
+.fig-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.fig-acoes button {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--linha-forte);
+  border-radius: 999px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fig-acoes button:hover:not(:disabled) {
+  border-color: var(--texto-2);
+}
+
+.fig-acoes button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.fig-acoes button.feito {
+  border-color: var(--destaque);
+  color: var(--destaque-tx);
+}
+
+@media (max-width: 600px) {
+  .compartilhar {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .comp-corpo {
+    padding: 1rem;
+  }
+}
