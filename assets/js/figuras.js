@@ -43,12 +43,14 @@ export function dadosDoTreino({ T, S, P, atividades, evolucao, anterior }) {
   };
 }
 const BRANCO = "#FFFFFF";
-const VERMELHO = "#FF3B30";
+export const VERMELHO = "#FF3B30";
 const FONTE = '"Barlow Condensed", "Arial Narrow", sans-serif';
+// a letra do site, para os rótulos dos resumos do mês e do ano (resumos.js)
+export const SANS = 'Manrope, "Barlow Condensed", sans-serif';
 const M = 40; // margem: as artes da Coros deixam 40 px de cada lado
 
 // ------------------------------------------------------------------ textos
-const MAIUSC = (s) => String(s ?? "").toLocaleUpperCase(LOCALE);
+export const MAIUSC = (s) => String(s ?? "").toLocaleUpperCase(LOCALE);
 // o nome do treino sem emoji e sem a exclamação do fim ("MEIA MARATONA DE JUIZ DE FORA! 🏅")
 export const limparNome = (s) => MAIUSC(String(s || "").replace(/[\p{Extended_Pictographic}️‍]/gu, "").replace(/[!\s]+$/u, "").replace(/\s{2,}/g, " ").trim());
 const U = () => MAIUSC(rotuloDist());
@@ -120,26 +122,26 @@ const MEDIDAS = {
 const medidas = (D, lista, n) => lista.map((k) => MEDIDAS[k](D)).filter(Boolean).slice(0, n);
 
 // ------------------------------------------------------------------ pincel
-function novaTela(altura) {
+export function novaTela(altura) {
   const c = document.createElement("canvas");
   c.width = LARGURA;
   c.height = Math.round(altura);
   return c;
 }
 
-function pincel(c, op) {
+export function pincel(c, op) {
   const ctx = c.getContext("2d");
   const comEspaco = "letterSpacing" in ctx;
   const acento = CORES[op.cor] || CORES.neon;
-  const fonte = (tam, peso) => `${peso} ${tam}px ${FONTE}`;
+  const fonte = (tam, peso, fam = FONTE) => `${peso} ${tam}px ${fam}`;
   function sombra(ligada) {
     const on = op.sombra && ligada;
     ctx.shadowColor = on ? "rgba(0,0,0,0.55)" : "transparent";
     ctx.shadowBlur = on ? 14 : 0;
     ctx.shadowOffsetY = on ? 2 : 0;
   }
-  function medir(str, { tam = 30, peso = 600, espaco = 0 } = {}) {
-    ctx.font = fonte(tam, peso);
+  function medir(str, { tam = 30, peso = 600, espaco = 0, fam } = {}) {
+    ctx.font = fonte(tam, peso, fam);
     if (comEspaco) {
       ctx.letterSpacing = `${espaco}px`;
       const w = ctx.measureText(str).width - (espaco && str.length ? espaco : 0);
@@ -149,17 +151,17 @@ function pincel(c, op) {
     return [...str].reduce((s, ch) => s + ctx.measureText(ch).width, 0) + espaco * Math.max(0, [...str].length - 1);
   }
   // escreve e devolve a largura; com `max`, a letra diminui até caber
-  function texto(str, x, y, { tam = 30, peso = 600, cor = BRANCO, alinhar = "left", base = "alphabetic", espaco = 0, alpha = 1, max = 0 } = {}) {
+  function texto(str, x, y, { tam = 30, peso = 600, cor = BRANCO, alinhar = "left", base = "alphabetic", espaco = 0, alpha = 1, max = 0, fam } = {}) {
     str = String(str ?? "");
     let tamF = tam;
-    while (max && tamF > 12 && medir(str, { tam: tamF, peso, espaco }) > max) tamF -= 2;
-    const w = medir(str, { tam: tamF, peso, espaco });
+    while (max && tamF > 12 && medir(str, { tam: tamF, peso, espaco, fam }) > max) tamF -= 2;
+    const w = medir(str, { tam: tamF, peso, espaco, fam });
     const x0 = alinhar === "right" ? x - w : alinhar === "center" ? x - w / 2 : x;
     ctx.save();
     sombra(true);
     ctx.globalAlpha = alpha;
     ctx.fillStyle = cor;
-    ctx.font = fonte(tamF, peso);
+    ctx.font = fonte(tamF, peso, fam);
     ctx.textBaseline = base;
     ctx.textAlign = "left";
     if (comEspaco) {
@@ -606,7 +608,7 @@ function projetar(trechos, caixaR) {
   return ([la, lo]) => [ox + (lo * k - x0) * esc, oy + (-la - y0) * esc];
 }
 // a rota numa lista só, com a distância acumulada (m) de cada ponto
-function rotaMedida(D) {
+export function rotaMedida(D) {
   const trechos = trechosRota(D.a.rota);
   const pts = trechos.flat();
   const acum = [0];
@@ -1036,7 +1038,7 @@ function figUltimos30(D, op) {
 // ---------------------------------------------- rotas giradas e encaixadas
 // A rota em metros (x para o leste, y para o sul), girada por `ang` e encaixada na caixa sem distorcer.
 // Devolve os trechos em pixels e a função que leva um ponto (lat, lng) para a figura.
-function rotaNaCaixa(R, caixa, ang = 0) {
+export function rotaNaCaixa(R, caixa, ang = 0) {
   const lat0 = R.pts.reduce((a, q) => a + q[0], 0) / R.pts.length;
   const k = Math.cos((lat0 * Math.PI) / 180);
   const [co, se] = [Math.cos(ang), Math.sin(ang)];
@@ -1059,7 +1061,7 @@ function rotaNaCaixa(R, caixa, ang = 0) {
   return { fn, trechos: R.trechos.map((tr) => tr.map(fn)), esc };
 }
 // o giro (de 5 em 5 graus) em que a rota fica maior dentro da caixa
-function anguloQueEncaixa(R, caixa) {
+export function anguloQueEncaixa(R, caixa) {
   let melhor = { ang: 0, esc: 0 };
   for (let g = 0; g < 180; g += 5) {
     const ang = (g * Math.PI) / 180;
@@ -1548,6 +1550,17 @@ export const pngDe = (canvas) => new Promise((r) => canvas.toBlob(r, "image/png"
 // espera a letra condensada carregar: sem ela, o canvas desenharia com a letra reserva
 export async function carregarFonte() {
   if (!document.fonts?.load) return;
+  // a página inicial não pede a letra condensada no <head>: vem aqui, só quando a janela abre
+  if (![...document.querySelectorAll('link[rel="stylesheet"]')].some((l) => l.href.includes("Barlow+Condensed"))) {
+    const folha = Object.assign(document.createElement("link"), {
+      rel: "stylesheet",
+      href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap",
+    });
+    await new Promise((r) => {
+      folha.onload = folha.onerror = r;
+      document.head.append(folha);
+    });
+  }
   await Promise.all([
     ...[500, 600, 700].map((p) => document.fonts.load(`${p} 40px "Barlow Condensed"`)),
     // o cartão da figura "Esforço" imita o app e usa a letra do site

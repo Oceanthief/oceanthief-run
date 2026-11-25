@@ -931,7 +931,29 @@ function anoEmCurso() {
     <a class="mais" href="pontos.html">${t("Ver o ano em pontos")}</a>`;
 }
 
+// O botão dos resumos do mês e do ano (resumos.js), ao lado das abas da constância. Abre o período da aba:
+// nos "Últimos 12 meses", o mês de agora; num ano, o ano todo. Enquanto os modelos esperam aprovação, só
+// aparece com ?resumos=novos no endereço. A janela e as figuras só carregam no primeiro clique.
+const VER_RESUMOS = new URLSearchParams(location.search).get("resumos") === "novos";
+function botaoResumo() {
+  if (!VER_RESUMOS || $("#botao-resumo")) return;
+  const abasEl = $("#abas-constancia");
+  if (!abasEl) return;
+  const grupo = document.createElement("div");
+  grupo.className = "cabeca-acoes";
+  abasEl.before(grupo);
+  grupo.innerHTML = `<button type="button" class="botao-compartilhar" id="botao-resumo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t("Compartilhar resumo"))}</button>`;
+  grupo.prepend(abasEl);
+  $("#botao-resumo").onclick = async () => {
+    const { abrirResumo } = await import("./compartilhar.js");
+    const hoje = new Date();
+    const doze = estado.ano === "12m";
+    abrirResumo({ S, P, atividades: A, rotas: ROTAS, ano: doze ? hoje.getFullYear() : +estado.ano, mes: doze ? hoje.getMonth() : null });
+  };
+}
+
 function constancia() {
+  botaoResumo();
   anoEmCurso();
   const anos = [...new Set(A.map((a) => a.ano))].sort((x, y) => y - x);
   abas($("#abas-constancia"), [{ valor: "12m", rotulo: t("Últimos 12 meses") }, ...anos.map((a) => ({ valor: String(a), rotulo: String(a) }))], estado.ano, (v) => { estado.ano = v; constancia(); });

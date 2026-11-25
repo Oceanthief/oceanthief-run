@@ -174,6 +174,16 @@ Na página de cada corrida e caminhada, o botão "Compartilhar" abre as métrica
 
 Os dados vêm do sync: a lista do Strava já traz esforço relativo, potência máxima e ponderada, energia, altitudes e temperatura (`re`, `wx`, `wp`, `kj`, `altx`, `altn`, `temp` no arquivo de cada treino), e as séries guardam também o tempo, a cadência e a potência (`t`, `cad`, `w`). As séries antigas dos treinos feitos com relógio são baixadas de novo aos poucos, dentro do limite de `--max-series` de cada rodada.
 
+### Resumos do mês e do ano
+
+Na página inicial, o botão "Compartilhar resumo" (ao lado das abas da Constância) abre cinco modelos no tamanho do story (1080 × 1920), em `assets/js/resumos.js`: ficha do período, retrato (a foto com a maior corrida do período como fita), constância (calendário do mês ou pontos do ano), duelo (os dois períodos frente a frente) e curva acumulada.
+
+- Os números são calculados na hora, com os treinos que já estão no site: acompanham cada atualização do Strava, sem passo extra.
+- O mês é comparado com o mês anterior do mesmo ano (janeiro fica sem comparação) e o ano com o ano anterior. Mês ou ano que ainda não acabou vai até hoje e é comparado com os mesmos dias do anterior (1 a 25 de novembro contra 1 a 25 de outubro); período fechado entra inteiro. Nada de projeção.
+- Os dias antes do primeiro treino no Strava não contam, nem como descanso.
+- Escolhe-se o período, o esporte (corrida, caminhada ou tudo), a cor, a grade, o fundo (café ou transparente) e a foto do retrato (a do site, ou uma escolhida na hora, que não sai do navegador). Duelo e curva só aparecem quando existe período anterior.
+- Enquanto esperam aprovação, o botão só aparece com `?resumos=novos` no endereço da página inicial.
+
 ## Ver com dados de mentira
 
 ```

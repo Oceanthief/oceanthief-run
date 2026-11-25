@@ -85,6 +85,8 @@ jobs:
           V=$(cat assets/css/*.css assets/js/*.js *.html | sha1sum | cut -c1-10)
           sed -i -E "s#(assets/(css|js)/[a-z]+\.(css|js))\"#\1?v=$V\"#g" *.html
           sed -i -E "s#from \"\./([a-z]+)\.js\"#from \"./\1.js?v=$V\"#g" assets/js/*.js
+          # e os módulos carregados só quando precisa: import("./compartilhar.js")
+          sed -i -E "s#import\(\"\./([a-z]+)\.js\"\)#import(\"./\1.js?v=$V\")#g" assets/js/*.js
           echo "Versão do código: $V"
 
       - uses: actions/configure-pages@v5

@@ -2800,6 +2800,55 @@ a.mais {
   background-color: #121212;
 }
 
+/* os resumos com fundo café já trazem o fundo; a prévia fica sem nada atrás */
+.fundo-nenhum .fig-previa {
+  background: none;
+}
+
+/* o botão dos resumos, ao lado das abas da constância */
+.cabeca-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+.cabeca-acoes .botao-compartilhar {
+  margin-top: 0;
+}
+
+/* a escolha do período e do esporte, em cima dos controles de cor */
+.fig-periodo {
+  gap: 0.75rem 1.25rem;
+}
+
+.fig-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.fig-select select {
+  padding: 0.45rem 2rem 0.45rem 0.9rem;
+  border: 1px solid var(--linha-forte);
+  border-radius: 999px;
+  background: var(--fundo) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23999' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 0.8rem center / 0.7rem;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  appearance: none;
+  cursor: pointer;
+}
+
+.fig-select select:focus-visible {
+  outline: 2px solid var(--destaque);
+  outline-offset: 2px;
+}
+
+.fig-opcoes [hidden] {
+  display: none;
+}
+
 .fig-rodape {
   display: grid;
   gap: 0.5rem;
