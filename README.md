@@ -170,13 +170,13 @@ Na página de cada corrida e caminhada, o botão "Compartilhar" abre as métrica
 - **Baixar** salva o PNG; **Copiar** põe na área de transferência (no iPhone, depois é só colar no story do Instagram); **Compartilhar** abre a folha do celular.
 - A cor de destaque (verde-limão, laranja, creme, branco, amarelo ou âmbar), a grade técnica e a sombra ficam guardadas no navegador.
 - A prévia pode ficar sobre uma foto escolhida na hora; a foto não sai do navegador e o PNG continua transparente.
-- Uma figura nova pode entrar escondida, com `nova: true` em `assets/js/figuras.js`: ela só aparece com `?figuras=novas` no endereço do treino, até ser aprovada.
+- Uma figura nova pode entrar escondida, com `nova: true` em `assets/js/figuras.js`: ela só aparece com `?figuras=novas` no endereço do treino, até ser aprovada. Esperando aprovação agora: splits por km e melhor km (no estilo das placas de transmissão de pista, na letra Barlow), com a posição de cada km pelo ritmo e o mais rápido em verde.
 
 Os dados vêm do sync: a lista do Strava já traz esforço relativo, potência máxima e ponderada, energia, altitudes e temperatura (`re`, `wx`, `wp`, `kj`, `altx`, `altn`, `temp` no arquivo de cada treino), e as séries guardam também o tempo, a cadência e a potência (`t`, `cad`, `w`). As séries antigas dos treinos feitos com relógio são baixadas de novo aos poucos, dentro do limite de `--max-series` de cada rodada.
 
 ### Resumos do mês e do ano
 
-Na página inicial, o botão "Compartilhar resumo" (ao lado das abas da Constância) abre os resumos do mês e do ano no tamanho do story (1080 × 1920), em `assets/js/resumos.js`: ficha do período, constância (calendário do mês ou pontos do ano), duelo (os dois períodos frente a frente) e curva acumulada. Esperando aprovação, só com `?resumos=novos` no endereço (`nova: true` no catálogo): retrato (a foto de ponta a ponta, desmanchando no fundo), rotas (o desenho de cada treino do período), destaques (os melhores do período contra os do anterior) e ritmo (cada treino como um ponto, na posição do ritmo).
+Na página inicial, o botão "Compartilhar resumo" (ao lado das abas da Constância) abre oito modelos de resumo do mês e do ano no tamanho do story (1080 × 1920), em `assets/js/resumos.js`: ficha do período, retrato (a foto de ponta a ponta, desmanchando no fundo), constância (calendário do mês ou pontos do ano), duelo (os dois períodos frente a frente), curva acumulada, rotas (o desenho de cada treino do período), destaques (os melhores do período contra os do anterior) e ritmo (cada treino como um ponto, na posição do ritmo). Um modelo novo pode entrar com `nova: true`: só aparece com `?resumos=novos` no endereço.
 
 - Os números são calculados na hora, com os treinos que já estão no site: acompanham cada atualização do Strava, sem passo extra.
 - O mês é comparado com o mês anterior (janeiro com dezembro do ano anterior) e o ano com o ano anterior. Mês ou ano que ainda não acabou vai até hoje e é comparado com os mesmos dias do anterior (1 a 25 de novembro contra 1 a 25 de outubro); período fechado entra inteiro. Nada de projeção.

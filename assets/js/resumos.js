@@ -1063,16 +1063,16 @@ function modRitmo(R, op) {
 
 // --------------------------------------------------------------- catálogo
 const temComparacao = (R) => !!R.anterior && (R.anterior.n > 0 || R.atual.n > 0);
-// `nova: true`: ainda esperando aprovação; só aparece com ?resumos=novos no endereço
+// um modelo novo pode entrar com `nova: true`: só aparece com ?resumos=novos no endereço, até ser aprovado
 export const MODELOS = [
   { id: "ficha", nome: () => t("Ficha do período"), pronta: (R) => R.atual.n > 0, desenhar: modFicha },
-  { id: "retrato", nome: () => t("Retrato"), pronta: (R) => R.atual.n > 0 && !!R.foto, desenhar: modRetrato, nova: true },
+  { id: "retrato", nome: () => t("Retrato"), pronta: (R) => R.atual.n > 0 && !!R.foto, desenhar: modRetrato },
   { id: "constancia", nome: () => t("Constância"), pronta: (R) => R.atual.n > 0, desenhar: modConstancia },
   { id: "duelo", nome: () => t("Duelo"), pronta: (R) => R.atual.n > 0 && temComparacao(R), desenhar: modDuelo },
   { id: "curva", nome: () => t("Curva acumulada"), pronta: (R) => R.atual.m > 0 && temComparacao(R) && R.anterior.m >= 0, desenhar: modCurva },
-  { id: "rotas", nome: () => t("Rotas"), pronta: (R) => R.atual.lista.filter((a) => trechosRota(R.rotaDe(a)).length).length >= 2, desenhar: modRotas, nova: true },
-  { id: "destaques", nome: () => t("Destaques"), pronta: (R) => R.atual.n >= 2, desenhar: modDestaques, nova: true },
-  { id: "ritmo", nome: () => t("Ritmo"), pronta: (R) => R.esporte !== "tudo" && R.atual.lista.filter((a) => a.m >= 1000 && a.s > 0).length >= 3, desenhar: modRitmo, nova: true },
+  { id: "rotas", nome: () => t("Rotas"), pronta: (R) => R.atual.lista.filter((a) => trechosRota(R.rotaDe(a)).length).length >= 2, desenhar: modRotas },
+  { id: "destaques", nome: () => t("Destaques"), pronta: (R) => R.atual.n >= 2, desenhar: modDestaques },
+  { id: "ritmo", nome: () => t("Ritmo"), pronta: (R) => R.esporte !== "tudo" && R.atual.lista.filter((a) => a.m >= 1000 && a.s > 0).length >= 3, desenhar: modRitmo },
 ];
 
 // os períodos que dá para escolher: cada ano (do mais novo ao mais velho) com os seus meses

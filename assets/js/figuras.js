@@ -47,6 +47,9 @@ export const VERMELHO = "#FF3B30";
 const FONTE = '"Barlow Condensed", "Arial Narrow", sans-serif';
 // a letra do site, para os rótulos dos resumos do mês e do ano (resumos.js)
 export const SANS = 'Manrope, "Barlow Condensed", sans-serif';
+// a Barlow sem condensar (de desenho parecido com a DIN), para os splits no estilo das transmissões de pista
+const DIN = 'Barlow, "Barlow Condensed", sans-serif';
+const VERDE = "#4ADE80"; // o melhor km nos splits
 const M = 40; // margem: as artes da Coros deixam 40 px de cada lado
 
 // ------------------------------------------------------------------ textos
@@ -1517,6 +1520,122 @@ function quebrar(p, texto, largura, tam, espaco = 1) {
   return saida;
 }
 
+// ------------------------------------------- splits no estilo da pista
+// As parciais com a cadência de cada km (da série, em passos por minuto) e a posição do km pelo ritmo
+// (1 = o km mais rápido; o pedaço final, menor que 1 km, fica sem posição).
+function parciaisComTudo(D) {
+  const lista = parciais(D);
+  const s = serieDe(D);
+  const cad = s?.cad ? mediaPorKm(s, "cad", lista.length) : null;
+  const ordem = lista.filter((x) => x.inteira).sort((a, b) => a.ritmo - b.ritmo);
+  return lista.map((x, i) => ({ ...x, cad: cad?.[i] ? Math.round(cad[i] * 2) : null, pos: x.inteira ? ordem.indexOf(x) + 1 : null }));
+}
+const kmDaParcial = (x) => (x.inteira ? `${num(Math.round(x.km))} KM` : `${num(x.km, 2)} KM`);
+const ROT_PISTA = () => ({ parcial: MAIUSC(t("Parcial")), fc: MAIUSC(t("FC méd.")), cad: MAIUSC(t("Cad. méd.")), ppm: MAIUSC(t("ppm")) });
+
+// Distribui grupos ("RÓTULO valor") de ponta a ponta da largura, como nas transmissões: o primeiro
+// encostado na esquerda, o último na direita. A letra diminui até sobrar um respiro entre eles.
+function emLinha(p, linhas, { tam = 32, respiro = 28, x0 = M, x1 = LARGURA - M } = {}) {
+  // `linhas`: lista de linhas; cada linha é uma lista de colunas [{ rotulo, valor, cor }]; as colunas
+  // têm a mesma largura em todas as linhas, para os valores ficarem alinhados
+  const nCols = linhas[0].length;
+  let k = tam;
+  let larguras;
+  const medir = (s) => (s ? p.medir(s, { tam: k, peso: 400, fam: DIN }) : 0);
+  for (; k > 14; k -= 1) {
+    larguras = Array.from({ length: nCols }, (_, j) => Math.max(...linhas.map((l) => {
+      const c = l[j];
+      return c ? medir(c.rotulo) + (c.rotulo && c.valor ? k * 0.35 : 0) + medir(c.valor) : 0;
+    })));
+    const sobra = x1 - x0 - larguras.reduce((a, b) => a + b, 0);
+    if (sobra / Math.max(1, nCols - 1) >= respiro) break;
+  }
+  const vao = (x1 - x0 - larguras.reduce((a, b) => a + b, 0)) / Math.max(1, nCols - 1);
+  const xs = larguras.map((_, j) => x0 + larguras.slice(0, j).reduce((a, b) => a + b, 0) + vao * j);
+  return {
+    tam: k,
+    desenhar(linha, y) {
+      linha.forEach((c, j) => {
+        if (!c) return;
+        let x = xs[j];
+        if (c.rotulo) x += p.texto(c.rotulo, x, y, { tam: k, peso: 400, fam: DIN, alpha: 0.5 }) + k * 0.35;
+        if (c.valor) p.texto(c.valor, x, y, { tam: k, peso: 400, fam: DIN, cor: c.cor || BRANCO });
+      });
+    },
+  };
+}
+
+// "Splits por km" (como a placa do 5000 m do Europeu): o nome do treino numa faixa cinza e uma linha por
+// km com a parcial, a posição do km pelo ritmo, a FC e a cadência. O km mais rápido fica em verde.
+function figSplits(D, op) {
+  const lista = parciaisComTudo(D);
+  const R = ROT_PISTA();
+  const temHr = lista.some((x) => x.hr);
+  const temCad = lista.some((x) => x.cad);
+  const passo = 50;
+  const y0 = 160;
+  const c = novaTela(y0 + (lista.length - 1) * passo + 56);
+  const p = pincel(c, op);
+  p.grade();
+  // a faixa de cima: a distância em cinza e o nome em branco, sobre um fundo cinza
+  const tamC = 34;
+  const dist = distTxt(D.a.m); // treino sozinho: sempre duas casas, como no Strava
+  const wD = p.medir(dist, { tam: tamC, peso: 400, fam: DIN });
+  const nome = limparNome(D.a.n);
+  const maxNome = LARGURA - 2 * M - wD - 40;
+  const wN = Math.min(maxNome, p.medir(nome, { tam: tamC, peso: 400, fam: DIN }));
+  p.caixa(M - 6, 72 - 32, wD + wN + 36, 44, { larg: 0, preencher: "#8E9196", alphaFundo: 0.55 });
+  p.texto(dist, M + 4, 72, { tam: tamC, peso: 400, fam: DIN, alpha: 0.75 });
+  p.texto(nome, M + wD + 22, 72, { tam: tamC, peso: 400, fam: DIN, max: maxNome });
+  const linhas = lista.map((x) => {
+    const cor = x.pos === 1 ? VERDE : BRANCO;
+    return [
+      { valor: kmDaParcial(x), cor: p.acento },
+      { rotulo: R.parcial, valor: relogio(x.s), cor },
+      { valor: x.pos ? `#${x.pos}` : "–", cor },
+      temHr ? { rotulo: R.fc, valor: x.hr ? `${x.hr} BPM` : "–", cor } : null,
+      temCad ? { rotulo: R.cad, valor: x.cad ? `${x.cad}` : "–", cor } : null,
+    ].filter((col, j) => j < 3 || col);
+  });
+  const grade = emLinha(p, linhas, { tam: 32 });
+  linhas.forEach((l, i) => grade.desenhar(l, y0 + i * passo));
+  return c;
+}
+
+// "Melhor km" (como a faixa da volta final): entre duas linhas finas, o km mais rápido, o tempo dele,
+// a FC e a cadência; embaixo, um traço por km do treino, da altura da velocidade, com o melhor em cor.
+function figMelhorKm(D, op) {
+  const lista = parciaisComTudo(D);
+  const b = lista.find((x) => x.pos === 1);
+  const R = ROT_PISTA();
+  const c = novaTela(300);
+  const p = pincel(c, op);
+  p.grade();
+  const linha = [
+    { rotulo: MAIUSC(t("Melhor km")), valor: `KM ${num(Math.round(b.km))}`, cor: p.acento },
+    { rotulo: MAIUSC(t("Tempo")), valor: relogio(b.s) },
+    b.hr ? { rotulo: R.fc, valor: `${b.hr} BPM` } : null,
+    b.cad ? { rotulo: R.cad, valor: `${b.cad} ${R.ppm}` } : null,
+  ].filter(Boolean);
+  p.linha([[M, 40], [LARGURA - M, 40]], { larg: 2, alpha: 0.85 });
+  p.linha([[M, 150], [LARGURA - M, 150]], { larg: 2, alpha: 0.85 });
+  emLinha(p, [linha], { tam: 34, respiro: 40 }).desenhar(linha, 107);
+  // os kms do treino: o mais rápido mais alto e na cor de destaque
+  const inteiras = lista.filter((x) => x.inteira);
+  const [rMin, rMax] = [Math.min(...inteiras.map((x) => x.ritmo)), Math.max(...inteiras.map((x) => x.ritmo))];
+  const slot = (LARGURA - 2 * M) / inteiras.length;
+  const bw = Math.max(3, Math.min(26, slot * 0.5));
+  const base = 250;
+  inteiras.forEach((x, i) => {
+    const h = 10 + 56 * (rMax > rMin ? (rMax - x.ritmo) / (rMax - rMin) : 1);
+    const cx = M + slot * (i + 0.5);
+    p.caixa(cx - bw / 2, base - h, bw, h, { larg: 0, preencher: x === b ? p.acento : BRANCO, alphaFundo: x === b ? 1 : 0.35 });
+  });
+  p.texto("KM 1", M + slot / 2, base + 34, { tam: 22, peso: 400, fam: DIN, alpha: 0.6, alinhar: "center" });
+  p.texto(`KM ${num(inteiras.length)}`, M + slot * (inteiras.length - 0.5), base + 34, { tam: 22, peso: 400, fam: DIN, alpha: 0.6, alinhar: "center" });
+  return c;
+}
+
 // --------------------------------------------------------------- catálogo
 // `pronta(D)`: se o treino tem o que a figura precisa. Uma figura nova pode entrar com `nova: true`:
 // fica escondida no site e só aparece com ?figuras=novas no endereço do treino, até ser aprovada.
@@ -1542,6 +1661,8 @@ export const FIGURAS = [
   { id: "painel", nome: () => t("Painel do percurso"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figPainel },
   { id: "rotavertical", nome: () => t("Rota vertical"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figRotaVertical },
   { id: "esforco", nome: () => t("Esforço"), pronta: (D) => !!posicaoDoEsforco(D) && D.a.m > 0, desenhar: figEsforco },
+  { id: "splits", nome: () => t("Splits por km"), pronta: (D) => parciais(D).filter((x) => x.inteira).length >= 2, desenhar: figSplits, nova: true },
+  { id: "melhorkm", nome: () => t("Melhor km"), pronta: (D) => parciais(D).filter((x) => x.inteira).length >= 2, desenhar: figMelhorKm, nova: true },
 ];
 
 // o PNG da figura (para baixar, copiar ou compartilhar)
@@ -1554,7 +1675,7 @@ export async function carregarFonte() {
   if (![...document.querySelectorAll('link[rel="stylesheet"]')].some((l) => l.href.includes("Barlow+Condensed"))) {
     const folha = Object.assign(document.createElement("link"), {
       rel: "stylesheet",
-      href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap",
+      href: "https://fonts.googleapis.com/css2?family=Barlow:wght@400&family=Barlow+Condensed:wght@500;600;700&display=swap",
     });
     await new Promise((r) => {
       folha.onload = folha.onerror = r;
@@ -1563,6 +1684,8 @@ export async function carregarFonte() {
   }
   await Promise.all([
     ...[500, 600, 700].map((p) => document.fonts.load(`${p} 40px "Barlow Condensed"`)),
+    // a Barlow sem condensar, dos splits no estilo da pista
+    document.fonts.load('400 40px "Barlow"'),
     // o cartão da figura "Esforço" imita o app e usa a letra do site
     ...[500, 700].map((p) => document.fonts.load(`${p} 40px Manrope`)),
   ]);
