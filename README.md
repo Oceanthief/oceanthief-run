@@ -176,13 +176,13 @@ Os dados vêm do sync: a lista do Strava já traz esforço relativo, potência m
 
 ### Resumos do mês e do ano
 
-Na página inicial, o botão "Compartilhar resumo" (ao lado das abas da Constância) abre cinco modelos no tamanho do story (1080 × 1920), em `assets/js/resumos.js`: ficha do período, retrato (a foto com a maior corrida do período como fita), constância (calendário do mês ou pontos do ano), duelo (os dois períodos frente a frente) e curva acumulada.
+Na página inicial, o botão "Compartilhar resumo" (ao lado das abas da Constância) abre os resumos do mês e do ano no tamanho do story (1080 × 1920), em `assets/js/resumos.js`: ficha do período, constância (calendário do mês ou pontos do ano), duelo (os dois períodos frente a frente) e curva acumulada. Esperando aprovação, só com `?resumos=novos` no endereço (`nova: true` no catálogo): retrato (a foto de ponta a ponta, desmanchando no fundo), rotas (o desenho de cada treino do período), destaques (os melhores do período contra os do anterior) e ritmo (cada treino como um ponto, na posição do ritmo).
 
 - Os números são calculados na hora, com os treinos que já estão no site: acompanham cada atualização do Strava, sem passo extra.
-- O mês é comparado com o mês anterior do mesmo ano (janeiro fica sem comparação) e o ano com o ano anterior. Mês ou ano que ainda não acabou vai até hoje e é comparado com os mesmos dias do anterior (1 a 25 de novembro contra 1 a 25 de outubro); período fechado entra inteiro. Nada de projeção.
+- O mês é comparado com o mês anterior (janeiro com dezembro do ano anterior) e o ano com o ano anterior. Mês ou ano que ainda não acabou vai até hoje e é comparado com os mesmos dias do anterior (1 a 25 de novembro contra 1 a 25 de outubro); período fechado entra inteiro. Nada de projeção.
 - Os dias antes do primeiro treino no Strava não contam, nem como descanso.
+- As imagens não levam o nome do site nem o endereço.
 - Escolhe-se o período, o esporte (corrida, caminhada ou tudo), a cor, a grade, o fundo (café ou transparente) e a foto do retrato (a do site, ou uma escolhida na hora, que não sai do navegador). Duelo e curva só aparecem quando existe período anterior.
-- Enquanto esperam aprovação, o botão só aparece com `?resumos=novos` no endereço da página inicial.
 
 ## Ver com dados de mentira
 

@@ -932,11 +932,10 @@ function anoEmCurso() {
 }
 
 // O botão dos resumos do mês e do ano (resumos.js), ao lado das abas da constância. Abre o período da aba:
-// nos "Últimos 12 meses", o mês de agora; num ano, o ano todo. Enquanto os modelos esperam aprovação, só
-// aparece com ?resumos=novos no endereço. A janela e as figuras só carregam no primeiro clique.
-const VER_RESUMOS = new URLSearchParams(location.search).get("resumos") === "novos";
+// nos "Últimos 12 meses", o mês de agora; num ano, o ano todo. A janela e as figuras só carregam no
+// primeiro clique. Os modelos ainda não aprovados (`nova` em resumos.js) só aparecem com ?resumos=novos.
 function botaoResumo() {
-  if (!VER_RESUMOS || $("#botao-resumo")) return;
+  if ($("#botao-resumo")) return;
   const abasEl = $("#abas-constancia");
   if (!abasEl) return;
   const grupo = document.createElement("div");

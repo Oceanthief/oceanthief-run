@@ -1,14 +1,14 @@
 // Resumos do mês e do ano para compartilhar: cinco modelos no tamanho do story (1080 × 1920).
-// Cada um compara o período com o anterior: o mês com o mês anterior do mesmo ano (janeiro fica sem
-// comparação) e o ano com o ano anterior. Se o período ainda não acabou, a comparação usa os mesmos dias
+// Cada um compara o período com o anterior: o mês com o mês anterior (janeiro com dezembro do ano
+// anterior) e o ano com o ano anterior. Se o período ainda não acabou, a comparação usa os mesmos dias
 // do anterior (de 1 a 25 de novembro contra de 1 a 25 de outubro), para não pôr um mês pela metade
-// contra um mês inteiro.
+// contra um mês inteiro. Nada de projeção: só o que já aconteceu.
 //
 // Os cinco seguem o mesmo sistema: o cabeçalho com o esporte e o tipo de resumo (sem o nome do site nem
 // o endereço), o período em letra condensada grande, rótulos na letra do site (Manrope) e a seta ▲ na cor
 // de destaque quando o número subiu e ▼ em branco apagado quando desceu. O fundo é o café do site, ou
 // transparente.
-import { chaveDia, dataCurta, DIAS_CURTOS, distValor, getUnidade, GRUPOS, inicioSemana, LOCALE, MESES_CURTOS, num, relogio, rotuloDist, t } from "./comum.js";
+import { chaveDia, dataCurta, DIAS_CURTOS, distValor, getUnidade, GRUPOS, inicioSemana, LOCALE, MESES_CURTOS, num, relogio, rotuloDist, t, trechosRota } from "./comum.js";
 import { anguloQueEncaixa, LARGURA, MAIUSC, novaTela, pincel, rotaMedida, rotaNaCaixa, SANS, VERMELHO } from "./figuras.js";
 
 const W = LARGURA;
@@ -77,6 +77,10 @@ function resumir(lista, dias, esporte, diasComAlgo) {
     const k = chaveDia(inicioSemana(a.data));
     semanas.set(k, (semanas.get(k) || 0) + (a.m || 0));
   }
+  const [semanaIni] = [...semanas].reduce((x, s) => (s[1] > x[1] ? s : x), ["", -1]);
+  // os melhores do período (para os destaques): o ritmo só conta em treino de 3 km ou mais
+  const melhorPor = (f, filtro = () => true) => lista.filter(filtro).reduce((x, a) => (!x || f(a) > f(x) ? a : x), null);
+  const ritmoDe = (a) => a.s / distValor(a.m);
   const porMes = Array(12).fill(0);
   for (const a of lista) porMes[a.data.getMonth()] += a.m || 0;
   const m = somar(lista, (a) => a.m);
@@ -96,6 +100,11 @@ function resumir(lista, dias, esporte, diasComAlgo) {
     maiorDia: Math.max(0, ...[...porDia.values()].map((d) => d.m)),
     descanso: dias.filter((d) => !diasComAlgo.has(chaveDia(d))).length,
     ritmo: esporte !== "tudo" && m > 0 && s > 0 ? s / distValor(m) : null,
+    lista: [...lista].sort((x, y) => x.data - y.data),
+    semanaIni: semanaIni ? new Date(`${semanaIni}T12:00`) : null,
+    rapido: esporte === "tudo" ? null : melhorPor((a) => -ritmoDe(a), (a) => a.m >= 3000 && a.s > 0),
+    subidaMax: melhorPor((a) => a.el || 0, (a) => a.el > 0),
+    longo: melhorPor((a) => a.s || 0, (a) => a.s > 0),
   };
 }
 
@@ -125,17 +134,13 @@ export function dadosDoPeriodo({ atividades, rotas, perfil, ano, mes = null, esp
   const desde = ini < inicioDados ? inicioDados : ini;
   const atual = resumir(listaAtual, listaDeDias(desde, ate), esporte, diasComAlgo);
 
-  // o período anterior: o mês anterior do mesmo ano, ou o ano anterior
-  let antIni = null;
-  let antFimTotal = null;
-  if (ehAno) [antIni, antFimTotal] = [new Date(ano - 1, 0, 1), new Date(ano, 0, 1)];
-  else if (mes > 0) [antIni, antFimTotal] = [new Date(ano, mes - 1, 1), new Date(ano, mes, 1)];
+  // o período anterior: o mês anterior (janeiro compara com dezembro do ano anterior), ou o ano anterior
+  const [antIni, antFimTotal] = ehAno ? [new Date(ano - 1, 0, 1), new Date(ano, 0, 1)] : [new Date(ano, mes - 1, 1), new Date(ano, mes, 1)];
   let anterior = null;
   let motivo = null;
   let diasAntTotal = [];
   let porDiaAntTotal = new Map();
-  if (!antIni) motivo = "janeiro";
-  else if (antFimTotal <= inicioDados) motivo = "sem-dados";
+  if (antFimTotal <= inicioDados) motivo = "sem-dados";
   else {
     // período em curso: os mesmos dias do anterior (até o dia de hoje)
     let antAte = antFimTotal;
@@ -150,10 +155,11 @@ export function dadosDoPeriodo({ atividades, rotas, perfil, ano, mes = null, esp
   }
 
   const nomeAtual = ehAno ? String(ano) : nomeMes(mes);
-  const nomeAnt = ehAno ? String(ano - 1) : mes > 0 ? nomeMes(mes - 1) : "";
+  // em janeiro, o anterior é de outro ano: "dezembro de 2025"; no título do duelo, só "dezembro"
+  const nomeAntCurto = ehAno ? String(ano - 1) : nomeMes((mes + 11) % 12);
+  const nomeAnt = !ehAno && mes === 0 ? t("{mes} de {ano}", { mes: nomeAntCurto, ano: ano - 1 }) : nomeAntCurto;
   let comparacao;
-  if (motivo === "janeiro") comparacao = t("Primeiro mês do ano, sem comparação");
-  else if (motivo === "sem-dados") comparacao = ehAno ? t("Primeiro ano no Strava, sem comparação") : t("Sem dados do mês anterior para comparar");
+  if (motivo === "sem-dados") comparacao = ehAno ? t("Primeiro ano no Strava, sem comparação") : t("Sem dados do mês anterior para comparar");
   else if (!emCurso) comparacao = t("Comparado com {ant}", { ant: nomeAnt });
   else if (ehAno) comparacao = t("Até {data}, comparado com o mesmo ponto de {ant}", { data: dataCurta(hoje0), ant: nomeAnt });
   else comparacao = t("De 1 a {dia} de {mes}, comparado com os mesmos dias de {ant}", { dia: hoje0.getDate(), mes: nomeAtual, ant: nomeAnt });
@@ -180,6 +186,7 @@ export function dadosDoPeriodo({ atividades, rotas, perfil, ano, mes = null, esp
     diasComAlgo,
     nomeAtual,
     nomeAnt,
+    nomeAntCurto,
     comparacao,
     titulo: ehAno ? String(ano) : `${nomeAtual} ${ano}`,
     chave: ehAno ? String(ano) : `${ano}-${String(mes + 1).padStart(2, "0")}`,
@@ -408,13 +415,13 @@ function linhaFicha(p, R, M, y) {
 }
 
 // ------------------------------------------------------------ 2. Retrato
-// A foto no meio e a maior corrida do período como uma fita grossa que passa por trás da foto e volta
-// pela frente (o começo e o fim do caminho), com a faixa tracejada de rua no meio. Embaixo, quatro números.
-function cobrir(ctx, img, F) {
+// A foto de ponta a ponta no alto, desmanchando no fundo; o período em letra grande por cima da borda
+// da foto; a maior corrida do período num traço fino e pequeno, ao lado do número; quatro números embaixo.
+function cobrir(ctx, img, F, foco = 0.5) {
   const k = Math.max(F.w / img.naturalWidth, F.h / img.naturalHeight);
   const w = img.naturalWidth * k;
   const h = img.naturalHeight * k;
-  ctx.drawImage(img, F.x + (F.w - w) / 2, F.y + (F.h - h) * 0.45, w, h);
+  ctx.drawImage(img, F.x + (F.w - w) / 2, F.y + (F.h - h) * foco, w, h);
 }
 
 function modRetrato(R, op) {
@@ -422,100 +429,59 @@ function modRetrato(R, op) {
   const p = pincel(c, opDe(op));
   const { ctx } = p;
   fundo(p, op);
+  const FH = 1200;
+  // a foto num canvas à parte, apagada aos poucos embaixo: emenda no café e também no PNG transparente
+  const f = document.createElement("canvas");
+  f.width = W;
+  f.height = FH;
+  const fx = f.getContext("2d");
+  cobrir(fx, R.foto, { x: 0, y: 0, w: W, h: FH }, 0.55);
+  fx.globalCompositeOperation = "destination-in";
+  const g = fx.createLinearGradient(0, 0, 0, FH);
+  g.addColorStop(0, "rgba(0,0,0,1)");
+  g.addColorStop(0.6, "rgba(0,0,0,1)");
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  fx.fillStyle = g;
+  fx.fillRect(0, 0, W, FH);
+  ctx.drawImage(f, 0, 0);
+  // o alto mais escuro, para o cabeçalho aparecer sobre qualquer foto
+  const s = ctx.createLinearGradient(0, 0, 0, 280);
+  s.addColorStop(0, "rgba(16,7,4,0.72)");
+  s.addColorStop(1, "rgba(16,7,4,0)");
+  ctx.fillStyle = s;
+  ctx.fillRect(0, 0, W, 280);
   p.grade();
   cabeca(p, R);
-  const F = { x: 220, y: 236, w: 640, h: 820, r: 30 };
-  let fita = null;
-  if (R.comRota) {
-    const Rr = rotaMedida({ a: { rota: R.rotaDe(R.comRota) } });
+
+  const yT = 1186;
+  p.texto(MAIUSC(R.titulo), MX - 6, yT, { tam: R.ehAno ? 250 : 156, peso: 700, max: W - 2 * MX });
+  p.texto(R.comparacao, MX, yT + 56, { tam: 28, peso: 500, fam: SANS, alpha: 0.7, max: W - 2 * MX });
+
+  // a maior corrida: o desenho da rota em traço fino (se tiver rota), a distância e o dia
+  const maior = R.atual.maior;
+  let x = MX;
+  const yM = yT + 100;
+  const rota = maior && R.rotaDe(maior);
+  if (rota) {
+    const Rr = rotaMedida({ a: { rota } });
     if (Rr.pts.length > 1) {
-      // a rota maior que a foto, encostando nas bordas, e alisada para parecer fita
-      const caixa = { x: -30, y: 140, w: W + 60, h: 1000 };
-      const { fn, trechos } = rotaNaCaixa(Rr, caixa, anguloQueEncaixa(Rr, caixa));
-      const lisos = trechos.map((tr) => alisar(tr, 2));
-      fita = { trechos: lisos, frente: trancado(lisos, F), ini: fn(Rr.pts[0]), fim: fn(Rr.pts.at(-1)) };
+      const caixa = { x: MX, y: yM, w: 112, h: 112 };
+      const { trechos, fn } = rotaNaCaixa(Rr, caixa, anguloQueEncaixa(Rr, caixa));
+      trechos.forEach((tr) => p.linha(tr, { cor: p.acento, larg: 4 }));
+      const [ix, iy] = fn(Rr.pts[0]);
+      p.quadrado(ix, iy, 11, VERMELHO);
+      x = MX + 112 + 32;
     }
   }
-  const LARG = 72;
-  const pintarFita = (trechos) => trechos.forEach((tr) => p.linha(tr, { cor: p.acento, larg: LARG, comSombra: op.fundo === "transparente" && op.sombra }));
-  if (fita) pintarFita(fita.trechos);
-  // a foto (ou, sem foto, um quadro café mais claro)
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(F.x, F.y, F.w, F.h, F.r);
-  ctx.clip();
-  if (R.foto) {
-    cobrir(ctx, R.foto, F);
-    const g = ctx.createLinearGradient(0, F.y + F.h * 0.6, 0, F.y + F.h);
-    g.addColorStop(0, "rgba(25,12,7,0)");
-    g.addColorStop(1, "rgba(25,12,7,0.45)");
-    ctx.fillStyle = g;
-    ctx.fillRect(F.x, F.y, F.w, F.h);
-  } else {
-    ctx.fillStyle = "#2B1810";
-    ctx.fillRect(F.x, F.y, F.w, F.h);
+  if (maior) {
+    p.texto(R.rotuloMaior, x, yM + 34, { tam: 26, peso: 600, fam: SANS, alpha: 0.7 });
+    const w = valor(p, kmPartes(maior.m), x - 2, yM + 100, { tam: 62 });
+    p.texto(dataCurta(maior.data), x + w + 18, yM + 100, { tam: 26, peso: 500, fam: SANS, alpha: 0.6 });
   }
-  ctx.restore();
-  if (fita) {
-    pintarFita(fita.frente);
-    // a largada e a chegada, só quando caem fora da foto
-    const fora = ([x, y]) => x < F.x - 10 || x > F.x + F.w + 10 || y < F.y - 10 || y > F.y + F.h + 10;
-    if (fora(fita.ini)) p.quadrado(fita.ini[0], fita.ini[1], 26, VERMELHO);
-    if (fora(fita.fim)) p.quadrado(fita.fim[0], fita.fim[1], 26, VERMELHO);
-  }
-  const yT = F.y + F.h + 168;
-  tituloCurto(p, R, yT);
-  const LEGENDAS = {
-    corrida: "A fita é a maior corrida do período: {d}, em {data}.",
-    caminhada: "A fita é a maior caminhada do período: {d}, em {data}.",
-    tudo: "A fita é o maior treino do período: {d}, em {data}.",
-  };
-  const legenda = fita ? t(LEGENDAS[R.esporte] || LEGENDAS.tudo, { d: textoDe(kmPartes(R.comRota.m)), data: dataCurta(R.comRota.data) }) : R.comparacao;
-  p.texto(legenda, MX, yT + 54, { tam: 28, peso: 500, fam: SANS, alpha: 0.7, max: W - 2 * MX });
+
   const chaves = ["distancia", "tempo", R.esporte === "tudo" ? "treinos" : "dias", "subida"];
-  chaves.forEach((k, i) => celula(p, R, METRICAS[k], i % 2 ? W / 2 + 16 : MX, yT + 128 + Math.floor(i / 2) * 206, W / 2 - MX - 24));
+  chaves.forEach((k, i) => celula(p, R, METRICAS[k], i % 2 ? W / 2 + 16 : MX, yM + 178 + Math.floor(i / 2) * 200, W / 2 - MX - 24));
   return c;
-}
-
-// alisa uma linha cortando os cantos (Chaikin): a rota fica com cara de fita, sem mudar o desenho
-function alisar(pts, vezes = 2) {
-  let p = pts;
-  for (let k = 0; k < vezes && p.length > 2; k++) {
-    const s = [p[0]];
-    for (let i = 0; i < p.length - 1; i++) {
-      const [a, b] = [p[i], p[i + 1]];
-      s.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
-    }
-    s.push(p.at(-1));
-    p = s;
-  }
-  return p;
-}
-
-// O trançado: cada vez que a fita atravessa a foto, ela passa inteira por cima ou inteira por baixo
-// (como uma fita de verdade). Passa por cima só quando não encosta no meio da foto, onde costuma estar a
-// pessoa. Devolve os trechos que vão por cima, com um ponto de fora em cada ponta, para emendar sem corte.
-function trancado(trechos, F) {
-  const dentro = ([x, y]) => x > F.x && x < F.x + F.w && y > F.y && y < F.y + F.h;
-  const [cx, cy, rx, ry] = [F.x + F.w / 2, F.y + F.h * 0.55, F.w * 0.3, F.h * 0.34];
-  const noMeio = ([x, y]) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1;
-  const frente = [];
-  for (const tr of trechos) {
-    let i = 0;
-    while (i < tr.length) {
-      if (!dentro(tr[i])) {
-        i++;
-        continue;
-      }
-      const ini = i;
-      while (i < tr.length && dentro(tr[i])) i++;
-      const run = tr.slice(Math.max(0, ini - 1), Math.min(tr.length, i + 1));
-      // confere também o meio de cada pedaço reto (a rota simplificada tem poucos pontos)
-      const encosta = run.some((q, k) => k > 0 && [0, 0.25, 0.5, 0.75].some((u) => noMeio([run[k - 1][0] + (q[0] - run[k - 1][0]) * u, run[k - 1][1] + (q[1] - run[k - 1][1]) * u])));
-      if (!encosta && !noMeio(run.at(-1))) frente.push(run);
-    }
-  }
-  return frente;
 }
 
 // um número com rótulo em cima e a variação embaixo ("▲ 28% vs. outubro")
@@ -682,14 +648,16 @@ function modDuelo(R, op) {
   cabeca(p, R);
   const tam = R.ehAno ? 200 : 124;
   const yN = R.ehAno ? 340 : 300;
-  const esq = MAIUSC(R.nomeAnt);
+  const esq = MAIUSC(R.nomeAntCurto);
   const dir = MAIUSC(R.nomeAtual);
   p.texto(esq, MX - 4, yN, { tam, peso: 700, alpha: 0.5, max: 430 });
   p.texto(dir, W - MX + 4, yN, { tam, peso: 700, cor: p.acento, alinhar: "right", max: 430 });
   p.texto("×", W / 2, yN - tam * 0.28, { tam: 64, peso: 500, alinhar: "center", alpha: 0.45 });
+  // os anos embaixo (janeiro contra dezembro mostra os dois)
+  const anos = !R.ehAno && R.mes === 0 ? t("{a} e {b}", { a: R.ano - 1, b: R.ano }) : String(R.ano);
   let sub = "";
-  if (R.emCurso) sub = R.ehAno ? t("De 1º de janeiro a {data} de cada ano", { data: dataCurta(R.hoje) }) : t("{ano}, de 1 a {dia} de cada mês", { ano: R.ano, dia: R.hoje.getDate() });
-  else if (!R.ehAno) sub = String(R.ano);
+  if (R.emCurso) sub = R.ehAno ? t("De 1º de janeiro a {data} de cada ano", { data: dataCurta(R.hoje) }) : t("{ano}, de 1 a {dia} de cada mês", { ano: anos, dia: R.hoje.getDate() });
+  else if (!R.ehAno) sub = anos;
   if (sub) p.texto(sub, W / 2, yN + 70, { tam: 28, peso: 500, fam: SANS, alpha: 0.62, alinhar: "center" });
 
   const chaves = R.esporte === "tudo" ? ["distancia", "tempo", "treinos", "dias", "subida", "maior"] : ["distancia", "tempo", "treinos", "dias", "subida", "ritmo", "maior"];
@@ -726,7 +694,7 @@ function modDuelo(R, op) {
   });
   // o placar
   const [pa, pb] = placar;
-  const frase = pb === pa ? t("Empate: {a} a {b}", { a: pb, b: pa }) : t("{nome} levou {n} de {total}", { nome: pb > pa ? R.nomeAtual : R.nomeAnt, n: Math.max(pa, pb), total: chaves.length });
+  const frase = pb === pa ? t("Empate: {a} a {b}", { a: pb, b: pa }) : t("{nome} levou {n} de {total}", { nome: pb > pa ? R.nomeAtual : R.nomeAntCurto, n: Math.max(pa, pb), total: chaves.length });
   p.texto(MAIUSC(frase), W / 2, 1700, { tam: 84, peso: 700, alinhar: "center", cor: pb > pa ? p.acento : BRANCO, max: W - 2 * MX });
   if (maiorSalto && Math.abs(maiorSalto.pct) >= 1) {
     p.texto(t("Maior diferença: {metrica}, {v}", { metrica: maiorSalto.rotulo.toLocaleLowerCase(LOCALE), v: `${maiorSalto.pct > 0 ? "+" : "−"}${num(Math.abs(maiorSalto.pct))}%` }), W / 2, 1756, {
@@ -848,14 +816,263 @@ function modCurva(R, op) {
   return c;
 }
 
+// os números de cima dos modelos novos: rótulo, valor e a seta ao lado
+function parDeNumeros(p, R, chaves, y) {
+  chaves.forEach((k, i) => {
+    const M = METRICAS[k];
+    const x = i ? W / 2 + 16 : MX;
+    const a = M.valor(R.atual);
+    const b = R.anterior ? M.valor(R.anterior) : null;
+    p.texto(M.rotulo(R), x, y, { tam: 27, peso: 600, fam: SANS, alpha: 0.7 });
+    const w = valor(p, a ? M.partes(a) : [["–", ""]], x - 2, y + 92, { tam: 96, max: W / 2 - MX - 150 });
+    const v = variacao(a, b, M.tipo);
+    if (v) seta(p, v, x + w + 20, y + 92, { tam: 38, alinhar: "left" });
+  });
+}
+
+// encaixa trechos (lat, lng) numa caixa, com o norte para cima, sem distorcer
+function encaixar(trechos, caixa) {
+  const pts = trechos.flat();
+  const lat0 = pts.reduce((s, q) => s + q[0], 0) / pts.length;
+  const k = Math.cos((lat0 * Math.PI) / 180);
+  let [x0, x1, y0, y1] = [Infinity, -Infinity, Infinity, -Infinity];
+  for (const [la, lo] of pts) {
+    x0 = Math.min(x0, lo * k);
+    x1 = Math.max(x1, lo * k);
+    y0 = Math.min(y0, -la);
+    y1 = Math.max(y1, -la);
+  }
+  const e = Math.min(caixa.w / (x1 - x0 || 1e-9), caixa.h / (y1 - y0 || 1e-9));
+  const ox = caixa.x + (caixa.w - (x1 - x0) * e) / 2;
+  const oy = caixa.y + (caixa.h - (y1 - y0) * e) / 2;
+  return ([la, lo]) => [ox + (lo * k - x0) * e, oy + (-la - y0) * e];
+}
+
+// -------------------------------------------------------------- 6. Rotas
+// Todas as rotas do período, uma por quadro, na ordem em que aconteceram (o norte para cima); a maior
+// fica em branco. Treino sem rota (esteira, academia) vira um anel. No ano, os quadros ficam pequenos e
+// sem legenda: vira um mosaico.
+function modRotas(R, op) {
+  const c = novaTela(H);
+  const p = pincel(c, opDe(op));
+  fundo(p, op);
+  p.grade();
+  cabeca(p, R);
+  tituloCurto(p, R, 250);
+  parDeNumeros(p, R, ["treinos", "distancia"], 340);
+  const lista = R.atual.lista;
+  const [x0, x1, y0, y1] = [MX, W - MX, 520, 1800];
+  // a legenda embaixo: a maior em branco; o anel é treino sem rota
+  const yL = 1866;
+  p.linha([[MX, yL - 9], [MX + 34, yL - 9]], { cor: BRANCO, larg: 4 });
+  let xl = MX + 48 + p.texto(R.rotuloMaior, MX + 48, yL, { tam: 24, peso: 500, fam: SANS, alpha: 0.65 }) + 36;
+  if (lista.some((a) => !trechosRota(R.rotaDe(a)).length)) {
+    p.ctx.save();
+    p.ctx.strokeStyle = "rgba(255,255,255,0.45)";
+    p.ctx.lineWidth = 2.5;
+    p.ctx.beginPath();
+    p.ctx.arc(xl + 10, yL - 9, 10, 0, Math.PI * 2);
+    p.ctx.stroke();
+    p.ctx.restore();
+    xl += 32;
+    p.texto(t("sem rota (esteira ou sem GPS)"), xl, yL, { tam: 24, peso: 500, fam: SANS, alpha: 0.65 });
+  }
+  let melhor = { cols: 1, lado: 0 };
+  for (let cols = 1; cols <= 18; cols++) {
+    const lado = Math.min((x1 - x0) / cols, (y1 - y0) / Math.ceil(lista.length / cols));
+    if (lado > melhor.lado) melhor = { cols, lado };
+  }
+  const { cols, lado } = melhor;
+  const comLegenda = lado >= 150;
+  const pad = lado * 0.1;
+  const larg = Math.max(1.6, Math.min(4, lado / 55));
+  const ox = x0 + (x1 - x0 - cols * lado) / 2;
+  lista.forEach((a, i) => {
+    const cx = ox + (i % cols) * lado;
+    const cy = y0 + Math.floor(i / cols) * lado;
+    const caixa = { x: cx + pad, y: cy + pad, w: lado - 2 * pad, h: lado - 2 * pad - (comLegenda ? 36 : 0) };
+    const trechos = trechosRota(R.rotaDe(a));
+    const cor = a === R.atual.maior ? BRANCO : p.acento;
+    if (trechos.length) {
+      const fn = encaixar(trechos, caixa);
+      trechos.forEach((tr) => p.linha(tr.map(fn), { cor, larg }));
+    } else {
+      p.ctx.save();
+      p.ctx.strokeStyle = "rgba(255,255,255,0.45)";
+      p.ctx.lineWidth = larg;
+      p.ctx.beginPath();
+      p.ctx.arc(caixa.x + caixa.w / 2, caixa.y + caixa.h / 2, Math.min(caixa.w, caixa.h) * 0.26, 0, Math.PI * 2);
+      p.ctx.stroke();
+      p.ctx.restore();
+    }
+    if (comLegenda) {
+      const yl = cy + lado - pad;
+      p.texto(MAIUSC(dataCurta(a.data)), cx + pad, yl, { tam: 22, peso: 600, alpha: 0.55 });
+      p.texto(textoDe(kmPartes(a.m)).toLocaleUpperCase(LOCALE), cx + lado - pad, yl, { tam: 22, peso: 600, alpha: 0.85, alinhar: "right" });
+    }
+  });
+  return c;
+}
+
+// ---------------------------------------------------------- 7. Destaques
+// Os melhores do período, cada um contra o melhor do período anterior: a maior distância, o ritmo mais
+// rápido (treinos de 3 km ou mais), a maior subida, a semana mais forte e o treino mais longo em tempo.
+// À direita, o dia e o nome do treino.
+function cortar(p, txt, max, op) {
+  let s = String(txt || "");
+  if (p.medir(s, op) <= max) return s;
+  while (s.length > 1 && p.medir(`${s}…`, op) > max) s = s.slice(0, -1);
+  return `${s.trimEnd()}…`;
+}
+
+function modDestaques(R, op) {
+  const c = novaTela(H);
+  const p = pincel(c, opDe(op));
+  fundo(p, op);
+  p.grade();
+  cabeca(p, R);
+  tituloCurto(p, R, 250);
+  p.texto(R.comparacao, MX, 310, { tam: 28, peso: 500, fam: SANS, alpha: 0.7, max: W - 2 * MX });
+  const ritmoDe = (a) => a.s / distValor(a.m);
+  const linhas = [
+    { rotulo: R.rotuloMaior, de: (r) => r.maior, partes: (a) => kmPartes(a.m), num: (a) => a.m },
+    { rotulo: t("Ritmo mais rápido"), de: (r) => r.rapido, partes: (a) => ritmoPartes(ritmoDe(a)), num: (a) => ritmoDe(a), tipo: "ritmo" },
+    { rotulo: t("Maior subida"), de: (r) => r.subidaMax, partes: (a) => subidaPartes(a.el), num: (a) => a.el },
+    { rotulo: t("Mais tempo num treino"), de: (r) => r.longo, partes: (a) => horasPartes(a.s), num: (a) => a.s },
+    { rotulo: t("Semana mais forte"), semana: true, partes: (r) => kmPartes(r.semana), num: (r) => r.semana },
+  ].filter((l) => (l.semana ? R.atual.semana > 0 : !!l.de(R.atual)));
+  const y0 = 400;
+  const passo = Math.min(280, (1850 - y0) / linhas.length);
+  linhas.forEach((l, i) => {
+    const y = y0 + i * passo;
+    const a = l.semana ? R.atual : l.de(R.atual);
+    const b = R.anterior ? (l.semana ? (R.anterior.semana > 0 ? R.anterior : null) : l.de(R.anterior)) : null;
+    p.texto(l.rotulo, MX, y + 30, { tam: 28, peso: 600, fam: SANS, alpha: 0.7 });
+    valor(p, l.partes(a), MX - 2, y + 130, { tam: 108, max: 560 });
+    // o dia e o nome, à direita
+    const dia = l.semana ? R.atual.semanaIni : a.data;
+    if (dia) p.texto(MAIUSC(l.semana ? t("Semana de {data}", { data: dataCurta(dia) }) : dataCurta(dia)), W - MX, y + 92, { tam: 40, peso: 600, alpha: 0.6, alinhar: "right", max: 380 });
+    if (!l.semana) {
+      // o nome do treino sem emoji (a letra do canvas não desenha todos)
+      const nome = String(a.n || "").replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "").replace(/\s{2,}/g, " ").trim();
+      const op2 = { tam: 24, peso: 500, fam: SANS };
+      p.texto(cortar(p, nome, 380, op2), W - MX, y + 130, { ...op2, alpha: 0.5, alinhar: "right" });
+    }
+    const v = b ? variacao(l.num(a), l.num(b), l.tipo) : null;
+    if (v) {
+      const w = seta(p, v, MX, y + 186, { tam: 34, alinhar: "left" });
+      p.texto(t("vs. {v} em {ant}", { v: textoDe(l.partes(b)), ant: R.nomeAnt }), MX + w + 14, y + 186, { tam: 24, peso: 500, fam: SANS, alpha: 0.55 });
+    }
+    if (i < linhas.length - 1) p.linha([[MX, y + passo - 34], [W - MX, y + passo - 34]], { cor: BRANCO, larg: 1.5, alpha: 0.12, comSombra: false });
+  });
+  return c;
+}
+
+// -------------------------------------------------------------- 8. Ritmo
+// Cada treino é um ponto, na posição do ritmo médio (mais rápido para a direita) e do tamanho da
+// distância: em cima o período anterior, embaixo este. A linha de cada faixa é o ritmo médio do período.
+function enxame(pontos, X, rMax, maxM, altura) {
+  const saida = [];
+  for (const q of [...pontos].sort((a, b) => X(a.r) - X(b.r))) {
+    const r = Math.max(4, rMax * Math.sqrt(q.m / maxM));
+    const x = X(q.r);
+    // o lugar livre mais perto do meio da faixa; sem lugar, fica por cima dos outros (nenhum some)
+    let y = 0;
+    for (let k = 0; ; k++) {
+      const tentativa = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 3;
+      if (Math.abs(tentativa) > altura) break;
+      if (!saida.some((o) => Math.hypot(o.x - x, o.y - tentativa) < o.raio + r + 2)) {
+        y = tentativa;
+        break;
+      }
+    }
+    saida.push({ x, y, raio: r, m: q.m });
+  }
+  return saida;
+}
+
+function modRitmo(R, op) {
+  const c = novaTela(H);
+  const p = pincel(c, opDe(op));
+  fundo(p, op);
+  p.grade();
+  cabeca(p, R);
+  tituloCurto(p, R, 250);
+  valor(p, ritmoPartes(R.atual.ritmo), MX - 8, 520, { tam: 220, cor: p.acento });
+  const v = variacao(R.atual.ritmo, R.anterior?.ritmo, "ritmo");
+  if (v) {
+    const w = seta(p, v, MX, 596, { tam: 44, alinhar: "left" });
+    const frase = v.dir === "cima" ? t("mais rápido que {ant}", { ant: R.nomeAnt }) : v.dir === "baixo" ? t("mais lento que {ant}", { ant: R.nomeAnt }) : t("igual a {ant}", { ant: R.nomeAnt });
+    p.texto(frase, MX + w + 16, 596, { tam: 30, peso: 500, fam: SANS, alpha: 0.75 });
+  } else p.texto(t("Ritmo médio do período"), MX, 596, { tam: 30, peso: 500, fam: SANS, alpha: 0.75 });
+
+  const pts = (r) => (r?.lista || []).filter((a) => a.m >= 1000 && a.s > 0).map((a) => ({ r: a.s / distValor(a.m), m: a.m }));
+  const A = pts(R.atual);
+  const B = pts(R.anterior);
+  const todos = [...A, ...B].map((q) => q.r).sort((a, b) => a - b);
+  const qt = (f) => todos[Math.min(todos.length - 1, Math.max(0, Math.round(f * (todos.length - 1))))];
+  let [lo, hi] = [qt(0.03), qt(0.97)];
+  const folga = Math.max(10, (hi - lo) * 0.08);
+  [lo, hi] = [lo - folga, hi + folga];
+  const [x0, x1] = [MX + 20, W - MX - 20];
+  // mais rápido (ritmo menor) para a direita
+  const X = (r) => x0 + ((hi - Math.min(hi, Math.max(lo, r))) / (hi - lo)) * (x1 - x0);
+  const maxM = Math.max(1, ...[...A, ...B].map((q) => q.m));
+  const n = Math.max(A.length, B.length);
+  const rMax = n > 80 ? 10 : n > 30 ? 15 : 22;
+  const faixas = [
+    ...(B.length ? [{ pts: B, y: 860, cor: BRANCO, alpha: 0.5, nome: R.nomeAnt, media: R.anterior.ritmo }] : []),
+    { pts: A, y: B.length ? 1220 : 1040, cor: p.acento, alpha: 1, nome: R.nomeAtual, media: R.atual.ritmo },
+  ];
+  // as marcas do eixo: o menor passo (15 s, 30 s, 1 min...) que deixe no máximo 8 marcas
+  const passoS = [15, 30, 60, 120, 300, 600].find((s) => (hi - lo) / s <= 8) || 900;
+  const yEixo = 1420;
+  for (let s = Math.ceil(lo / passoS) * passoS; s <= hi; s += passoS) {
+    p.linha([[X(s), 700], [X(s), yEixo - 30]], { cor: BRANCO, larg: 1.5, alpha: 0.08, comSombra: false });
+    p.texto(relogio(s), X(s), yEixo, { tam: 24, peso: 500, alpha: 0.5, alinhar: "center" });
+  }
+  p.texto(t("mais lento"), x0, yEixo + 46, { tam: 24, peso: 500, fam: SANS, alpha: 0.55 });
+  p.texto(t("mais rápido"), x1 - 22, yEixo + 46, { tam: 24, peso: 500, fam: SANS, alpha: 0.55, alinhar: "right" });
+  p.triangulo(x1 - 6, yEixo + 38, 14, "direita", "rgba(255,255,255,0.55)");
+  faixas.forEach((f) => {
+    p.texto(MAIUSC(f.nome), MX, f.y - 150, { tam: 30, peso: 600, espaco: 2, cor: f.cor, alpha: f.alpha === 1 ? 1 : 0.7 });
+    if (f.media) {
+      const xm = X(f.media);
+      p.linha([[xm, f.y - 120], [xm, f.y + 120]], { cor: f.cor, larg: 3, alpha: 0.8, traco: [10, 8], comSombra: false });
+      p.texto(relogio(f.media), xm, f.y - 128, { tam: 28, peso: 700, cor: f.cor, alinhar: "center", alpha: f.alpha === 1 ? 1 : 0.8 });
+    }
+    for (const b of enxame(f.pts, X, rMax, maxM, 112)) p.bola(b.x, f.y + b.y, b.raio, { cor: f.cor, alpha: f.alpha });
+  });
+  // três números embaixo
+  const rap = R.atual.rapido;
+  const fatos = [
+    rap ? { rotulo: t("Mais rápido (3 km ou mais)"), partes: ritmoPartes(rap.s / distValor(rap.m)), sub: dataCurta(rap.data) } : null,
+    { rotulo: t("Treinos"), partes: [[num(A.length), ""]], v: variacao(A.length, R.anterior ? B.length : null) },
+    { rotulo: t("Distância por treino"), partes: kmPartes(A.reduce((s, q) => s + q.m, 0) / Math.max(1, A.length)) },
+  ].filter(Boolean);
+  const col = (W - 2 * MX) / 3;
+  fatos.forEach((f, i) => {
+    const x = MX + i * col;
+    p.texto(f.rotulo, x, 1600, { tam: 26, peso: 600, fam: SANS, alpha: 0.7, max: col - 20 });
+    valor(p, f.partes, x - 2, 1692, { tam: 84, max: col - 24 });
+    if (f.v) seta(p, f.v, x, 1740, { tam: 32, alinhar: "left" });
+    else if (f.sub) p.texto(f.sub, x, 1740, { tam: 26, peso: 500, fam: SANS, alpha: 0.6 });
+  });
+  return c;
+}
+
 // --------------------------------------------------------------- catálogo
 const temComparacao = (R) => !!R.anterior && (R.anterior.n > 0 || R.atual.n > 0);
+// `nova: true`: ainda esperando aprovação; só aparece com ?resumos=novos no endereço
 export const MODELOS = [
   { id: "ficha", nome: () => t("Ficha do período"), pronta: (R) => R.atual.n > 0, desenhar: modFicha },
-  { id: "retrato", nome: () => t("Retrato"), pronta: (R) => R.atual.n > 0 && (!!R.foto || !!R.comRota), desenhar: modRetrato },
+  { id: "retrato", nome: () => t("Retrato"), pronta: (R) => R.atual.n > 0 && !!R.foto, desenhar: modRetrato, nova: true },
   { id: "constancia", nome: () => t("Constância"), pronta: (R) => R.atual.n > 0, desenhar: modConstancia },
   { id: "duelo", nome: () => t("Duelo"), pronta: (R) => R.atual.n > 0 && temComparacao(R), desenhar: modDuelo },
   { id: "curva", nome: () => t("Curva acumulada"), pronta: (R) => R.atual.m > 0 && temComparacao(R) && R.anterior.m >= 0, desenhar: modCurva },
+  { id: "rotas", nome: () => t("Rotas"), pronta: (R) => R.atual.lista.filter((a) => trechosRota(R.rotaDe(a)).length).length >= 2, desenhar: modRotas, nova: true },
+  { id: "destaques", nome: () => t("Destaques"), pronta: (R) => R.atual.n >= 2, desenhar: modDestaques, nova: true },
+  { id: "ritmo", nome: () => t("Ritmo"), pronta: (R) => R.esporte !== "tudo" && R.atual.lista.filter((a) => a.m >= 1000 && a.s > 0).length >= 3, desenhar: modRitmo, nova: true },
 ];
 
 // os períodos que dá para escolher: cada ano (do mais novo ao mais velho) com os seus meses

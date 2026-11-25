@@ -20,8 +20,10 @@ const guardar = () => {
     localStorage.setItem(CHAVE, JSON.stringify(op));
   } catch {}
 };
-// as figuras marcadas como `nova` (figuras.js) só aparecem com ?figuras=novas no endereço, até serem aprovadas
-const verNovas = new URLSearchParams(location.search).get("figuras") === "novas";
+// as figuras e os resumos marcados como `nova` só aparecem com ?figuras=novas (página do treino) ou
+// ?resumos=novos (página inicial) no endereço, até serem aprovados
+const busca = new URLSearchParams(location.search);
+const verNovas = busca.get("figuras") === "novas" || busca.get("resumos") === "novos";
 
 let dialogo;
 let galeria;
