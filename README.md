@@ -165,12 +165,12 @@ Leva uns 2 minutos e não depende da velocidade do computador: a página `video.
 
 ## Figuras para compartilhar
 
-Na página de cada corrida e caminhada, o botão "Compartilhar" abre as métricas do treino em figuras PNG de fundo transparente (1080 px de largura), no estilo das artes da Coros, para pôr por cima de uma foto: resumo, distância em destaque, resumo técnico, parciais, ritmo por km, altimetria e FC, curva de FC, zonas, rota com marcos, melhor trecho, melhores esforços, antes e agora (a edição anterior da prova ou os recordes batidos), cadência e potência, condições. Cada figura só aparece quando o treino tem o que ela precisa.
+Na página de cada corrida e caminhada, o botão "Compartilhar" abre as métricas do treino em 21 figuras PNG de fundo transparente (1080 px de largura), no estilo das artes da Coros, para pôr por cima de uma foto: resumo, distância em destaque, resumo técnico, parciais, ritmo por km, altimetria e FC, curva de FC, zonas, rota com marcos, melhor trecho, melhores esforços, antes e agora (a edição anterior da prova ou os recordes batidos), cadência e potência, condições, dados do percurso, últimos 30 dias, rota pelo ritmo, rota e números, painel do percurso, rota vertical e esforço (o esforço relativo entre os treinos dos últimos 90 dias). Cada figura só aparece quando o treino tem o que ela precisa.
 
 - **Baixar** salva o PNG; **Copiar** põe na área de transferência (no iPhone, depois é só colar no story do Instagram); **Compartilhar** abre a folha do celular.
 - A cor de destaque (verde-limão, laranja, creme, branco, amarelo ou âmbar), a grade técnica e a sombra ficam guardadas no navegador.
 - A prévia pode ficar sobre uma foto escolhida na hora; a foto não sai do navegador e o PNG continua transparente.
-- As figuras ainda em aprovação (`nova: true` em `assets/js/figuras.js`) só aparecem com `?figuras=novas` no endereço do treino.
+- Uma figura nova pode entrar escondida, com `nova: true` em `assets/js/figuras.js`: ela só aparece com `?figuras=novas` no endereço do treino, até ser aprovada.
 
 Os dados vêm do sync: a lista do Strava já traz esforço relativo, potência máxima e ponderada, energia, altitudes e temperatura (`re`, `wx`, `wp`, `kj`, `altx`, `altn`, `temp` no arquivo de cada treino), e as séries guardam também o tempo, a cadência e a potência (`t`, `cad`, `w`). As séries antigas dos treinos feitos com relógio são baixadas de novo aos poucos, dentro do limite de `--max-series` de cada rodada.
 

@@ -15,7 +15,7 @@ const guardar = () => {
     localStorage.setItem(CHAVE, JSON.stringify(op));
   } catch {}
 };
-// as figuras novas só aparecem com ?figuras=novas no endereço, até o Victor aprovar
+// as figuras marcadas como `nova` (figuras.js) só aparecem com ?figuras=novas no endereço, até serem aprovadas
 const verNovas = new URLSearchParams(location.search).get("figuras") === "novas";
 
 let dialogo;

@@ -1516,7 +1516,8 @@ function quebrar(p, texto, largura, tam, espaco = 1) {
 }
 
 // --------------------------------------------------------------- catálogo
-// `pronta(D)`: se o treino tem o que a figura precisa
+// `pronta(D)`: se o treino tem o que a figura precisa. Uma figura nova pode entrar com `nova: true`:
+// fica escondida no site e só aparece com ?figuras=novas no endereço do treino, até ser aprovada.
 export const FIGURAS = [
   { id: "resumo", nome: () => t("Resumo"), pronta: (D) => D.a.m > 0 && D.a.s > 0, desenhar: (D, op) => figResumo(D, op, ["tempo", "distancia", "ritmo", "fc", "subida", "cadencia", "potencia", "calorias"]) },
   { id: "destaque", nome: () => t("Distância em destaque"), pronta: (D) => D.a.m > 0 && D.a.s > 0, desenhar: figDestaque },
@@ -1532,14 +1533,13 @@ export const FIGURAS = [
   { id: "antes", nome: () => t("Antes e agora"), pronta: (D) => !!D.anterior || recordesBatidos(D).length > 0, desenhar: figAntesAgora },
   { id: "cadencia", nome: () => t("Cadência e potência"), pronta: (D) => D.x?.serie?.cad?.some(Boolean) && D.x?.serie?.w?.some(Boolean), desenhar: figCadenciaPotencia },
   { id: "condicoes", nome: () => t("Condições"), pronta: () => true, desenhar: figCondicoes },
-  // `nova`: ainda esperando a aprovação do Victor; no site só aparecem com ?figuras=novas no endereço
-  { id: "percurso", nova: true, nome: () => t("Dados do percurso"), pronta: (D) => serieDe(D)?.alt?.some((v) => v != null), desenhar: figDadosPercurso },
-  { id: "trintadias", nova: true, nome: () => t("Últimos 30 dias"), pronta: (D) => D.atividades.length > 0, desenhar: figUltimos30 },
-  { id: "rotaritmo", nova: true, nome: () => t("Rota pelo ritmo"), pronta: (D) => !!D.a.rota && serieDe(D)?.v?.filter((v) => v > 0.8).length > 20 && parciais(D).filter((x) => x.inteira).length >= 2, desenhar: figRotaRitmo },
-  { id: "rotaplacar", nova: true, nome: () => t("Rota e números"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figRotaPlacar },
-  { id: "painel", nova: true, nome: () => t("Painel do percurso"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figPainel },
-  { id: "rotavertical", nova: true, nome: () => t("Rota vertical"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figRotaVertical },
-  { id: "esforco", nova: true, nome: () => t("Esforço"), pronta: (D) => !!posicaoDoEsforco(D) && D.a.m > 0, desenhar: figEsforco },
+  { id: "percurso", nome: () => t("Dados do percurso"), pronta: (D) => serieDe(D)?.alt?.some((v) => v != null), desenhar: figDadosPercurso },
+  { id: "trintadias", nome: () => t("Últimos 30 dias"), pronta: (D) => D.atividades.length > 0, desenhar: figUltimos30 },
+  { id: "rotaritmo", nome: () => t("Rota pelo ritmo"), pronta: (D) => !!D.a.rota && serieDe(D)?.v?.filter((v) => v > 0.8).length > 20 && parciais(D).filter((x) => x.inteira).length >= 2, desenhar: figRotaRitmo },
+  { id: "rotaplacar", nome: () => t("Rota e números"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figRotaPlacar },
+  { id: "painel", nome: () => t("Painel do percurso"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figPainel },
+  { id: "rotavertical", nome: () => t("Rota vertical"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figRotaVertical },
+  { id: "esforco", nome: () => t("Esforço"), pronta: (D) => !!posicaoDoEsforco(D) && D.a.m > 0, desenhar: figEsforco },
 ];
 
 // o PNG da figura (para baixar, copiar ou compartilhar)
