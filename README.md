@@ -158,7 +158,7 @@ node scripts/gravar_video.mjs --formato 45 --roteiro completo --lang pt --saida 
 ```
 
 - `--formato`: `45` (4:5, 1080 × 1350, o feed do LinkedIn e do Instagram), `916` (9:16, 1080 × 1920, Reels e Stories) ou `11` (quadrado);
-- `--roteiro`: `completo` (os 7 capítulos, 45 s) ou `curto` (rotas, quilômetros, meta e previsão, 30 s);
+- `--roteiro`: `completo` (6 capítulos, 37 s) ou `curto` (rotas, quilômetros, meta e semanas, 26 s). A previsão da maratona fica só na página, não no vídeo;
 - `--lang`: `pt`, `en` ou `es`.
 
 Leva uns 2 minutos e não depende da velocidade do computador: a página `video.html` só anda um quadro quando o script pede, então cada quadro sai igual. Para ver o vídeo tocando antes de gravar, abra `video.html?formato=45&roteiro=completo` com o site servido localmente (`python -m http.server`). O tempo de cada capítulo fica no começo de `assets/js/video.js`. `video.html` não vai para o site publicado.

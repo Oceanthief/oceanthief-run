@@ -2,7 +2,7 @@
 //
 // video.html?formato=45&roteiro=completo&lang=pt toca em tempo real (para conferir no navegador).
 //   formato: 45 (4:5, 1080 × 1350, o feed), 916 (9:16, 1080 × 1920, Reels e Stories) ou 11 (quadrado)
-//   roteiro: completo (os 7 capítulos, ~45 s) ou curto (rotas, quilômetros, meta e previsão, ~30 s)
+//   roteiro: completo (6 capítulos, sem a previsão, ~37 s) ou curto (rotas, quilômetros, meta e semanas, ~26 s)
 // Com &gravar=1, o tempo da página para: só anda quando scripts/gravar_video.mjs pede o próximo quadro
 // (window.video.quadro(n)). Assim cada quadro sai igual, por mais lento que o computador esteja.
 import { $, buscarJSON, carregarTudo, num, t } from "./comum.js";
@@ -11,9 +11,10 @@ import { montarPontos } from "./pontos.js";
 const params = new URLSearchParams(location.search);
 const FORMATOS = { 45: [432, 540, 136], 916: [432, 768, 150], 11: [432, 432, 118] };
 const [largura, altura, legenda] = FORMATOS[params.get("formato")] || FORMATOS[45];
+// a previsão da maratona fica só na página (o Victor pediu para tirar do vídeo em 25/11/2026)
 const ROTEIROS = {
-  completo: ["rotas", "montes", "meta", "semanas", "horas", "ritmo", "maratona"],
-  curto: ["rotas", "montes", "meta", "maratona"],
+  completo: ["rotas", "montes", "meta", "semanas", "horas", "ritmo"],
+  curto: ["rotas", "montes", "meta", "semanas"],
 };
 const roteiro = ROTEIROS[params.get("roteiro")] || ROTEIROS.completo;
 // quanto tempo cada parte fica na tela (ms), contando a animação de entrada do capítulo

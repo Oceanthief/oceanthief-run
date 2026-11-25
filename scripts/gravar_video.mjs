@@ -4,7 +4,7 @@
 //
 //   --formato   45 (4:5, 1080 × 1350, feed do LinkedIn e do Instagram), 916 (9:16, 1080 × 1920, Reels e
 //               Stories) ou 11 (quadrado, 1080 × 1080). Padrão: 45.
-//   --roteiro   completo (os 7 capítulos) ou curto (rotas, quilômetros, meta e previsão). Padrão: completo.
+//   --roteiro   completo (6 capítulos, sem a previsão) ou curto (rotas, quilômetros, meta e semanas). Padrão: completo.
 //   --lang      pt, en ou es. Padrão: pt.
 //   --saida     o arquivo MP4. Padrão: video-<roteiro>-<formato>-<lang>.mp4 na pasta atual.
 //
