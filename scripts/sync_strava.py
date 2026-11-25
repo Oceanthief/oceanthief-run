@@ -969,6 +969,9 @@ def gerar_site() -> None:
         if a.get("average_heartrate"):
             c["hr"] = round(a["average_heartrate"])
             c["hrx"] = round(a.get("max_heartrate") or 0)
+        if a.get("suffer_score"):
+            # esforço relativo: a figura "Esforço" compara o treino com os dos últimos 90 dias
+            c["re"] = round(a["suffer_score"])
         if a.get("trainer") or tipo(a).startswith("Virtual"):
             c["in"] = 1
         # 1 = prova de corrida, 11 = prova de pedal; perfil.json pode desmarcar

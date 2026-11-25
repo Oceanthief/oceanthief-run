@@ -1033,6 +1033,118 @@ function figUltimos30(D, op) {
   return c;
 }
 
+// ---------------------------------------------- rotas giradas e encaixadas
+// A rota em metros (x para o leste, y para o sul), girada por `ang` e encaixada na caixa sem distorcer.
+// Devolve os trechos em pixels e a função que leva um ponto (lat, lng) para a figura.
+function rotaNaCaixa(R, caixa, ang = 0) {
+  const lat0 = R.pts.reduce((a, q) => a + q[0], 0) / R.pts.length;
+  const k = Math.cos((lat0 * Math.PI) / 180);
+  const [co, se] = [Math.cos(ang), Math.sin(ang)];
+  const f0 = ([la, lo]) => {
+    const x = lo * k * 111320;
+    const y = -la * 110540;
+    return [x * co - y * se, x * se + y * co];
+  };
+  const todos = R.pts.map(f0);
+  const xs = todos.map((q) => q[0]);
+  const ys = todos.map((q) => q[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const esc = Math.min(caixa.w / (x1 - x0 || 1), caixa.h / (y1 - y0 || 1));
+  const ox = caixa.x + (caixa.w - (x1 - x0) * esc) / 2;
+  const oy = caixa.y + (caixa.h - (y1 - y0) * esc) / 2;
+  const fn = (q) => {
+    const [x, y] = f0(q);
+    return [ox + (x - x0) * esc, oy + (y - y0) * esc];
+  };
+  return { fn, trechos: R.trechos.map((tr) => tr.map(fn)), esc };
+}
+// o giro (de 5 em 5 graus) em que a rota fica maior dentro da caixa
+function anguloQueEncaixa(R, caixa) {
+  let melhor = { ang: 0, esc: 0 };
+  for (let g = 0; g < 180; g += 5) {
+    const ang = (g * Math.PI) / 180;
+    const { esc } = rotaNaCaixa(R, caixa, ang);
+    if (esc > melhor.esc * 1.02) melhor = { ang, esc };
+  }
+  return melhor.ang;
+}
+// o giro que deixa a rota em pé: da largada (em cima) para a chegada (embaixo); numa volta, o eixo mais longo
+function anguloEmPe(R) {
+  const lat0 = R.pts[0][0];
+  const k = Math.cos((lat0 * Math.PI) / 180);
+  const pl = R.pts.map(([la, lo]) => [lo * k * 111320, -la * 110540]);
+  const [a, b] = [pl[0], pl.at(-1)];
+  const reta = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  if (reta > R.total * 0.25) return Math.PI / 2 - Math.atan2(b[1] - a[1], b[0] - a[0]);
+  const mx = pl.reduce((s, q) => s + q[0], 0) / pl.length;
+  const my = pl.reduce((s, q) => s + q[1], 0) / pl.length;
+  let sxx = 0;
+  let syy = 0;
+  let sxy = 0;
+  for (const [x, y] of pl) {
+    sxx += (x - mx) ** 2;
+    syy += (y - my) ** 2;
+    sxy += (x - mx) * (y - my);
+  }
+  return Math.PI / 2 - 0.5 * Math.atan2(2 * sxy, sxx - syy);
+}
+const voltaFechada = (R) => Math.hypot(R.pts[0][0] - R.pts.at(-1)[0], R.pts[0][1] - R.pts.at(-1)[1]) < 0.003;
+
+// o alvo vermelho das artes ("START LINE", "FINISH")
+function alvo(p, x, y, rotulo, lado = "direita") {
+  p.bola(x, y, 10, { cor: VERMELHO });
+  p.linha([[x - 17, y], [x - 12, y]], { cor: VERMELHO, larg: 2.5 });
+  p.linha([[x + 12, y], [x + 17, y]], { cor: VERMELHO, larg: 2.5 });
+  p.linha([[x, y - 17], [x, y - 12]], { cor: VERMELHO, larg: 2.5 });
+  p.linha([[x, y + 12], [x, y + 17]], { cor: VERMELHO, larg: 2.5 });
+  const dir = lado === "direita";
+  p.texto(MAIUSC(rotulo), dir ? x + 28 : x - 28, y + 10, { tam: 28, peso: 500, espaco: 1.5, alinhar: dir ? "left" : "right" });
+}
+
+// descida: o Strava só dá a subida; pela altitude da largada e da chegada, descida = subida − (fim − começo)
+function descida(D) {
+  const alts = serieDe(D)?.alt?.filter((v) => v != null);
+  if (!alts?.length || D.a.el == null) return null;
+  return Math.max(0, D.a.el - (alts.at(-1) - alts[0]));
+}
+const melhorKm = (D) => {
+  const inteiras = parciais(D).filter((x) => x.inteira);
+  return inteiras.length ? inteiras.reduce((a, b) => (b.ritmo < a.ritmo ? b : a)) : null;
+};
+
+// linhas "RÓTULO valor" (o rótulo apagado, o valor branco), como nas artes da Coros
+function listaDeNumeros(p, linhas, x, y, { alinhar = "left", passo = 50, tam = 34 } = {}) {
+  linhas.forEach(([rot, val, destaque], i) => {
+    const yy = y + i * passo;
+    const r = MAIUSC(rot);
+    const wr = p.medir(`${r}  `, { tam, peso: 500, espaco: 1 });
+    const wv = p.medir(val, { tam, peso: 600 });
+    const x0 = alinhar === "left" ? x : x - wr - wv;
+    p.texto(r, x0, yy, { tam, peso: 500, espaco: 1, alpha: destaque ? 1 : 0.55, cor: destaque ? p.acento : BRANCO });
+    p.texto(val, x0 + wr, yy, { tam, peso: 600, cor: destaque ? p.acento : BRANCO });
+  });
+}
+
+// a altimetria em linha fina, com um ponto marcado (a altitude máxima ou a mínima) por uma linha pontilhada
+function perfilFino(p, D, caixa, marcar = "max") {
+  const s = serieDe(D);
+  const alts = s.alt.filter((v) => v != null);
+  const lo = Math.min(...alts);
+  const hi = Math.max(lo + 30, Math.max(...alts));
+  const dMax = s.d.at(-1) || 1;
+  const pts = s.d.map((d, i) => [caixa.x + (d / dMax) * caixa.w, caixa.y + caixa.h - (((s.alt[i] ?? lo) - lo) / (hi - lo)) * caixa.h]);
+  p.linha(pts, { cor: p.acento, larg: 2.5 });
+  const alvoAlt = marcar === "max" ? Math.max(...alts) : lo;
+  const i = s.alt.indexOf(alvoAlt);
+  const [mx, my] = pts[i];
+  const yRot = Math.min(my - 70, caixa.y - 30);
+  p.linha([[mx, my - 6], [mx, yRot + 10]], { cor: p.acento, larg: 2, traco: [2, 6], comSombra: false });
+  p.triangulo(mx, yRot + 4, 12, "baixo", p.acento);
+  const texto = marcar === "max" ? t("Altitude máxima: {v}", { v: MAIUSC(elev(D.x?.alt_max ?? alvoAlt)) }) : t("Altitude mínima: {v}", { v: MAIUSC(elev(D.x?.alt_min ?? alvoAlt)) });
+  const dir = mx < LARGURA - 360;
+  p.texto(MAIUSC(texto), dir ? mx + 16 : mx - 16, yRot + 12, { tam: 26, peso: 500, cor: p.acento, espaco: 1, alinhar: dir ? "left" : "right" });
+}
+
 // a cor de um trecho, com u de 0 (o mais lento) a 1 (o mais rápido): branco apagado, branco, destaque
 function corDoRitmo(acento, u) {
   if (u < 0.5) return `rgba(255,255,255,${(0.22 + (u / 0.5) * 0.68).toFixed(2)})`;
@@ -1042,7 +1154,8 @@ function corDoRitmo(acento, u) {
   return `rgba(${m(255, r)},${m(255, g)},${m(255, b)},${(0.9 + 0.1 * e).toFixed(2)})`;
 }
 
-// "Rota pelo ritmo": cada trecho da rota pintado pelo ritmo naquele ponto
+// "Rota pelo ritmo": a rota girada para ocupar a figura, cada trecho pintado pela posição do seu ritmo
+// entre todos os do treino; o km mais rápido e o mais lento marcados; a escala com o ritmo de cada marca
 function figRotaRitmo(D, op) {
   const R = rotaMedida(D);
   const s = serieDe(D);
@@ -1051,10 +1164,7 @@ function figRotaRitmo(D, op) {
     return janela.length ? janela.reduce((a, b) => a + b, 0) / janela.length : null;
   });
   const ordem = vel.filter(Boolean).sort((a, b) => a - b);
-  const lo = ordem[Math.floor(ordem.length * 0.05)];
-  const hi = ordem[Math.floor(ordem.length * 0.95)];
-  // a cor vem da posição do ritmo entre todos os do treino (não da diferença em s/km): num treino
-  // constante, as pequenas variações ainda aparecem
+  const quantil = (q) => ordem[Math.min(ordem.length - 1, Math.floor(q * ordem.length))];
   const posicao = (v) => {
     let a = 0;
     let z = ordem.length;
@@ -1073,154 +1183,336 @@ function figRotaRitmo(D, op) {
   const c = novaTela(1350);
   const p = pincel(c, op);
   p.grade();
-  p.texto(dataTxt(D.data), M + 70, 150, { tam: 40, peso: 600, cor: p.acento, espaco: 1.5 });
-  p.texto(limparNome(D.a.n), M + 70, 214, { tam: 62, peso: 700, espaco: 1.5, max: LARGURA - 2 * M - 140 });
-  const proj = projetar(R.trechos, { x: 120, y: 280, w: 840, h: 840 });
-  // a sombra embaixo de tudo, para a rota aparecer em qualquer foto
-  if (op.sombra) for (const tr of R.trechos) p.linha(tr.map(proj), { cor: "rgba(0,0,0,0.45)", larg: 14, comSombra: false });
+  p.texto(dataTxt(D.data), M, 92, { tam: 34, peso: 600, cor: p.acento, espaco: 2 });
+  p.texto(limparNome(D.a.n), M, 150, { tam: 56, peso: 700, espaco: 1, max: LARGURA - 2 * M });
+  p.texto(MAIUSC(t("O ritmo em cada trecho")), M, 194, { tam: 28, peso: 500, alpha: 0.75, espaco: 2 });
+  const caixa = { x: 80, y: 250, w: 920, h: 760 };
+  const G = rotaNaCaixa(R, caixa, anguloQueEncaixa(R, caixa));
+  if (op.sombra) for (const tr of G.trechos) p.linha(tr, { cor: "rgba(0,0,0,0.45)", larg: 15, comSombra: false });
   let k = 0;
-  for (const tr of R.trechos) {
+  for (const tr of G.trechos) {
     for (let i = 1; i < tr.length; i++) {
       k++;
-      const d = (R.acum[k] / R.total) * D.a.m;
-      const u = Math.min(1, Math.max(0, posicao(velEm(d) || lo)));
-      p.linha([proj(tr[i - 1]), proj(tr[i])], { cor: corDoRitmo(p.acento, u), larg: 8, comSombra: false });
+      const u = posicao(velEm((R.acum[k] / R.total) * D.a.m) || ordem[0]);
+      p.linha([tr[i - 1], tr[i]], { cor: corDoRitmo(p.acento, u), larg: 9, comSombra: false });
     }
     k++;
   }
-  // a legenda: do lento ao rápido
+  // o km mais rápido e o mais lento, com o rótulo fora da rota
+  const inteiras = parciais(D).filter((x) => x.inteira);
+  const rapido = inteiras.reduce((a, b) => (b.ritmo < a.ritmo ? b : a), inteiras[0]);
+  const lento = inteiras.reduce((a, b) => (b.ritmo > a.ritmo ? b : a), inteiras[0]);
+  // o rótulo vai para o canto (entre 8 opções em volta do ponto) com menos rota e menos rótulos embaixo
+  const pixels = G.trechos.flat();
+  const ocupados = [];
+  const marcarKm = (x, rot, cor) => {
+    const [px, py] = G.fn(pontoNa(R, ((x.i + 0.5) * 1000) / D.a.m));
+    const larg = 250;
+    const alt = 74;
+    const opcoes = [];
+    for (const [dx, dy] of [[1, -1], [-1, -1], [1, 1], [-1, 1], [1, 0], [-1, 0], [0, -1.6], [0, 1.6]]) {
+      const cx = px + dx * 150;
+      const cy = py + dy * 110;
+      const bx = cx - (dx < 0 ? larg : dx > 0 ? 0 : larg / 2);
+      const by = cy - alt / 2;
+      if (bx < 20 || bx + larg > LARGURA - 20 || by < caixa.y - 30 || by + alt > caixa.y + caixa.h + 40) continue;
+      const naRota = pixels.filter(([qx, qy]) => qx > bx - 12 && qx < bx + larg + 12 && qy > by - 12 && qy < by + alt + 12).length;
+      const emRotulo = ocupados.some((o) => bx < o.x + o.w && o.x < bx + larg && by < o.y + o.h && o.y < by + alt) ? 1000 : 0;
+      opcoes.push({ cx, cy, bx, by, custo: naRota + emRotulo, al: dx < 0 ? "right" : dx > 0 ? "left" : "center" });
+    }
+    const o = opcoes.sort((a, b) => a.custo - b.custo)[0] || { cx: px + 150, cy: py - 110, bx: px + 150, by: py - 147, al: "left" };
+    ocupados.push({ x: o.bx, y: o.by, w: larg, h: alt });
+    p.linha([[px, py], [o.cx, o.cy]], { larg: 2, alpha: 0.85 });
+    p.bola(px, py, 11, { cor });
+    p.texto(MAIUSC(rot), o.cx, o.cy - 8, { tam: 26, peso: 600, espaco: 1.5, cor, alinhar: o.al });
+    p.texto(`KM ${x.i + 1}  ${ritmoKm(x.ritmo)}`, o.cx, o.cy + 28, { tam: 32, peso: 700, alinhar: o.al });
+  };
+  if (rapido) marcarKm(rapido, t("Km mais rápido"), p.acento);
+  if (lento && lento !== rapido) marcarKm(lento, t("Km mais lento"), BRANCO);
+  // a escala: a barra com 5 marcas e o ritmo em cada uma (a cor vem da posição, não da diferença em s/km)
   const lx = 150;
   const lw = LARGURA - 300;
-  const ly = 1210;
+  const ly = 1110;
+  p.texto(MAIUSC(t("Ritmo")), lx, ly - 22, { tam: 26, peso: 600, espaco: 2, alpha: 0.85 });
   const g = p.ctx.createLinearGradient(lx, 0, lx + lw, 0);
   g.addColorStop(0, corDoRitmo(p.acento, 0));
   g.addColorStop(0.5, corDoRitmo(p.acento, 0.5));
   g.addColorStop(1, corDoRitmo(p.acento, 1));
   p.ctx.save();
   p.ctx.fillStyle = g;
-  p.ctx.fillRect(lx, ly, lw, 14);
+  p.ctx.fillRect(lx, ly, lw, 16);
   p.ctx.restore();
-  p.texto(MAIUSC(t("Mais lento")), lx, ly + 58, { tam: 28, peso: 600, espaco: 1.5 });
-  p.texto(ritmoKm(1000 / lo), lx, ly + 96, { tam: 28, peso: 500, alpha: 0.8 });
-  p.texto(MAIUSC(t("Mais rápido")), lx + lw, ly + 58, { tam: 28, peso: 600, espaco: 1.5, alinhar: "right", cor: p.acento });
-  p.texto(ritmoKm(1000 / hi), lx + lw, ly + 96, { tam: 28, peso: 500, alpha: 0.8, alinhar: "right" });
+  [0, 0.25, 0.5, 0.75, 1].forEach((q, i) => {
+    const x = lx + q * lw;
+    p.linha([[x, ly + 20], [x, ly + 32]], { larg: 2, alpha: 0.8, comSombra: false });
+    p.texto(relogio(1000 / quantil(Math.min(0.98, Math.max(0.02, q)))), x, ly + 66, { tam: 28, peso: 600, alinhar: i === 0 ? "left" : i === 4 ? "right" : "center" });
+  });
+  p.texto(MAIUSC(t("Mais lento")), lx, ly + 104, { tam: 24, peso: 500, alpha: 0.7, espaco: 1.5 });
+  p.texto(MAIUSC(t("Mais rápido")), lx + lw, ly + 104, { tam: 24, peso: 600, cor: p.acento, espaco: 1.5, alinhar: "right" });
+  p.texto(`${MAIUSC(t("Média"))} ${ritmoKm(tempoDe(D.a) / (D.a.m / 1000))}`, lx + lw / 2, ly + 104, { tam: 24, peso: 600, alinhar: "center", alpha: 0.9, espaco: 1.5 });
   return c;
 }
 
-// "Relógio das parciais": cada km é um raio em volta do tempo total; quanto mais longo, mais rápido
-function figRelogio(D, op) {
-  const lista = parciais(D);
-  const c = novaTela(1180);
+// "Rota e números" (como a do Monte Rosa Trail): a rota grande saindo pela borda, os alvos vermelhos da
+// largada e da chegada, a lista de números e a altimetria em linha fina com a altitude mínima
+function figRotaPlacar(D, op) {
+  const R = rotaMedida(D);
+  const c = novaTela(1350);
   const p = pincel(c, op);
   p.grade();
-  cabecalho(p, D, 80);
-  const cx = LARGURA / 2;
-  const cy = 640;
-  const r0 = 250;
-  const rMax = 470;
-  const vel = lista.map((x) => 1000 / x.ritmo);
-  const inteiras = lista.filter((x) => x.inteira);
-  const melhor = inteiras.reduce((a, b) => (b.ritmo < a.ritmo ? b : a), inteiras[0]);
-  const vHi = Math.max(...vel);
-  const vLo = Math.min(...vel) * 0.85;
-  const passo = (Math.PI * 2) / lista.length;
-  const espessura = Math.min(34, ((Math.PI * 2 * r0) / lista.length) * 0.62);
-  const comprimento = (v) => 30 + ((v - vLo) / (vHi - vLo || 1)) * (rMax - r0 - 30);
-  // o anel tracejado é o ritmo médio: o raio que passa dele foi um km mais rápido que a média
-  const rMedia = r0 + comprimento(D.a.m / tempoDe(D.a));
-  p.ctx.save();
-  p.ctx.globalAlpha = 0.55;
-  p.ctx.strokeStyle = BRANCO;
-  p.ctx.lineWidth = 2;
-  p.ctx.setLineDash([8, 10]);
-  p.ctx.beginPath();
-  p.ctx.arc(cx, cy, rMedia, 0, Math.PI * 2);
-  p.ctx.stroke();
-  p.ctx.restore();
-  lista.forEach((x, i) => {
-    const ang = -Math.PI / 2 + passo * (i + 0.5);
-    const len = comprimento(vel[i]);
-    const [c1, s1] = [Math.cos(ang), Math.sin(ang)];
-    p.linha([[cx + c1 * r0, cy + s1 * r0], [cx + c1 * (r0 + len), cy + s1 * (r0 + len)]], {
-      cor: x === melhor ? p.acento : BRANCO, larg: espessura, alpha: x === melhor ? 1 : x.inteira ? 0.78 : 0.4,
-    });
-    if (i === 0 || (i + 1) % 5 === 0 || x === melhor) {
-      const rr = r0 + len + espessura / 2 + (x === melhor ? 44 : 30);
-      const lx = Math.min(LARGURA - 60, Math.max(60, cx + c1 * rr));
-      p.texto(x === melhor ? relogio(x.ritmo) : String(i + 1), lx, cy + s1 * rr + 12, { tam: x === melhor ? 38 : 26, peso: x === melhor ? 700 : 500, alinhar: "center", cor: x === melhor ? p.acento : BRANCO, alpha: x === melhor ? 1 : 0.8 });
-    }
-  });
-  p.texto(distTxt(D.a.m), cx, cy - 70, { tam: 40, peso: 600, alinhar: "center", cor: p.acento });
-  p.texto(relogio(tempoDe(D.a)), cx, cy + 40, { tam: 120, peso: 700, alinhar: "center", max: r0 * 1.8 });
-  // o anel tracejado é a média: está escrito no meio, embaixo do tempo
-  p.texto(`${MAIUSC(t("Média"))} ${ritmoKm(tempoDe(D.a) / (D.a.m / 1000))}`, cx, cy + 92, { tam: 28, peso: 600, alinhar: "center", alpha: 0.85, espaco: 1.5 });
-  return c;
-}
-
-// "O treino no ano": os km do ano em pontos (como a página "O ano em pontos"), com os deste treino acesos
-function figAnoPontos(D, op) {
-  const ano = D.data.getFullYear();
-  const doAno = D.atividades.filter((a) => a.grupo === "corrida" && a.ano === ano).sort((a, b) => a.data - b.data);
-  const pontos = [];
-  let acum = 0;
-  for (const a of doAno) {
-    const ini = acum;
-    acum += a.m / 1000;
-    for (let k = Math.floor(ini) + 1; k <= Math.floor(acum); k++) pontos.push(String(a.id) === String(D.a.id));
+  // a rota ocupa a coluna da esquerda (girada para ficar o maior possível) e pode sair pela borda
+  const caixaRota = { x: -90, y: 30, w: 530, h: 1150 };
+  const G = rotaNaCaixa(R, caixaRota, anguloQueEncaixa(R, caixaRota));
+  for (const tr of G.trechos) p.linha(tr, { cor: p.acento, larg: 3.5 });
+  const ini = G.fn(R.pts[0]);
+  const fim = G.fn(R.pts.at(-1));
+  const dentro = (q) => q[0] > 30 && q[0] < LARGURA - 30;
+  // o rótulo do alvo vai para a esquerda quando, à direita, ele bateria na lista de números
+  const lado = (q) => (q[0] > 250 ? "esquerda" : "direita");
+  if (voltaFechada(R)) {
+    if (dentro(ini)) alvo(p, ini[0], ini[1], t("Largada e chegada"), lado(ini));
+  } else {
+    if (dentro(ini)) alvo(p, ini[0], ini[1], t("Largada"), lado(ini));
+    if (dentro(fim)) alvo(p, fim[0], fim[1], t("Chegada"), lado(fim));
   }
-  const colunas = 50;
-  const passo = (LARGURA - 2 * M) / colunas;
-  const n = Math.max(pontos.length, D.meta);
-  const linhas = Math.ceil(n / colunas);
-  const y0 = 230;
-  const c = novaTela(y0 + linhas * passo + 190);
+  const x0 = 500;
+  p.texto(limparNome(D.a.n), x0, 815, { tam: 68, peso: 700, alpha: 0.82, max: LARGURA - x0 - M });
+  const desc = descida(D);
+  const linhas = [
+    [D.a.prova ? t("Tempo de prova") : t("Tempo total"), relogio(tempoDe(D.a)), true],
+    [t("Distância"), distTxt(D.a.m)],
+    [t("Subida"), MAIUSC(elev(D.a.el || 0))],
+    desc != null ? [t("Descida"), MAIUSC(elev(desc))] : null,
+    [t("Ritmo médio"), ritmoTxt(ritmoDe(D.a.m, tempoDe(D.a)))],
+    D.a.hr ? [t("FC média"), `${D.a.hr} BPM`] : null,
+  ].filter(Boolean);
+  listaDeNumeros(p, linhas, x0, 882, { passo: 48, tam: 34 });
+  if (serieDe(D)?.alt?.some((v) => v != null)) perfilFino(p, D, { x: 260, y: 1215, w: LARGURA - 260, h: 110 }, "min");
+  return c;
+}
+
+// "Painel do percurso" (como a do Sea Otter Classic): o nome do atleta, a rota grande e um painel escuro
+// translúcido com os dados (o painel continua legível sobre qualquer foto)
+function figPainel(D, op) {
+  const R = rotaMedida(D);
+  const c = novaTela(1350);
   const p = pincel(c, op);
   p.grade();
-  cabecalho(p, D, 80);
-  p.texto(MAIUSC(t("{ano} em pontos", { ano })), M, 170, { tam: 64, peso: 700 });
-  const pos = (k) => [M + ((k % colunas) + 0.5) * passo, y0 + (Math.floor(k / colunas) + 0.5) * passo];
+  const atleta = MAIUSC([D.atleta?.nome, D.atleta?.sobrenome].filter(Boolean).join(" "));
+  p.texto(atleta || limparNome(D.a.n), 150, 76, { tam: 34, peso: 500, cor: p.acento, espaco: 1.5 });
+  const G = rotaNaCaixa(R, { x: 50, y: 160, w: 760, h: 760 });
+  for (const tr of G.trechos) p.linha(tr, { cor: p.acento, larg: 3.5 });
+  const [sx, sy] = G.fn(R.pts[0]);
+  p.quadrado(sx, sy, 16, BRANCO);
+  const linhas = [
+    [t("Distância total"), distTxt(D.a.m)],
+    [t("Subida acumulada"), MAIUSC(elev(D.a.el || 0))],
+    [t("Tempo"), relogio(tempoDe(D.a))],
+    [t("Ritmo médio"), ritmoTxt(ritmoDe(D.a.m, tempoDe(D.a)))],
+    D.a.hr ? [t("FC média"), `${D.a.hr} BPM`] : MEDIDAS.cadencia(D) ? [t("Cadência"), MEDIDAS.cadencia(D).valor] : null,
+  ].filter(Boolean);
+  const px = 420;
+  const pw = LARGURA - px - 150 + 120;
+  const py = 1350 - 70 - (130 + linhas.length * 66);
+  const ph = 130 + linhas.length * 66;
+  p.caixa(px, py, pw, ph, { larg: 0, preencher: "rgba(28,28,30,0.78)", alphaFundo: 1, raio: 6 });
+  const xi = px + 24;
+  const xf = px + pw - 24;
+  p.texto(MAIUSC(t("Dados do percurso")), xi, py + 56, { tam: 30, peso: 500, espaco: 1.5, max: 230 });
+  p.texto(limparNome(D.a.n), xf, py + 48, { tam: 30, peso: 600, cor: p.acento, espaco: 1.5, alinhar: "right", max: pw - 300 });
+  p.texto(dataTxt(D.data), xf, py + 86, { tam: 28, peso: 500, espaco: 1.5, alinhar: "right", alpha: 0.85 });
+  let y = py + 118;
+  for (const [rot, val] of linhas) {
+    p.linha([[xi, y], [xf, y]], { larg: 1.5, alpha: 0.35, comSombra: false });
+    p.texto(MAIUSC(rot), xi, y + 44, { tam: 28, peso: 500, espaco: 1.5 });
+    p.texto(val, xf, y + 44, { tam: 28, peso: 500, espaco: 1.5, alinhar: "right" });
+    y += 66;
+  }
+  return c;
+}
+
+// "Rota vertical" (como a do Black Canyon 100K): a rota em pé no meio, da largada à chegada, e os números
+// em duas colunas dos lados; uma moldura fina em volta
+function figRotaVertical(D, op) {
+  const R = rotaMedida(D);
+  const c = novaTela(1350);
+  const p = pincel(c, op);
+  p.grade();
+  p.caixa(M, M, LARGURA - 2 * M, c.height - 2 * M, { larg: 1.5, alpha: 0.35 });
+  // a rota numa faixa estreita no meio; os números ficam nas laterais, sem encostar nela
+  const G = rotaNaCaixa(R, { x: 430, y: 190, w: 220, h: 1000 }, anguloEmPe(R));
+  for (const tr of G.trechos) p.linha(tr, { larg: 2.5 });
+  const ini = G.fn(R.pts[0]);
+  const fim = G.fn(R.pts.at(-1));
+  p.bola(ini[0], ini[1], 7, { cor: BRANCO });
+  if (voltaFechada(R)) {
+    // o rótulo vai para o lado de fora da rota: em cima se a largada está na metade de cima
+    const ys = G.trechos.flat().map((q) => q[1]);
+    const emCima = ini[1] < (Math.min(...ys) + Math.max(...ys)) / 2;
+    p.texto(MAIUSC(t("Largada e chegada")), ini[0], emCima ? Math.min(...ys) - 30 : Math.max(...ys) + 56, { tam: 32, peso: 600, alinhar: "center" });
+  } else {
+    p.bola(fim[0], fim[1], 7, { cor: BRANCO });
+    p.texto(MAIUSC(t("Largada")), ini[0], ini[1] - 30, { tam: 32, peso: 600, alinhar: "center" });
+    p.texto(MAIUSC(t("Chegada")), fim[0], fim[1] + 56, { tam: 32, peso: 600, alinhar: "center" });
+  }
+  // o nome em até duas linhas (um nome longo encolheria demais numa só)
+  quebrar(p, limparNome(D.a.n), 290, 28, 4).slice(0, 2).forEach((l, i) => p.texto(l, 150, 480 + i * 38, { tam: 28, peso: 500, cor: p.acento, espaco: 4, max: 300 }));
+  const wt = p.medir(relogio(tempoDe(D.a)), { tam: 28, peso: 600, espaco: 3 });
+  p.texto(relogio(tempoDe(D.a)), LARGURA - 150, 480, { tam: 28, peso: 600, cor: p.acento, espaco: 3, alinhar: "right" });
+  p.texto(MAIUSC(t("Tempo total")), LARGURA - 150 - wt - 30, 480, { tam: 28, peso: 500, cor: p.acento, espaco: 4, alinhar: "right" });
+  const mk = melhorKm(D);
+  const escolher = (lista) => lista.filter(Boolean).slice(0, 4);
+  const esquerda = escolher([
+    [t("Ritmo médio"), ritmoTxt(ritmoDe(D.a.m, tempoDe(D.a)))],
+    D.a.hrx ? [t("FC máxima"), `${D.a.hrx} BPM`] : null,
+    MEDIDAS.cadencia(D) ? [t("Cadência"), MEDIDAS.cadencia(D).valor] : null,
+    MEDIDAS.potencia(D) ? [t("Potência média"), MEDIDAS.potencia(D).valor] : null,
+    MEDIDAS.calorias(D) ? [t("Calorias"), MEDIDAS.calorias(D).valor] : null,
+  ]);
+  const direita = escolher([
+    mk ? [t("Melhor km"), relogio(mk.ritmo)] : null,
+    D.a.hr ? [t("FC média"), `${D.a.hr} BPM`] : null,
+    [t("Subida"), MAIUSC(elev(D.a.el || 0))],
+    MEDIDAS.esforco(D) ? [t("Esforço relativo"), MEDIDAS.esforco(D).valor] : null,
+    [t("Distância"), distTxt(D.a.m)],
+  ]);
+  listaDeNumeros(p, esquerda, 100, 925, { passo: 50, tam: 28 });
+  listaDeNumeros(p, direita, LARGURA - 100, 925, { passo: 50, tam: 28, alinhar: "right" });
+  return c;
+}
+
+// quanto o treino pesou perto dos outros: a posição do esforço relativo entre os treinos do mesmo tipo
+// nos 90 dias até ele (0 = o mais leve, 1 = o mais pesado)
+function posicaoDoEsforco(D) {
+  const re = D.a.re;
+  if (!re) return null;
+  const grupo = grupoDe(D.a.t);
+  const desde = D.data.getTime() - 90 * 864e5;
+  const outros = D.atividades.filter((a) => a.grupo === grupo && a.re && a.data.getTime() >= desde && a.data.getTime() <= D.data.getTime() + 864e5 && String(a.id) !== String(D.a.id)).map((a) => a.re);
+  if (outros.length < 5) return null;
+  return { pos: outros.filter((v) => v < re).length / outros.length, n: outros.length };
+}
+
+// o cartão escuro do app, com a barra de leve a pesado (como o "pace strategy" da Coros)
+function cartaoEsforco(p, x, y, w, D, pos) {
+  const h = 250;
   const ctx = p.ctx;
+  p.caixa(x, y, w, h, { larg: 0, preencher: "rgba(6,6,6,0.88)", alphaFundo: 1, raio: 28 });
   ctx.save();
-  pontos.forEach((nosso, k) => {
-    const [x, y] = pos(k);
-    ctx.globalAlpha = nosso ? 1 : 0.32;
-    ctx.fillStyle = nosso ? p.acento : BRANCO;
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.font = `500 26px Manrope, ${FONTE}`;
+  ctx.fillText(`${t("Esforço relativo")} | ${t("Ritmo médio")}`, x + 32, y + 52);
+  ctx.fillStyle = BRANCO;
+  ctx.font = `700 66px Manrope, ${FONTE}`;
+  const v1 = num(D.a.re);
+  ctx.fillText(v1, x + 32, y + 128);
+  const w1 = ctx.measureText(v1).width;
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.fillRect(x + 32 + w1 + 24, y + 78, 2, 56);
+  ctx.fillStyle = BRANCO;
+  ctx.font = `700 58px Manrope, ${FONTE}`;
+  const ritmo = relogio(tempoDe(D.a) / (D.a.m / 1000));
+  ctx.fillText(ritmo, x + 32 + w1 + 50, y + 128);
+  const wr = ctx.measureText(ritmo).width;
+  ctx.font = `500 30px Manrope, ${FONTE}`;
+  ctx.fillText("/km", x + 32 + w1 + 50 + wr + 6, y + 128);
+  // a barra colorida, com o fim listrado
+  const bx = x + 32;
+  const bw = w - 64;
+  const by = y + 168;
+  const g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+  [["#2EE6D6", 0], ["#7BE35A", 0.35], ["#F2E640", 0.6], ["#F59A3A", 0.8], ["#EE3E63", 1]].forEach(([cor, q]) => g.addColorStop(q, cor));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx, by, bw, 18, 9);
+  else ctx.rect(bx, by, bw, 18);
+  ctx.fill();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(bx + bw * 0.88, by - 10, bw * 0.12, 38);
+  ctx.clip();
+  ctx.strokeStyle = "rgba(0,0,0,0.45)";
+  ctx.lineWidth = 3;
+  for (let sx = bx + bw * 0.88 - 40; sx < bx + bw + 40; sx += 10) {
     ctx.beginPath();
-    ctx.arc(x, y, passo * (nosso ? 0.36 : 0.3), 0, Math.PI * 2);
-    ctx.fill();
-  });
-  // o que falta para a meta, em anéis
-  ctx.globalAlpha = 0.3;
-  ctx.strokeStyle = BRANCO;
-  ctx.lineWidth = 1.5;
-  for (let k = pontos.length; k < D.meta; k++) {
-    const [x, y] = pos(k);
-    ctx.beginPath();
-    ctx.arc(x, y, passo * 0.28, 0, Math.PI * 2);
+    ctx.moveTo(sx, by + 28);
+    ctx.lineTo(sx + 20, by - 10);
     ctx.stroke();
   }
   ctx.restore();
-  // a linha da meta, em degrau, como na página
-  if (D.meta) {
-    const q = Math.floor(D.meta / colunas);
-    const resto = D.meta % colunas;
-    const yq = y0 + q * passo;
-    const pts = resto ? [[M, yq + passo], [M + resto * passo, yq + passo], [M + resto * passo, yq], [LARGURA - M, yq]] : [[M, yq], [LARGURA - M, yq]];
-    p.linha(pts, { larg: 3, traco: [10, 7], alpha: 0.95 });
+  const mx = bx + Math.min(0.98, Math.max(0.02, pos)) * bw;
+  ctx.fillStyle = "#111";
+  ctx.beginPath();
+  ctx.arc(mx, by + 9, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = BRANCO;
+  ctx.beginPath();
+  ctx.arc(mx, by + 9, 11, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.font = `500 24px Manrope, ${FONTE}`;
+  ctx.fillText(t("Leve"), bx, y + 226);
+  const wp = ctx.measureText(t("Pesado")).width;
+  ctx.fillText(t("Pesado"), bx + bw - wp, y + 226);
+  ctx.restore();
+  return h;
+}
+
+// "Esforço" (como a da Emelie, com a estratégia de ritmo): o cartão de leve a pesado, a frase sobre o
+// treino, uma seta à mão e a altimetria em linha fina com a altitude máxima
+function figEsforco(D, op) {
+  const E = posicaoDoEsforco(D);
+  const c = novaTela(1350);
+  const p = pincel(c, op);
+  p.grade();
+  const x = 110;
+  const y = 700;
+  const w = 560;
+  const h = cartaoEsforco(p, x, y, w, D, E.pos);
+  // a seta à mão: uma curva que vem da direita e aponta para o cartão
+  const ctx = p.ctx;
+  const [ax, ay] = [x + w + 34, y + h * 0.62];
+  ctx.save();
+  if (op.sombra) {
+    ctx.shadowColor = "rgba(0,0,0,0.55)";
+    ctx.shadowBlur = 10;
   }
-  const yR = y0 + linhas * passo + 100;
-  const tres = [
-    [t("Este treino"), distTxt(D.a.m)],
-    [t("No ano"), distTxt(acum * 1000, 0)],
-    D.meta ? [t("Meta"), distTxt(D.meta * 1000, 0)] : null,
-  ].filter(Boolean);
-  const xs = [M, LARGURA / 2, LARGURA - M];
-  const al = ["left", "center", "right"];
-  tres.forEach(([rot, val], i) => {
-    p.texto(val, xs[i], yR, { tam: 60, peso: 700, alinhar: al[i], cor: i === 0 ? p.acento : BRANCO });
-    p.texto(MAIUSC(rot), xs[i], yR + 40, { tam: 28, peso: 600, alinhar: al[i], espaco: 1.5, alpha: 0.9 });
-  });
+  ctx.strokeStyle = BRANCO;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x + w + 190, y + h + 90);
+  ctx.bezierCurveTo(x + w + 230, y + h - 30, x + w + 120, y + h * 0.45, ax, ay);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(ax + 24, ay - 10);
+  ctx.lineTo(ax, ay);
+  ctx.lineTo(ax + 18, ay + 18);
+  ctx.stroke();
+  ctx.restore();
+  const pct = Math.round(E.pos * 100);
+  const frase = E.pos >= 0.5
+    ? t("Mais pesado que {p}% dos treinos dos últimos 90 dias.", { p: pct })
+    : t("Mais leve que {p}% dos treinos dos últimos 90 dias.", { p: 100 - pct });
+  const linhas = quebrar(p, MAIUSC(`${t("Esforço relativo de {v}.", { v: num(D.a.re) })} ${frase}`), 560, 36);
+  linhas.forEach((l, i) => p.texto(l, x, y + h + 70 + i * 42, { tam: 36, peso: 500, cor: p.acento, espaco: 1 }));
+  if (serieDe(D)?.alt?.some((v) => v != null)) perfilFino(p, D, { x: 0, y: 1150, w: LARGURA, h: 150 }, "max");
   return c;
+}
+
+// quebra um texto em linhas que cabem na largura
+function quebrar(p, texto, largura, tam, espaco = 1) {
+  const saida = [];
+  let atual = "";
+  for (const palavra of texto.split(/\s+/)) {
+    const tentativa = atual ? `${atual} ${palavra}` : palavra;
+    if (atual && p.medir(tentativa, { tam, peso: 500, espaco }) > largura) {
+      saida.push(atual);
+      atual = palavra;
+    } else atual = tentativa;
+  }
+  if (atual) saida.push(atual);
+  return saida;
 }
 
 // --------------------------------------------------------------- catálogo
@@ -1243,9 +1535,11 @@ export const FIGURAS = [
   // `nova`: ainda esperando a aprovação do Victor; no site só aparecem com ?figuras=novas no endereço
   { id: "percurso", nova: true, nome: () => t("Dados do percurso"), pronta: (D) => serieDe(D)?.alt?.some((v) => v != null), desenhar: figDadosPercurso },
   { id: "trintadias", nova: true, nome: () => t("Últimos 30 dias"), pronta: (D) => D.atividades.length > 0, desenhar: figUltimos30 },
-  { id: "rotaritmo", nova: true, nome: () => t("Rota pelo ritmo"), pronta: (D) => !!D.a.rota && serieDe(D)?.v?.filter((v) => v > 0.8).length > 20, desenhar: figRotaRitmo },
-  { id: "relogio", nova: true, nome: () => t("Relógio das parciais"), pronta: (D) => parciais(D).filter((x) => x.inteira).length >= 3, desenhar: figRelogio },
-  { id: "anopontos", nova: true, nome: () => t("O treino no ano"), pronta: (D) => grupoDe(D.a.t) === "corrida" && D.atividades.length > 0, desenhar: figAnoPontos },
+  { id: "rotaritmo", nova: true, nome: () => t("Rota pelo ritmo"), pronta: (D) => !!D.a.rota && serieDe(D)?.v?.filter((v) => v > 0.8).length > 20 && parciais(D).filter((x) => x.inteira).length >= 2, desenhar: figRotaRitmo },
+  { id: "rotaplacar", nova: true, nome: () => t("Rota e números"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figRotaPlacar },
+  { id: "painel", nova: true, nome: () => t("Painel do percurso"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figPainel },
+  { id: "rotavertical", nova: true, nome: () => t("Rota vertical"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figRotaVertical },
+  { id: "esforco", nova: true, nome: () => t("Esforço"), pronta: (D) => !!posicaoDoEsforco(D) && D.a.m > 0, desenhar: figEsforco },
 ];
 
 // o PNG da figura (para baixar, copiar ou compartilhar)
@@ -1254,5 +1548,9 @@ export const pngDe = (canvas) => new Promise((r) => canvas.toBlob(r, "image/png"
 // espera a letra condensada carregar: sem ela, o canvas desenharia com a letra reserva
 export async function carregarFonte() {
   if (!document.fonts?.load) return;
-  await Promise.all([500, 600, 700].map((p) => document.fonts.load(`${p} 40px "Barlow Condensed"`)));
+  await Promise.all([
+    ...[500, 600, 700].map((p) => document.fonts.load(`${p} 40px "Barlow Condensed"`)),
+    // o cartão da figura "Esforço" imita o app e usa a letra do site
+    ...[500, 700].map((p) => document.fonts.load(`${p} 40px Manrope`)),
+  ]);
 }
