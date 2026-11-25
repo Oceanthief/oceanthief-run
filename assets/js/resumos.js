@@ -4,9 +4,10 @@
 // do anterior (de 1 a 25 de novembro contra de 1 a 25 de outubro), para não pôr um mês pela metade
 // contra um mês inteiro.
 //
-// Os cinco seguem o mesmo sistema: o cabeçalho com a marca e o esporte, o período em letra condensada
-// grande, rótulos na letra do site (Manrope), a seta ▲ na cor de destaque quando o número subiu e ▼ em
-// branco apagado quando desceu, e o endereço do site no pé. O fundo é o café do site, ou transparente.
+// Os cinco seguem o mesmo sistema: o cabeçalho com o esporte e o tipo de resumo (sem o nome do site nem
+// o endereço), o período em letra condensada grande, rótulos na letra do site (Manrope) e a seta ▲ na cor
+// de destaque quando o número subiu e ▼ em branco apagado quando desceu. O fundo é o café do site, ou
+// transparente.
 import { chaveDia, dataCurta, DIAS_CURTOS, distValor, getUnidade, GRUPOS, inicioSemana, LOCALE, MESES_CURTOS, num, relogio, rotuloDist, t } from "./comum.js";
 import { anguloQueEncaixa, LARGURA, MAIUSC, novaTela, pincel, rotaMedida, rotaNaCaixa, SANS, VERMELHO } from "./figuras.js";
 
@@ -102,14 +103,6 @@ const nomeDoEsporte = (e) => (e === "tudo" ? t("Todos os esportes") : GRUPOS[e]?
 const ROTULOS_DIAS = { corrida: "Dias com corrida", caminhada: "Dias com caminhada", tudo: "Dias com treino" };
 const ROTULOS_MAIOR = { corrida: "Maior corrida", caminhada: "Maior caminhada", tudo: "Maior treino" };
 
-// o endereço do site, para o pé das figuras (no computador de teste, o endereço publicado)
-function endereco() {
-  if (/github\.io$|\.[a-z]{2,}$/.test(location.hostname) && !/^(localhost|127\.)/.test(location.hostname)) {
-    return `${location.host}${location.pathname.replace(/[^/]*$/, "")}`.replace(/\/$/, "");
-  }
-  return "oceanthief.github.io/oceanthief-run";
-}
-
 // Tudo o que os modelos usam de um período. `mes` de 0 a 11, ou null para o ano inteiro.
 // `atividades`: a lista do site já preparada; `rotas`: Map do id do treino para a rota.
 export function dadosDoPeriodo({ atividades, rotas, perfil, ano, mes = null, esporte = "corrida", foto = null, hoje = new Date() }) {
@@ -197,8 +190,6 @@ export function dadosDoPeriodo({ atividades, rotas, perfil, ano, mes = null, esp
     rotaDe: (a) => rotas?.get?.(a.id) || "",
     // a meta do ano só vale para o esporte principal
     metaM: ehAno && esporte === (perfil?.esporte_principal || "corrida") ? metaKm * 1000 : 0,
-    marca: perfil?.nome_site || "The Oceanthief Run",
-    endereco: endereco(),
     foto,
   };
 }
@@ -273,16 +264,12 @@ function fundo(p, op) {
   ctx.restore();
 }
 
-// a marca à esquerda (com o quadrado vermelho das figuras) e o esporte à direita
+// o esporte à esquerda (com o quadrado vermelho das figuras) e o tipo de resumo à direita;
+// sem nome do site nem endereço (pedido do Victor)
 function cabeca(p, R) {
   p.quadrado(MX + 8, 91, 16, VERMELHO);
-  p.texto(MAIUSC(R.marca), MX + 30, 100, { tam: 30, peso: 600, espaco: 5, alpha: 0.88 });
-  p.texto(MAIUSC(R.nomeEsporte), W - MX, 100, { tam: 30, peso: 600, espaco: 5, cor: p.acento, alinhar: "right" });
-}
-
-function pe(p, R) {
-  p.texto(R.endereco, MX, H - 66, { tam: 24, peso: 500, fam: SANS, alpha: 0.5 });
-  p.texto(R.ehAno ? t("Resumo do ano") : t("Resumo do mês"), W - MX, H - 66, { tam: 24, peso: 500, fam: SANS, alpha: 0.5, alinhar: "right" });
+  p.texto(MAIUSC(R.nomeEsporte), MX + 30, 100, { tam: 30, peso: 600, espaco: 5, cor: p.acento });
+  p.texto(MAIUSC(R.ehAno ? t("Resumo do ano") : t("Resumo do mês")), W - MX, 100, { tam: 30, peso: 600, espaco: 5, alpha: 0.88, alinhar: "right" });
 }
 
 // um número com a unidade menor ao lado ("194" + "KM"); diminui até caber em `max`; devolve a largura
@@ -401,7 +388,6 @@ function modFicha(R, op) {
   const passo = Math.min(196, (1600 - y0) / chaves.length);
   chaves.forEach((k, i) => linhaFicha(p, R, METRICAS[k], y0 + i * passo));
   impressao(p, R, 1676, 104);
-  pe(p, R);
   return c;
 }
 
@@ -488,7 +474,6 @@ function modRetrato(R, op) {
   p.texto(legenda, MX, yT + 54, { tam: 28, peso: 500, fam: SANS, alpha: 0.7, max: W - 2 * MX });
   const chaves = ["distancia", "tempo", R.esporte === "tudo" ? "treinos" : "dias", "subida"];
   chaves.forEach((k, i) => celula(p, R, METRICAS[k], i % 2 ? W / 2 + 16 : MX, yT + 128 + Math.floor(i / 2) * 206, W / 2 - MX - 24));
-  pe(p, R);
   return c;
 }
 
@@ -591,7 +576,6 @@ function modConstancia(R, op) {
     if (f.v) seta(p, f.v, x, yF + 140, { tam: 32, alinhar: "left" });
     else if (f.sub) p.texto(f.sub, x, yF + 140, { tam: 26, peso: 500, fam: SANS, alpha: 0.6 });
   });
-  pe(p, R);
   return c;
 }
 
@@ -749,7 +733,6 @@ function modDuelo(R, op) {
       tam: 28, peso: 500, fam: SANS, alpha: 0.65, alinhar: "center",
     });
   }
-  pe(p, R);
   return c;
 }
 
@@ -862,7 +845,6 @@ function modCurva(R, op) {
     if (f.v) seta(p, f.v, x, yF + 140, { tam: 32, alinhar: "left" });
     else if (f.sub) p.texto(f.sub, x, yF + 140, { tam: 26, peso: 500, fam: SANS, alpha: 0.6 });
   });
-  pe(p, R);
   return c;
 }
 
