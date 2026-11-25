@@ -418,7 +418,6 @@ const FRASES = {
   "Total de {ano}: {v}": ["{ano} total: {v}", "Total de {ano}: {v}"],
   "{ano} até agora": ["{ano} so far", "{ano} hasta ahora"],
   "Onde a meta pede estar hoje: {v}": ["Where the goal says to be today: {v}", "Donde la meta pide estar hoy: {v}"],
-  "No ritmo atual, {ano} fecha com {v}.": ["At this pace, {ano} ends at {v}.", "A este ritmo, {ano} cierra con {v}."],
   "{p}% a mais que no mesmo ponto de {ano} ({v}).": ["{p}% more than at this point in {ano} ({v}).", "{p}% más que a esta altura de {ano} ({v})."],
   "{p}% a menos que no mesmo ponto de {ano} ({v}).": ["{p}% less than at this point in {ano} ({v}).", "{p}% menos que a esta altura de {ano} ({v})."],
   "Altimetria": ["Elevation", "Altimetría"],

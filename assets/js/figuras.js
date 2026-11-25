@@ -1603,12 +1603,12 @@ function figSplits(D, op) {
 }
 
 // "Melhor km" (como a faixa da volta final): entre duas linhas finas, o km mais rápido, o tempo dele,
-// a FC e a cadência; embaixo, um traço por km do treino, da altura da velocidade, com o melhor em cor.
+// a FC e a cadência.
 function figMelhorKm(D, op) {
   const lista = parciaisComTudo(D);
   const b = lista.find((x) => x.pos === 1);
   const R = ROT_PISTA();
-  const c = novaTela(300);
+  const c = novaTela(190);
   const p = pincel(c, op);
   p.grade();
   const linha = [
@@ -1620,19 +1620,6 @@ function figMelhorKm(D, op) {
   p.linha([[M, 40], [LARGURA - M, 40]], { larg: 2, alpha: 0.85 });
   p.linha([[M, 150], [LARGURA - M, 150]], { larg: 2, alpha: 0.85 });
   emLinha(p, [linha], { tam: 34, respiro: 40 }).desenhar(linha, 107);
-  // os kms do treino: o mais rápido mais alto e na cor de destaque
-  const inteiras = lista.filter((x) => x.inteira);
-  const [rMin, rMax] = [Math.min(...inteiras.map((x) => x.ritmo)), Math.max(...inteiras.map((x) => x.ritmo))];
-  const slot = (LARGURA - 2 * M) / inteiras.length;
-  const bw = Math.max(3, Math.min(26, slot * 0.5));
-  const base = 250;
-  inteiras.forEach((x, i) => {
-    const h = 10 + 56 * (rMax > rMin ? (rMax - x.ritmo) / (rMax - rMin) : 1);
-    const cx = M + slot * (i + 0.5);
-    p.caixa(cx - bw / 2, base - h, bw, h, { larg: 0, preencher: x === b ? p.acento : BRANCO, alphaFundo: x === b ? 1 : 0.35 });
-  });
-  p.texto("KM 1", M + slot / 2, base + 34, { tam: 22, peso: 400, fam: DIN, alpha: 0.6, alinhar: "center" });
-  p.texto(`KM ${num(inteiras.length)}`, M + slot * (inteiras.length - 0.5), base + 34, { tam: 22, peso: 400, fam: DIN, alpha: 0.6, alinhar: "center" });
   return c;
 }
 
@@ -1661,8 +1648,8 @@ export const FIGURAS = [
   { id: "painel", nome: () => t("Painel do percurso"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figPainel },
   { id: "rotavertical", nome: () => t("Rota vertical"), pronta: (D) => !!D.a.rota && D.a.m >= 1000, desenhar: figRotaVertical },
   { id: "esforco", nome: () => t("Esforço"), pronta: (D) => !!posicaoDoEsforco(D) && D.a.m > 0, desenhar: figEsforco },
-  { id: "splits", nome: () => t("Splits por km"), pronta: (D) => parciais(D).filter((x) => x.inteira).length >= 2, desenhar: figSplits, nova: true },
-  { id: "melhorkm", nome: () => t("Melhor km"), pronta: (D) => parciais(D).filter((x) => x.inteira).length >= 2, desenhar: figMelhorKm, nova: true },
+  { id: "splits", nome: () => t("Splits por km"), pronta: (D) => parciais(D).filter((x) => x.inteira).length >= 2, desenhar: figSplits },
+  { id: "melhorkm", nome: () => t("Melhor km"), pronta: (D) => parciais(D).filter((x) => x.inteira).length >= 2, desenhar: figMelhorKm },
 ];
 
 // o PNG da figura (para baixar, copiar ou compartilhar)

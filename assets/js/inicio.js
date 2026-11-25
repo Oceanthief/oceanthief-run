@@ -866,8 +866,8 @@ function autoLimites(valores) {
 }
 
 // ------------------------------------------------------------- constância
-// o ano até agora: quanto já foi, comparado com o mesmo ponto do ano passado,
-// a projeção para 31 de dezembro e a meta (ou, sem meta, o total do ano passado)
+// o ano até agora: quanto já foi, comparado com o mesmo ponto do ano passado, e a meta (ou, sem
+// meta, o total do ano passado). Sem projeção para 31 de dezembro: o Victor pediu para tirar.
 function anoEmCurso() {
   const el = $("#ano-curso");
   if (!el) return;
@@ -880,7 +880,6 @@ function anoEmCurso() {
   const inicioAno = new Date(ano, 0, 1);
   const fimAno = new Date(ano + 1, 0, 1);
   const fracao = Math.min(1, (hoje - inicioAno) / (fimAno - inicioAno));
-  const projecao = fracao > 0.02 ? feito / fracao : null;
   const mesmaData = new Date(ano - 1, hoje.getMonth(), hoje.getDate(), 23, 59);
   const anterior = doAno(ano - 1, mesmaData);
   const totalAnterior = doAno(ano - 1);
@@ -923,7 +922,6 @@ function anoEmCurso() {
     <ul class="ano-fatos">
       ${batida ? `<li class="meta-batida">${esc(t("Meta batida em {data}.", { data: dataLonga(batida) }))}</li>` : ""}
       ${metaKm && !batida ? `<li>${esc(t("Faltam {v} para a meta.", { v: dist(alvo - feito) }))}${semanasRestantes >= 1 && alvo - feito > alvo * 0.05 ? ` ${esc(t("Dá {v} por semana até o fim do ano.", { v: dist((alvo - feito) / semanasRestantes, 1) }))}` : ""}</li>` : ""}
-      ${projecao ? `<li>${esc(t("No ritmo atual, {ano} fecha com {v}.", { ano, v: dist(projecao) }))}</li>` : ""}
       ${variacao != null ? `<li>${esc(variacao >= 0
         ? t("{p}% a mais que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior) })
         : t("{p}% a menos que no mesmo ponto de {ano} ({v}).", { p: num(Math.abs(variacao)), ano: ano - 1, v: dist(anterior) }))}</li>` : ""}
