@@ -496,9 +496,9 @@ function figCurvaFc(D, op) {
   const c = novaTela(700);
   const p = pincel(c, op);
   p.grade();
-  const atleta = MAIUSC([D.atleta?.nome, D.atleta?.sobrenome].filter(Boolean).join(" "));
-  p.texto(atleta || limparNome(D.a.n), M, 80, { tam: 40, peso: 600, cor: p.acento, espaco: 1.5, max: 480 });
-  p.texto(dataTxt(D.data), LARGURA - M, 80, { tam: 40, peso: 600, cor: p.acento, espaco: 1.5, alinhar: "right" });
+  // o nome do treino (sem o nome da pessoa, pedido do Victor) e a data
+  const wData = p.texto(dataTxt(D.data), LARGURA - M, 80, { tam: 40, peso: 600, cor: p.acento, espaco: 1.5, alinhar: "right" });
+  p.texto(limparNome(D.a.n), M, 80, { tam: 40, peso: 600, cor: p.acento, espaco: 1.5, max: LARGURA - 2 * M - wData - 40 });
   const hrs = s.hr.filter(Boolean);
   const minHr = Math.min(...hrs);
   const r = caixaGrafico(p, 120, 560, t("Frequência cardíaca"), "", [
@@ -642,6 +642,52 @@ const trechoDaRota = (R, de, ate) => {
   return saida;
 };
 
+// ------------------------------------------------ rótulos fora da rota
+// pontos a cada `passo` px ao longo dos trechos: uma caixa que fica entre dois pontos de um trecho reto e
+// longo também encosta na linha, e só os pontos da rota não mostrariam isso
+function amostrar(trechos, passo = 6) {
+  const saida = [];
+  for (const tr of trechos) {
+    for (let i = 1; i < tr.length; i++) {
+      const [a, b] = [tr[i - 1], tr[i]];
+      const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / passo));
+      for (let k = 0; k < n; k++) saida.push([a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n]);
+    }
+    if (tr.length) saida.push(tr.at(-1));
+  }
+  return saida;
+}
+
+// O lugar de um rótulo w×h perto do ponto (px, py): entre 8 direções e várias distâncias, a caixa que não
+// encosta na linha (com folga), não encosta em outro rótulo ou marcador e não sai da área; entre as que
+// servem, a mais perto do ponto. Sem nenhuma livre, a que menos encosta na linha.
+function lugarDoRotulo(px, py, w, h, { linha, ocupados, area, folga = 10, distancias = [22, 50, 90, 140, 200, 270] }) {
+  const dirs = [[1, 0], [-1, 0], [1, -1], [-1, -1], [1, 1], [-1, 1], [0, -1], [0, 1]];
+  let melhor = null;
+  for (const d of distancias) {
+    for (const [dx, dy] of dirs) {
+      const x = dx > 0 ? px + d : dx < 0 ? px - d - w : px - w / 2;
+      const y = dy > 0 ? py + d : dy < 0 ? py - d - h : py - h / 2;
+      if (x < area.x || y < area.y || x + w > area.x + area.w || y + h > area.y + area.h) continue;
+      let naLinha = 0;
+      for (const [qx, qy] of linha) if (qx > x - folga && qx < x + w + folga && qy > y - folga && qy < y + h + folga) naLinha++;
+      const emOutro = ocupados.some((o) => x < o.x + o.w + 10 && o.x < x + w + 10 && y < o.y + o.h + 10 && o.y < y + h + 10);
+      const custo = (emOutro ? 1e7 : 0) + naLinha * 1000 + d;
+      if (!melhor || custo < melhor.custo) melhor = { x, y, w, h, dx, dy, d, custo };
+    }
+  }
+  return melhor;
+}
+
+// a linha fina do ponto até a borda mais perto do rótulo (quando o rótulo ficou longe)
+function guia(p, px, py, b, cor = BRANCO) {
+  const qx = Math.min(Math.max(px, b.x), b.x + b.w);
+  const qy = Math.min(Math.max(py, b.y), b.y + b.h);
+  if (Math.hypot(qx - px, qy - py) > 34) p.linha([[px, py], [qx, qy]], { cor, larg: 2, alpha: 0.75 });
+}
+
+const caixaDoPonto = (x, y, r) => ({ x: x - r, y: y - r, w: 2 * r, h: 2 * r });
+
 function figRotaMarcos(D, op) {
   const R = rotaMedida(D);
   const c = novaTela(1350);
@@ -650,8 +696,10 @@ function figRotaMarcos(D, op) {
   p.texto(dataTxt(D.data), M + 70, 150, { tam: 40, peso: 600, cor: p.acento, espaco: 1.5 });
   const nome = limparNome(D.a.n);
   p.texto(nome, M + 70, 214, { tam: 66, peso: 700, cor: p.acento, espaco: 1.5, max: LARGURA - 2 * M - 140 });
-  const proj = projetar(R.trechos, { x: 150, y: 290, w: 720, h: 960 });
-  for (const tr of R.trechos) p.linha(tr.map(proj), { larg: 4 });
+  const proj = projetar(R.trechos, { x: 150, y: 300, w: 780, h: 940 });
+  const trechos = R.trechos.map((tr) => tr.map(proj));
+  for (const tr of trechos) p.linha(tr, { larg: 4 });
+  const linha = amostrar(trechos);
   // marcos: de N em N km, com o tempo de prova em cada um (pelas parciais)
   const lista = parciais(D);
   const km = D.a.m / 1000;
@@ -662,36 +710,56 @@ function figRotaMarcos(D, op) {
     acumS += x.s;
     tempoAte.push(acumS);
   }
-  // o rótulo vai à direita do marco; se bater em outro (ida e volta pelo mesmo caminho), vai para a esquerda
-  const ocupados = [];
-  const bate = (b) => ocupados.some((o) => b.x < o.x + o.w && o.x < b.x + b.w && b.y < o.y + o.h && o.y < b.y + b.h);
+  const marcos = [];
   for (let k = N; k < km - N * 0.4; k += N) {
     const [mx, my] = proj(pontoNa(R, (k * 1000) / D.a.m));
-    p.linha([[mx - 22, my], [mx + 22, my]], { cor: p.acento, larg: 3 });
-    p.bola(mx, my, 12);
-    const largura = 170;
-    const opcoes = [
-      { al: "left", x: mx + 34, y: my },
-      { al: "right", x: mx - 34, y: my },
-      { al: "left", x: mx + 34, y: my + 96 },
-      { al: "right", x: mx - 34, y: my - 96 },
-    ].filter((o) => (o.al === "left" ? o.x + largura < LARGURA - 10 : o.x - largura > 10));
-    const caixaDe = (o) => ({ x: o.al === "left" ? o.x : o.x - largura, y: o.y - 44, w: largura, h: 92 });
-    const o = opcoes.find((x) => !bate(caixaDe(x))) || opcoes[0];
-    ocupados.push(caixaDe(o));
-    p.texto(`KM ${k}`, o.x, o.y - 2, { tam: 44, peso: 700, cor: p.acento, alinhar: o.al });
-    if (tempoAte[k - 1]) p.texto(relogio(tempoAte[k - 1]), o.x, o.y + 38, { tam: 36, peso: 500, cor: p.acento, alinhar: o.al });
+    marcos.push({ k, x: mx, y: my, tempo: tempoAte[k - 1], caixa: caixaDoPonto(mx, my, 24) });
   }
-  // largada e chegada
   const ini = proj(R.pts[0]);
   const fim = proj(R.pts.at(-1));
   const juntas = Math.hypot(ini[0] - fim[0], ini[1] - fim[1]) < 40;
-  p.bola(ini[0], ini[1], 7, { cor: BRANCO });
-  p.texto(MAIUSC(juntas ? t("Largada e chegada") : t("Largada")), ini[0] + 16, ini[1] + 26, { tam: 26, peso: 600 });
-  if (!juntas) {
-    p.bola(fim[0], fim[1], 7, { cor: BRANCO });
-    p.texto(MAIUSC(t("Chegada")), fim[0] + 16, fim[1] + 26, { tam: 26, peso: 600 });
+  const cIni = caixaDoPonto(ini[0], ini[1], 12);
+  const cFim = caixaDoPonto(fim[0], fim[1], 12);
+  // os pontos primeiro (cada rótulo desvia dos pontos dos outros), depois cada rótulo no lugar livre mais perto
+  const ocupados = [...marcos.map((m) => m.caixa), cIni, ...(juntas ? [] : [cFim])];
+  const area = { x: 20, y: 250, w: LARGURA - 40, h: 1350 - 270 };
+  const distancias = [30, 60, 100, 150, 210, 280];
+  const desenhos = [];
+  for (const m of marcos) {
+    const l1 = `KM ${m.k}`;
+    const l2 = m.tempo ? relogio(m.tempo) : "";
+    const w = Math.max(p.medir(l1, { tam: 44, peso: 700 }), l2 ? p.medir(l2, { tam: 36, peso: 500 }) : 0) + 4;
+    const b = lugarDoRotulo(m.x, m.y, w, l2 ? 84 : 44, { linha, ocupados: ocupados.filter((o) => o !== m.caixa), area, folga: 12, distancias });
+    if (!b) continue;
+    ocupados.push(b);
+    desenhos.push(() => {
+      guia(p, m.x, m.y, b, p.acento);
+      const al = b.dx < 0 ? "right" : b.dx > 0 ? "left" : "center";
+      const tx = al === "right" ? b.x + b.w : al === "left" ? b.x : b.x + b.w / 2;
+      p.texto(l1, tx, b.y + 38, { tam: 44, peso: 700, cor: p.acento, alinhar: al });
+      if (l2) p.texto(l2, tx, b.y + 78, { tam: 36, peso: 500, cor: p.acento, alinhar: al });
+    });
   }
+  const pontas = juntas ? [[ini, t("Largada e chegada"), cIni]] : [[ini, t("Largada"), cIni], [fim, t("Chegada"), cFim]];
+  for (const [[x, y], rot, propria] of pontas) {
+    const txt = MAIUSC(rot);
+    const b = lugarDoRotulo(x, y, p.medir(txt, { tam: 26, peso: 600 }) + 4, 28, { linha, ocupados: ocupados.filter((o) => o !== propria), area, folga: 10, distancias: [16, 40, 80, 130, 190] });
+    if (!b) continue;
+    ocupados.push(b);
+    desenhos.push(() => {
+      guia(p, x, y, b);
+      const al = b.dx < 0 ? "right" : b.dx > 0 ? "left" : "center";
+      p.texto(txt, al === "right" ? b.x + b.w : al === "left" ? b.x : b.x + b.w / 2, b.y + 24, { tam: 26, peso: 600, alinhar: al });
+    });
+  }
+  // desenha as guias e os textos, e por cima os pontos
+  desenhos.forEach((f) => f());
+  for (const m of marcos) {
+    p.linha([[m.x - 22, m.y], [m.x + 22, m.y]], { cor: p.acento, larg: 3 });
+    p.bola(m.x, m.y, 12);
+  }
+  p.bola(ini[0], ini[1], 7, { cor: BRANCO });
+  if (!juntas) p.bola(fim[0], fim[1], 7, { cor: BRANCO });
   return c;
 }
 
@@ -1207,33 +1275,34 @@ function figRotaRitmo(D, op) {
   const inteiras = parciais(D).filter((x) => x.inteira);
   const rapido = inteiras.reduce((a, b) => (b.ritmo < a.ritmo ? b : a), inteiras[0]);
   const lento = inteiras.reduce((a, b) => (b.ritmo > a.ritmo ? b : a), inteiras[0]);
-  // o rótulo vai para o canto (entre 8 opções em volta do ponto) com menos rota e menos rótulos embaixo
-  const pixels = G.trechos.flat();
-  const ocupados = [];
-  const marcarKm = (x, rot, cor) => {
-    const [px, py] = G.fn(pontoNa(R, ((x.i + 0.5) * 1000) / D.a.m));
-    const larg = 250;
-    const alt = 74;
-    const opcoes = [];
-    for (const [dx, dy] of [[1, -1], [-1, -1], [1, 1], [-1, 1], [1, 0], [-1, 0], [0, -1.6], [0, 1.6]]) {
-      const cx = px + dx * 150;
-      const cy = py + dy * 110;
-      const bx = cx - (dx < 0 ? larg : dx > 0 ? 0 : larg / 2);
-      const by = cy - alt / 2;
-      if (bx < 20 || bx + larg > LARGURA - 20 || by < caixa.y - 30 || by + alt > caixa.y + caixa.h + 40) continue;
-      const naRota = pixels.filter(([qx, qy]) => qx > bx - 12 && qx < bx + larg + 12 && qy > by - 12 && qy < by + alt + 12).length;
-      const emRotulo = ocupados.some((o) => bx < o.x + o.w && o.x < bx + larg && by < o.y + o.h && o.y < by + alt) ? 1000 : 0;
-      opcoes.push({ cx, cy, bx, by, custo: naRota + emRotulo, al: dx < 0 ? "right" : dx > 0 ? "left" : "center" });
-    }
-    const o = opcoes.sort((a, b) => a.custo - b.custo)[0] || { cx: px + 150, cy: py - 110, bx: px + 150, by: py - 147, al: "left" };
-    ocupados.push({ x: o.bx, y: o.by, w: larg, h: alt });
-    p.linha([[px, py], [o.cx, o.cy]], { larg: 2, alpha: 0.85 });
-    p.bola(px, py, 11, { cor });
-    p.texto(MAIUSC(rot), o.cx, o.cy - 8, { tam: 26, peso: 600, espaco: 1.5, cor, alinhar: o.al });
-    p.texto(`KM ${x.i + 1}  ${ritmoKm(x.ritmo)}`, o.cx, o.cy + 28, { tam: 32, peso: 700, alinhar: o.al });
-  };
-  if (rapido) marcarKm(rapido, t("Km mais rápido"), p.acento);
-  if (lento && lento !== rapido) marcarKm(lento, t("Km mais lento"), BRANCO);
+  // o rótulo vai para o lugar livre mais perto: sem encostar na rota (que é grossa), no outro rótulo
+  // ou no outro ponto; uma linha fina liga o ponto ao rótulo
+  const linha = amostrar(G.trechos);
+  const marcas = [[rapido, t("Km mais rápido"), p.acento], ...(lento && lento !== rapido ? [[lento, t("Km mais lento"), BRANCO]] : [])]
+    .filter(([x]) => x)
+    .map(([x, rot, cor]) => {
+      const [px, py] = G.fn(pontoNa(R, ((x.i + 0.5) * 1000) / D.a.m));
+      return { x, rot: MAIUSC(rot), cor, px, py, caixa: caixaDoPonto(px, py, 16) };
+    });
+  const ocupados = marcas.map((m) => m.caixa);
+  const area = { x: 20, y: caixa.y - 40, w: LARGURA - 40, h: caixa.h + 90 };
+  const desenhos = [];
+  for (const m of marcas) {
+    const l2 = `KM ${m.x.i + 1}  ${ritmoKm(m.x.ritmo)}`;
+    const w = Math.max(p.medir(m.rot, { tam: 26, peso: 600, espaco: 1.5 }), p.medir(l2, { tam: 32, peso: 700 })) + 4;
+    const b = lugarDoRotulo(m.px, m.py, w, 70, { linha, ocupados: ocupados.filter((o) => o !== m.caixa), area, folga: 16, distancias: [30, 60, 100, 150, 210, 280] });
+    if (!b) continue;
+    ocupados.push(b);
+    desenhos.push(() => {
+      guia(p, m.px, m.py, b);
+      const al = b.dx < 0 ? "right" : b.dx > 0 ? "left" : "center";
+      const tx = al === "right" ? b.x + b.w : al === "left" ? b.x : b.x + b.w / 2;
+      p.texto(m.rot, tx, b.y + 24, { tam: 26, peso: 600, espaco: 1.5, cor: m.cor, alinhar: al });
+      p.texto(l2, tx, b.y + 64, { tam: 32, peso: 700, alinhar: al });
+    });
+  }
+  desenhos.forEach((f) => f());
+  for (const m of marcas) p.bola(m.px, m.py, 11, { cor: m.cor });
   // a escala: a barra com 5 marcas e o ritmo em cada uma (a cor vem da posição, não da diferença em s/km)
   const lx = 150;
   const lw = LARGURA - 300;
@@ -1296,19 +1365,14 @@ function figRotaPlacar(D, op) {
   return c;
 }
 
-// "Painel do percurso" (como a do Sea Otter Classic): o nome do atleta, a rota grande e um painel escuro
-// translúcido com os dados (o painel continua legível sobre qualquer foto)
+// "Painel do percurso" (como a do Sea Otter Classic): a rota grande e um painel escuro translúcido com
+// os dados (o painel continua legível sobre qualquer foto). Sem o nome da pessoa (pedido do Victor): o
+// nome do treino e a data já estão no painel.
 function figPainel(D, op) {
   const R = rotaMedida(D);
   const c = novaTela(1350);
   const p = pincel(c, op);
   p.grade();
-  const atleta = MAIUSC([D.atleta?.nome, D.atleta?.sobrenome].filter(Boolean).join(" "));
-  p.texto(atleta || limparNome(D.a.n), 150, 76, { tam: 34, peso: 500, cor: p.acento, espaco: 1.5 });
-  const G = rotaNaCaixa(R, { x: 50, y: 160, w: 760, h: 760 });
-  for (const tr of G.trechos) p.linha(tr, { cor: p.acento, larg: 3.5 });
-  const [sx, sy] = G.fn(R.pts[0]);
-  p.quadrado(sx, sy, 16, BRANCO);
   const linhas = [
     [t("Distância total"), distTxt(D.a.m)],
     [t("Subida acumulada"), MAIUSC(elev(D.a.el || 0))],
@@ -1320,6 +1384,11 @@ function figPainel(D, op) {
   const pw = LARGURA - px - 150 + 120;
   const py = 1350 - 70 - (130 + linhas.length * 66);
   const ph = 130 + linhas.length * 66;
+  // a rota acima do painel, sem passar por baixo dele
+  const G = rotaNaCaixa(R, { x: 50, y: 120, w: 760, h: Math.min(760, py - 40 - 120) });
+  for (const tr of G.trechos) p.linha(tr, { cor: p.acento, larg: 3.5 });
+  const [sx, sy] = G.fn(R.pts[0]);
+  p.quadrado(sx, sy, 16, BRANCO);
   p.caixa(px, py, pw, ph, { larg: 0, preencher: "rgba(28,28,30,0.78)", alphaFundo: 1, raio: 6 });
   const xi = px + 24;
   const xf = px + pw - 24;
